@@ -924,26 +924,47 @@
   }
 
   function renderMap(flights) {
-    if (!document.getElementById("map")) return;
-    const segments = getMapSegments(flights);
-    if (leafletMap) {
-      leafletMap.remove();
-      leafletMap = null;
-    }
-    leafletMap = L.map("map").setView([20,0],2);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-      maxZoom: 8
-    }).addTo(leafletMap);
+  if (!document.getElementById("map")) return;
 
-    const bounds = [];
-    segments.forEach(seg => {
-      L.polyline(seg,{color:"#38bdf8"}).addTo(leafletMap);
-      bounds.push(seg[0],seg[1]);
-    });
-    if (bounds.length) {
-      leafletMap.fitBounds(bounds,{padding:[20,20]});
-    }
+  // vorhandene Karte entfernen
+  if (leafletMap) {
+    leafletMap.remove();
+    leafletMap = null;
   }
+
+  // neue Karte anlegen
+  leafletMap = L.map("map").setView([20, 0], 2);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 8
+  }).addTo(leafletMap);
+
+  // alle Airports aus den Flügen einsammeln (ein Punkt pro Airport)
+  const airportCodes = new Set();
+  flights.forEach(f => {
+    if (AIRPORTS[f.from]) airportCodes.add(f.from);
+    if (AIRPORTS[f.to])   airportCodes.add(f.to);
+  });
+
+  const bounds = [];
+  airportCodes.forEach(code => {
+    const a = AIRPORTS[code];
+    if (!a) return;
+    const latlng = [a.lat, a.lon];
+
+    // normaler Marker mit Popup Stadt (IATA)
+    L.marker(latlng)
+      .addTo(leafletMap)
+      .bindPopup((a.city || code) + " (" + code + ")");
+
+    bounds.push(latlng);
+  });
+
+  // Karte auf alle Punkte zoomen
+  if (bounds.length) {
+    leafletMap.fitBounds(bounds, { padding: [20, 20] });
+  }
+}
+
 
   function renderFullStatistics() {
     const flights = loadFlights();
