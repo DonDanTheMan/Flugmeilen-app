@@ -5,14 +5,6 @@
   <title>Flugmeilen Tracker</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-
-<!-- Wichtig für Android: -->
-<meta name="theme-color" content="#111827">
-
-
   <!-- Leaflet für die Karte -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -403,9 +395,14 @@
         <label for="speed">Ø Reisegeschwindigkeit [km/h]</label>
         <input type="number" id="speed" value="600" min="300" max="1000" step="10" />
       </div>
-      <div>
+        <div>
         <label>&nbsp;</label>
-        <button id="addFlightBtn" class="btn btn-primary" type="button">+ Flug speichern</button>
+        <div class="flex-row">
+          <button id="addFlightBtn" class="btn btn-primary" type="button">+ Flug speichern</button>
+          <button id="cancelEditBtn" class="btn btn-secondary btn-sm" type="button" style="display:none;">
+            Bearbeitung abbrechen
+          </button>
+        </div>
       </div>
     </div>
     <div id="flightError" class="error"></div>
@@ -503,6 +500,7 @@
 
   let AIRPORTS = loadAirportsFromStorage();
   let leafletMap = null;
+  let editingFlightId = null; // <--- NEU: aktuell bearbeiteter Flug (oder null)
 
   function loadAirportsFromStorage() {
     try {
@@ -657,33 +655,36 @@
 
   // ----- Flüge manuell -----
   function addFlight() {
-    const date = document.getElementById("flightDate").value;
-    const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
-    const toIata = document.getElementById("toIata").value.trim().toUpperCase();
-    const airline = document.getElementById("airline").value.trim();
-    const aircraft = document.getElementById("aircraft").value.trim();
-    const tripType = document.getElementById("tripType").value;
-    const speed = Number(document.getElementById("speed").value);
-    const errBox = document.getElementById("flightError");
-    errBox.textContent = "";
+  const date = document.getElementById("flightDate").value;
+  const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
+  const toIata = document.getElementById("toIata").value.trim().toUpperCase();
+  const airline = document.getElementById("airline").value.trim();
+  const aircraft = document.getElementById("aircraft").value.trim();
+  const tripType = document.getElementById("tripType").value;
+  const speed = Number(document.getElementById("speed").value);
+  const errBox = document.getElementById("flightError");
+  errBox.textContent = "";
 
-    const errors = [];
-    if (!date) errors.push("Datum fehlt.");
-    if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
-    if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
-    if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
-    if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
-    if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+  const errors = [];
+  if (!date) errors.push("Datum fehlt.");
+  if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
+  if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
+  if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
+  if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
+  if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
 
-    if (errors.length) {
-      errBox.textContent = errors.join(" ");
-      return;
-    }
+  if (errors.length) {
+    errBox.textContent = errors.join(" ");
+    return;
+  }
 
-    const distanceKm = calcDistanceKm(fromIata, toIata);
-    const durationHours = calcDurationHours(distanceKm, speed);
+  const distanceKm = calcDistanceKm(fromIata, toIata);
+  const durationHours = calcDurationHours(distanceKm, speed);
 
-    const flights = loadFlights();
+  const flights = loadFlights();
+
+  if (editingFlightId === null) {
+    // Neuer Flug
     const newFlight = {
       id: Date.now(),
       date,
@@ -697,11 +698,67 @@
       durationHours
     };
     flights.push(newFlight);
-    saveFlights(flights);
-    renderAll();
-    document.getElementById("airline").value = "";
-    document.getElementById("aircraft").value = "";
+  } else {
+    // Bestehenden Flug aktualisieren
+    const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
+    if (idx !== -1) {
+      flights[idx] = {
+        ...flights[idx],
+        date,
+        from: fromIata,
+        to: toIata,
+        airline,
+        aircraft,
+        tripType,
+        speedKmh: speed,
+        distanceKm,
+        durationHours
+      };
+    }
   }
+
+  saveFlights(flights);
+  resetFlightForm();
+  renderAll();
+}
+
+function resetFlightForm() {
+  editingFlightId = null;
+  document.getElementById("flightDate").value = "";
+  document.getElementById("fromIata").value = "";
+  document.getElementById("toIata").value = "";
+  document.getElementById("airline").value = "";
+  document.getElementById("aircraft").value = "";
+  document.getElementById("tripType").value = "p";
+  document.getElementById("speed").value = 850;
+  document.getElementById("flightError").textContent = "";
+  document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+  document.getElementById("cancelEditBtn").style.display = "none";
+}
+
+function startEditFlight(id) {
+  const flights = loadFlights();
+  const f = flights.find(fl => String(fl.id) === String(id));
+  if (!f) return;
+
+  editingFlightId = f.id;
+
+  document.getElementById("flightDate").value = f.date || "";
+  document.getElementById("fromIata").value = f.from || "";
+  document.getElementById("toIata").value = f.to || "";
+  document.getElementById("airline").value = f.airline || "";
+  document.getElementById("aircraft").value = f.aircraft || "";
+  document.getElementById("tripType").value = f.tripType || "p";
+  document.getElementById("speed").value = f.speedKmh || 850;
+
+  document.getElementById("addFlightBtn").textContent = "\u00c4nderungen speichern";
+  document.getElementById("cancelEditBtn").style.display = "inline-flex";
+  document.getElementById("flightError").textContent = "";
+}
+
+function cancelEditFlight() {
+  resetFlightForm();
+}
 
   function deleteFlight(id) {
     const flights = loadFlights();
@@ -1001,6 +1058,7 @@
       "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
 
+        // Airports: Hin- und Rückflug als 1 Besuch werten
     const airportFrom = countOccurrences(flightsYear, f => {
       const a = AIRPORTS[f.from];
       return a ? (a.city || f.from) + " (" + f.from + ")" : null;
@@ -1009,13 +1067,23 @@
       const a = AIRPORTS[f.to];
       return a ? (a.city || f.to) + " (" + f.to + ")" : null;
     });
-    const mergedAirports = {};
-    for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
-    for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
-    const sortedAirports = sortedEntries(mergedAirports);
 
-    const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
-    const sortedAirlines = sortedEntries(airlinesCounts);
+    // Bewegungen zusammenzählen (Starts + Landungen)
+    const movementCounts = {};
+    for (const [k, v] of Object.entries(airportFrom)) {
+      movementCounts[k] = (movementCounts[k] || 0) + v;
+    }
+    for (const [k, v] of Object.entries(airportTo)) {
+      movementCounts[k] = (movementCounts[k] || 0) + v;
+    }
+
+    // Besuche = ceil(Bewegungen / 2)
+    const visitCounts = {};
+    for (const [k, v] of Object.entries(movementCounts)) {
+      visitCounts[k] = Math.ceil(v / 2);
+    }
+
+    const sortedAirports = sortedEntries(visitCounts);
 
     const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
     const sortedAircrafts = sortedEntries(aircraftCounts);
@@ -1049,14 +1117,23 @@
         "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
         "<td>"+formatHours(f.durationHours)+"</td>"+
         "<td>"+(f.tripType || "–")+"</td>"+
-        "<td><button class=\"btn btn-secondary btn-sm\" data-id=\""+f.id+"\">✕</button></td>";
+                "<td>"+
+          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\">✎</button> "+
+          "<button class=\"btn btn-secondary btn-sm\" data-id=\""+f.id+"\">✕</button>"+
+        "</td>";
       tbody.appendChild(tr);
     });
-    tbody.querySelectorAll("button[data-id]").forEach(btn => {
+        tbody.querySelectorAll("button[data-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         deleteFlight(btn.getAttribute("data-id"));
       });
     });
+    tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        startEditFlight(btn.getAttribute("data-edit-id"));
+      });
+    });
+
     document.getElementById("visibleCount").textContent =
       visibleFlights.length + " sichtbar";
   }
@@ -1120,6 +1197,7 @@
     document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
     document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
     document.getElementById("addFlightBtn").addEventListener("click", addFlight);
+	document.getElementById("cancelEditBtn").addEventListener("click", cancelEditFlight);
     document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
     document.getElementById("searchInput").addEventListener("input", renderAll);
     document.getElementById("yearSelect").addEventListener("change", renderAll);
