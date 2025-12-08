@@ -1033,7 +1033,7 @@ function renderMap(flights) {
   const flights = loadFlights();
   const year = getSelectedYear();
   const flightsYear = year
-    ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
+    ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d) && d.getFullYear() === year; })
     : flights;
 
   const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
@@ -1107,10 +1107,9 @@ function renderMap(flights) {
   document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
   document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
 
-  // Karte für das gefilterte Jahr / Filter neu zeichnen
+  // Karte für gefiltertes Jahr neu zeichnen
   setTimeout(() => renderMap(flightsYear), 100);
 }
-
 
   // ----- Init -----
   document.addEventListener("DOMContentLoaded", () => {
@@ -1152,3 +1151,4 @@ function renderMap(flights) {
 </script>
 </body>
 </html>
+
