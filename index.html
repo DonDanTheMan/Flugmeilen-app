@@ -980,7 +980,7 @@ function cancelEditFlight() {
     return segments;
   }
 
-  function renderMap(flights) {
+function renderMap(flights) {
   const mapDiv = document.getElementById("map");
   if (!mapDiv) return;
 
@@ -1030,173 +1030,87 @@ function cancelEditFlight() {
 
 
   function renderFullStatistics() {
-    const flights = loadFlights();
-    const year = getSelectedYear();
-    const flightsYear = year
-      ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
-      : flights;
+  const flights = loadFlights();
+  const year = getSelectedYear();
+  const flightsYear = year
+    ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
+    : flights;
 
-    const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
-    const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
-    const allAirportsSet = new Set();
-    flights.forEach(f=>{
-      if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
-      if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
-    });
-    const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
-    const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
+  const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
+  const allAirportsSet = new Set();
+  flights.forEach(f=>{
+    if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
+    if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
+  });
+  const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
+  const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
 
-    document.getElementById("statsAllYears").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
+  document.getElementById("statsAllYears").innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-label\">Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
 
-    const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
-    const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
-    document.getElementById("statsSelectedYear").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Jahr</div><div class=\"stat-value\">"+(year ?? "Alle")+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
+  const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
+  document.getElementById("statsSelectedYear").innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-label\">Jahr</div><div class=\"stat-value\">"+(year ?? "Alle")+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
 
-        // Airports: Hin- und Rückflug als 1 Besuch werten
-    const airportFrom = countOccurrences(flightsYear, f => {
-      const a = AIRPORTS[f.from];
-      return a ? (a.city || f.from) + " (" + f.from + ")" : null;
-    });
-    const airportTo = countOccurrences(flightsYear, f => {
-      const a = AIRPORTS[f.to];
-      return a ? (a.city || f.to) + " (" + f.to + ")" : null;
-    });
+  // Airports: Hin- und Rückflug als 1 Besuch werten
+  const airportFrom = countOccurrences(flightsYear, f => {
+    const a = AIRPORTS[f.from];
+    return a ? (a.city || f.from) + " (" + f.from + ")" : null;
+  });
+  const airportTo = countOccurrences(flightsYear, f => {
+    const a = AIRPORTS[f.to];
+    return a ? (a.city || f.to) + " (" + f.to + ")" : null;
+  });
 
-    // Bewegungen zusammenzählen (Starts + Landungen)
-    const movementCounts = {};
-    for (const [k, v] of Object.entries(airportFrom)) {
-      movementCounts[k] = (movementCounts[k] || 0) + v;
-    }
-    for (const [k, v] of Object.entries(airportTo)) {
-      movementCounts[k] = (movementCounts[k] || 0) + v;
-    }
-
-    // Besuche = ceil(Bewegungen / 2)
-    const visitCounts = {};
-    for (const [k, v] of Object.entries(movementCounts)) {
-      visitCounts[k] = Math.ceil(v / 2);
-    }
-
-    const sortedAirports = sortedEntries(visitCounts);
-
-    const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
-    const sortedAircrafts = sortedEntries(aircraftCounts);
-
-    document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
-    document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
-    document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
-
-    document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
-    document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
-    document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
-
-    setTimeout(()=>renderMap(flightsYear),100);
+  // Bewegungen zusammenzählen (Starts + Landungen)
+  const movementCounts = {};
+  for (const [k, v] of Object.entries(airportFrom)) {
+    movementCounts[k] = (movementCounts[k] || 0) + v;
+  }
+  for (const [k, v] of Object.entries(airportTo)) {
+    movementCounts[k] = (movementCounts[k] || 0) + v;
   }
 
-  // ----- Rendering Hauptseite -----
-  function renderFlightsTable(visibleFlights) {
-    const tbody = document.getElementById("flightTableBody");
-    tbody.innerHTML = "";
-    visibleFlights.forEach((f, idx) => {
-      const tr = document.createElement("tr");
-      const fromA = AIRPORTS[f.from] || {};
-      const toA = AIRPORTS[f.to] || {};
-      tr.innerHTML =
-        "<td>"+(idx+1)+"</td>"+
-        "<td>"+formatDate(f.date)+"</td>"+
-        "<td><div><span class=\"tag\">"+f.from+"</span></div><div class=\"muted\">"+(fromA.city || "")+"</div></td>"+
-        "<td><div><span class=\"tag\">"+f.to+"</span></div><div class=\"muted\">"+(toA.city || "")+"</div></td>"+
-        "<td>"+(f.airline || "–")+"</td>"+
-        "<td>"+(f.aircraft || "–")+"</td>"+
-        "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
-        "<td>"+formatHours(f.durationHours)+"</td>"+
-        "<td>"+(f.tripType || "–")+"</td>"+
-                "<td>"+
-          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\">✎</button> "+
-          "<button class=\"btn btn-secondary btn-sm\" data-id=\""+f.id+"\">✕</button>"+
-        "</td>";
-      tbody.appendChild(tr);
-    });
-        tbody.querySelectorAll("button[data-id]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        deleteFlight(btn.getAttribute("data-id"));
-      });
-    });
-    tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        startEditFlight(btn.getAttribute("data-edit-id"));
-      });
-    });
-
-    document.getElementById("visibleCount").textContent =
-      visibleFlights.length + " sichtbar";
+  // Besuche = ceil(Bewegungen / 2)
+  const visitCounts = {};
+  for (const [k, v] of Object.entries(movementCounts)) {
+    visitCounts[k] = Math.ceil(v / 2);
   }
 
-  function renderSummary(flights, visibleFlights) {
-    const year = getSelectedYear();
-    document.getElementById("summaryYearLabel").textContent = year ? year : "Alle Jahre";
+  const sortedAirports = sortedEntries(visitCounts);
 
-    const statMilesEl = document.getElementById("statMiles");
-    const statKmEl = document.getElementById("statKm");
-    const statHoursEl = document.getElementById("statHours");
-    const statHoursTextEl = document.getElementById("statHoursText");
-    const statPgEl = document.getElementById("statPg");
-    const statAirlinesEl = document.getElementById("statAirlines");
-    const statAircraftsEl = document.getElementById("statAircrafts");
-    const flightCountLabel = document.getElementById("flightCountLabel");
+  // Airlines
+  const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
+  const sortedAirlines = sortedEntries(airlinesCounts);
 
-    const totalKm = visibleFlights.reduce((s,f)=> s + (f.distanceKm||0), 0);
-    const totalHours = visibleFlights.reduce((s,f)=> s + (f.durationHours||0), 0);
-    const totalFlights = visibleFlights.length;
-    const priv = visibleFlights.filter(f=>f.tripType==="p").length;
-    const gesch = visibleFlights.filter(f=>f.tripType==="g").length;
+  // Aircrafts
+  const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
+  const sortedAircrafts = sortedEntries(aircraftCounts);
 
-    const airlines = new Set(visibleFlights.map(f => (f.airline||"").trim()).filter(Boolean));
-    const aircrafts = new Set(visibleFlights.map(f => (f.aircraft||"").trim()).filter(Boolean));
+  document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
+  document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
+  document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
 
-    statKmEl.textContent = totalKm ? formatKm(totalKm) : "–";
-    statMilesEl.textContent = totalKm ? formatMiles(totalKm) : "–";
-    statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
-    statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
-    statPgEl.textContent = totalFlights ? (totalFlights+" (p: "+priv+", g: "+gesch+")") : "–";
-    statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
-    statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
-    flightCountLabel.textContent = totalFlights + (totalFlights === 1 ? " Flug" : " Fl\u00fcge");
-  }
+  document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
+  document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
+  document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
 
-  function renderMiniStats(visibleFlights) {
-    const miniKm = visibleFlights.reduce((s,f)=>s+(f.distanceKm||0),0);
-    const miniHours = visibleFlights.reduce((s,f)=>s+(f.durationHours||0),0);
-    document.getElementById("miniStats").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
-  }
+  // Karte für das gefilterte Jahr / Filter neu zeichnen
+  setTimeout(() => renderMap(flightsYear), 100);
+}
 
-  function renderAll() {
-    updateAirportCount();
-    const flights = loadFlights();
-    buildYearOptions(flights);
-    const visible = applyFilters(flights);
-    renderFlightsTable(visible);
-    renderSummary(flights, visible);
-    renderMiniStats(visible);
-    if (document.getElementById("statsPage").style.display !== "none") {
-      renderFullStatistics();
-    }
-  }
 
   // ----- Init -----
   document.addEventListener("DOMContentLoaded", () => {
@@ -1238,4 +1152,3 @@ function cancelEditFlight() {
 </script>
 </body>
 </html>
-
