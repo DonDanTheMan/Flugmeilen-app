@@ -702,6 +702,47 @@
     document.getElementById("airline").value = "";
     document.getElementById("aircraft").value = "";
   }
+let editingId = null;
+
+function startEditFlight(id) {
+  const f = loadFlights().find(x => String(x.id) === String(id));
+  if (!f) return;
+
+  editingId = f.id;
+  document.getElementById("flightDate").value = f.date;
+  document.getElementById("fromIata").value = f.from;
+  document.getElementById("toIata").value = f.to;
+  document.getElementById("airline").value = f.airline;
+  document.getElementById("aircraft").value = f.aircraft;
+  document.getElementById("tripType").value = f.tripType;
+  document.getElementById("speed").value = f.speedKmh;
+
+  document.getElementById("addFlightBtn").textContent = "Änderungen speichern";
+}
+
+function updateFlight() {
+  const flights = loadFlights();
+  const f = flights.find(x => x.id === editingId);
+  if (!f) return addFlight(); // fallback
+
+  const date = document.getElementById("flightDate").value;
+  const from = document.getElementById("fromIata").value.trim().toUpperCase();
+  const to   = document.getElementById("toIata").value.trim().toUpperCase();
+  const airline = document.getElementById("airline").value.trim();
+  const aircraft = document.getElementById("aircraft").value.trim();
+  const tripType = document.getElementById("tripType").value;
+  const speedKmh = Number(document.getElementById("speed").value);
+
+  const dist = calcDistanceKm(from, to);
+  const dur = calcDurationHours(dist, speedKmh);
+
+  Object.assign(f, { date, from, to, airline, aircraft, tripType, speedKmh, distanceKm: dist, durationHours: dur });
+
+  saveFlights(flights);
+  editingId = null;
+  document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+  renderAll();
+}
 
   function deleteFlight(id) {
     const flights = loadFlights();
@@ -1012,7 +1053,14 @@
     const mergedAirports = {};
     for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
     for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
-    const sortedAirports = sortedEntries(mergedAirports);
+    // Besuche = ceil(Bewegungen / 2)
+const visits = {};
+for (const [k, v] of Object.entries(mergedAirports)) {
+  visits[k] = Math.ceil(v / 2);
+}
+
+const sortedAirports = sortedEntries(visits);
+
 
     const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
     const sortedAirlines = sortedEntries(airlinesCounts);
@@ -1049,14 +1097,25 @@
         "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
         "<td>"+formatHours(f.durationHours)+"</td>"+
         "<td>"+(f.tripType || "–")+"</td>"+
-        "<td><button class=\"btn btn-secondary btn-sm\" data-id=\""+f.id+"\">✕</button></td>";
+        "<td>"+
+			"<button class=\"btn btn-secondary btn-sm\" data-edit=\""+f.id+"\">✎</button> "+
+			"<button class=\"btn btn-secondary btn-sm\" data-del=\""+f.id+"\">✕</button>"+
+		"</td>";
+
       tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll("button[data-id]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        deleteFlight(btn.getAttribute("data-id"));
-      });
-    });
+// Löschen
+tbody.querySelectorAll("button[data-del]").forEach(btn => {
+  btn.addEventListener("click", () =>
+    deleteFlight(btn.getAttribute("data-del"))
+  );
+});
+// Bearbeiten
+tbody.querySelectorAll("button[data-edit]").forEach(btn => {
+  btn.addEventListener("click", () =>
+    startEditFlight(btn.getAttribute("data-edit"))
+  );
+});
+
     document.getElementById("visibleCount").textContent =
       visibleFlights.length + " sichtbar";
   }
@@ -1119,7 +1178,11 @@
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
     document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
-    document.getElementById("addFlightBtn").addEventListener("click", addFlight);
+    document.getElementById("addFlightBtn").addEventListener("click", () => {
+  if (editingId) updateFlight();
+  else addFlight();
+});
+
     document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
     document.getElementById("searchInput").addEventListener("input", renderAll);
     document.getElementById("yearSelect").addEventListener("change", renderAll);
