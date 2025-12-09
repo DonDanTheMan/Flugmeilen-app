@@ -5,13 +5,10 @@
   <title>Flugmeilen Tracker</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-
-<!-- Wichtig für Android: -->
-<meta name="theme-color" content="#111827">
-
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <meta name="theme-color" content="#111827">
 
   <!-- Leaflet für die Karte -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -368,7 +365,7 @@
     <div id="miniStats" class="stats-grid"></div>
   </section>
 
-  <!-- Flug hinzufügen -->
+  <!-- Flug hinzufügen / bearbeiten -->
   <section class="card">
     <h2>Neuen Flug hinzuf&uuml;gen</h2>
     <div class="form-grid">
@@ -497,258 +494,729 @@
 </main>
 
 <script>
-const STORAGE_KEY_FLIGHTS = "flugmeilen_flights_v3";
-const STORAGE_KEY_AIRPORTS = "flugmeilen_airports_v3";
+  const STORAGE_KEY_FLIGHTS = "flugmeilen_flights_v3";
+  const STORAGE_KEY_AIRPORTS = "flugmeilen_airports_v3";
 
-let AIRPORTS = loadAirportsFromStorage();
-let leafletMap = null;
-let editingId = null;
+  let AIRPORTS = loadAirportsFromStorage();
+  let leafletMap = null;
+  let editingFlightId = null; // <--- NEU: für Bearbeiten
 
-// --- Storage ---
-function loadAirportsFromStorage() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY_AIRPORTS)) || {};
-  } catch (_) {
-    return {};
-  }
-}
-function saveAirportsToStorage() {
-  localStorage.setItem(STORAGE_KEY_AIRPORTS, JSON.stringify(AIRPORTS));
-}
-function loadFlights() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY_FLIGHTS)) || [];
-  } catch (_) {
-    return [];
-  }
-}
-function saveFlights(f) {
-  localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(f));
-}
-
-// --- Mathe/Format ---
-function deg2rad(d){return d*Math.PI/180;}
-function calcDistanceKm(from,to){
-  const a=AIRPORTS[from],b=AIRPORTS[to];
-  if(!a||!b) return null;
-  const R=6371;
-  const dlat=deg2rad(b.lat-a.lat),dlon=deg2rad(b.lon-a.lon);
-  const h=Math.sin(dlat/2)**2+Math.cos(deg2rad(a.lat))*Math.cos(deg2rad(b.lat))*Math.sin(dlon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
-}
-function calcDurationHours(dist,spd){return dist&&spd?dist/spd+0.5:null;}
-function formatKm(v){return v? v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,"'")+" km":"–";}
-function formatMiles(v){return v? (v*0.621371).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,"'")+" mi":"–";}
-function formatHours(h){if(!h)return"–";const m=Math.round(h*60),H=Math.floor(m/60),M=m%60;return`${String(H).padStart(2,"0")}:${String(M).padStart(2,"0")} h`;}
-function hoursToText(h){if(!h)return"";return"";}
-function formatDate(d){const x=new Date(d);return isNaN(x)?d:x.toLocaleDateString();}
-
-// --- Airport Import ---
-function parseCsvAirports(t){
-  const l=t.split(/\r?\n/).filter(r=>r.trim());
-  const d=l[0].includes(";")?";":",";
-  const h=l[0].split(d).map(x=>x.trim().toLowerCase());
-  const iI=h.indexOf("iata"),iC=h.indexOf("stadt"),iLa=h.indexOf("breite"),iLo=h.indexOf("länge")>=0?h.indexOf("länge"):h.indexOf("laenge");
-  if(iI<0||iC<0||iLa<0||iLo<0) throw Error("Spalten fehlen");
-  const r={};
-  for(let i=1;i<l.length;i++){
-    const p=l[i].split(d);const c=(p[iI]||"").trim().toUpperCase();
-    if(c.length!==3)continue;
-    const city=(p[iC]||"").trim();
-    const lat=parseFloat((p[iLa]||"").replace(",","."));
-    const lon=parseFloat((p[iLo]||"").replace(",","."));
-    if(!isFinite(lat)||!isFinite(lon))continue;
-    r[c]={city,lat,lon};
-  }
-  return r;
-}
-function handleAirportCsvLoad(){
-  const f=document.getElementById("airportFile").files[0];
-  if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      AIRPORTS=parseCsvAirports(e.target.result);
-      saveAirportsToStorage();updateAirportCount();renderAll();
-    }catch(err){alert(err.message);}
-  };
-  r.readAsText(f,"windows-1252");
-}
-function updateAirportCount(){
-  const n=Object.keys(AIRPORTS).length;
-  document.getElementById("airportCount").textContent= n+" Airports";
-}
-
-// --- Flights manuell ---
-function addFlight(){
-  const date=flightDate.value;
-  const from=fromIata.value.trim().toUpperCase();
-  const to=toIata.value.trim().toUpperCase();
-  const airline=airlineEl.value.trim();
-  const aircraft=aircraftEl.value.trim();
-  const tripType=tripTypeEl.value;
-  const speed=+speedEl.value;
-
-  if(!AIRPORTS[from]||!AIRPORTS[to]){alert("Unbekannte IATA");return;}
-
-  const dist=calcDistanceKm(from,to);
-  const dur=calcDurationHours(dist,speed);
-  const f=loadFlights();
-  const o={
-    id:editingId||Date.now(),
-    date,from,to,airline,aircraft,tripType,
-    speedKmh:speed,distanceKm:dist,durationHours:dur
-  };
-  if(editingId){
-    const i=f.findIndex(x=>x.id===editingId);
-    f[i]=o;
-    editingId=null;addFlightBtn.textContent="+ Flug speichern";
-  } else f.push(o);
-
-  saveFlights(f);renderAll();
-}
-function deleteFlight(id){
-  saveFlights(loadFlights().filter(x=>x.id!=id));
-  if(editingId==id){editingId=null;addFlightBtn.textContent="+ Flug speichern";}
-  renderAll();
-}
-function startEditFlight(id){
-  const f=loadFlights().find(x=>x.id==id);
-  if(!f)return;
-  editingId=f.id;
-  flightDate.value=f.date;
-  fromIata.value=f.from;
-  toIata.value=f.to;
-  airlineEl.value=f.airline;
-  aircraftEl.value=f.aircraft;
-  tripTypeEl.value=f.tripType;
-  speedEl.value=f.speedKmh;
-  addFlightBtn.textContent="Änderungen speichern";
-}
-
-// --- Search / Filter ---
-function getSelectedYear(){const v=yearSelect.value;return v?+v:null;}
-function buildYearOptions(f){
-  const s=new Set(f.map(x=>new Date(x.date).getFullYear()));
-  const el=yearSelect;el.innerHTML="<option value=''>Alle Jahre</option>";
-  [...s].sort().forEach(y=>el.innerHTML+=`<option>${y}</option>`);
-}
-function applyFilters(f){
-  const y=getSelectedYear();
-  const q=searchInput.value.trim().toLowerCase();
-  return f.filter(x=>{
-    const d=new Date(x.date).getFullYear();
-    if(y && d!==y) return false;
-    if(q){
-      const a=AIRPORTS[x.from]||{},b=AIRPORTS[x.to]||{};
-      const inTxt=[x.from,x.to,a.city,b.city,x.airline,x.aircraft].join(" ").toLowerCase();
-      if(!inTxt.includes(q)) return false;
+  function loadAirportsFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_AIRPORTS);
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === "object" ? obj : {};
+    } catch (e) {
+      return {};
     }
-    return true;
+  }
+  function saveAirportsToStorage() {
+    localStorage.setItem(STORAGE_KEY_AIRPORTS, JSON.stringify(AIRPORTS));
+  }
+
+  function loadFlights() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_FLIGHTS);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveFlights(flights) {
+    localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(flights));
+  }
+
+  // ----- Mathe / Format -----
+  function deg2rad(deg) { return deg * Math.PI / 180; }
+
+  function calcDistanceKm(fromCode, toCode) {
+    const a1 = AIRPORTS[fromCode];
+    const a2 = AIRPORTS[toCode];
+    if (!a1 || !a2) return null;
+    const R = 6371;
+    const lat1 = deg2rad(a1.lat), lon1 = deg2rad(a1.lon);
+    const lat2 = deg2rad(a2.lat), lon2 = deg2rad(a2.lon);
+    const dlat = lat2 - lat1;
+    const dlon = lon2 - lon1;
+    const h = Math.sin(dlat/2)*Math.sin(dlat/2) +
+              Math.cos(lat1)*Math.cos(lat2)*Math.sin(dlon/2)*Math.sin(dlon/2);
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h));
+    return R * c;
+  }
+
+  function calcDurationHours(distanceKm, speedKmh) {
+    if (!distanceKm || !speedKmh) return null;
+    return distanceKm / speedKmh + 0.5;
+  }
+
+  function formatKm(km) {
+    if (!km) return "–";
+    return km.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,"'") + " km";
+  }
+
+  function formatMiles(km) {
+    if (!km) return "–";
+    const miles = km * 0.621371;
+    return miles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,"'") + " mi";
+  }
+
+  function formatHours(hours) {
+    if (!hours) return "–";
+    const totalMin = Math.round(hours * 60);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0") + " h";
+  }
+
+  function hoursToText(hours) {
+    if (!hours) return "";
+    const totalMin = Math.round(hours * 60);
+    const d = Math.floor(totalMin / (24*60));
+    const remMin = totalMin - d*24*60;
+    const h = Math.floor(remMin/60);
+    const m = remMin % 60;
+    const parts = [];
+    if (d) parts.push(d + " Tage");
+    if (h) parts.push(h + " Stunden");
+    if (m) parts.push(m + " Minuten");
+    return parts.join(" ");
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "–";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString();
+  }
+
+  // ----- Airports CSV -----
+  function parseCsvAirports(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    if (!lines.length) throw new Error("CSV ist leer.");
+    const delimiter = lines[0].includes(";") ? ";" : ",";
+    const header = lines[0].split(delimiter).map(h => h.trim());
+    const idxIata = header.findIndex(h => h.toLowerCase() === "iata");
+    const idxCity = header.findIndex(h => h.toLowerCase() === "stadt");
+    const idxLat  = header.findIndex(h => h.toLowerCase() === "breite");
+    const idxLon  = header.findIndex(h => h.toLowerCase() === "l\u00e4nge" || h.toLowerCase() === "laenge");
+    if (idxIata === -1 || idxCity === -1 || idxLat === -1 || idxLon === -1) {
+      throw new Error("Erwartete Spalten IATA, Stadt, Breite, L\u00e4nge nicht gefunden.");
+    }
+    const result = {};
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(delimiter);
+      if (!parts.length) continue;
+      const code = (parts[idxIata] || "").trim().toUpperCase();
+      if (!code || code.length !== 3) continue;
+      const city = (parts[idxCity] || "").trim();
+      const lat = parseFloat((parts[idxLat] || "").replace(",","."));  // leicht angepasst: nur erste , -> .
+      const lon = parseFloat((parts[idxLon] || "").replace(",","."));  // dito
+      if (!isFinite(lat) || !isFinite(lon)) continue;
+      result[code] = { city, lat, lon };
+    }
+    return result;
+  }
+
+  function handleAirportCsvLoad() {
+    const fileInput = document.getElementById("airportFile");
+    const errBox = document.getElementById("airportError");
+    errBox.textContent = "";
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      errBox.textContent = "Bitte eine CSV-Datei ausw\u00e4hlen.";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const parsed = parseCsvAirports(text);
+        AIRPORTS = parsed;
+        saveAirportsToStorage();
+        updateAirportCount();
+        renderAll();
+      } catch (err) {
+        errBox.textContent = "Fehler beim Einlesen: " + err.message;
+      }
+    };
+    reader.onerror = () => { errBox.textContent = "Fehler beim Lesen der Datei."; };
+    reader.readAsText(file, "windows-1252");
+  }
+
+  function updateAirportCount() {
+    const el = document.getElementById("airportCount");
+    const n = Object.keys(AIRPORTS).length;
+    el.textContent = n + (n === 1 ? " Airport" : " Airports");
+  }
+
+  // ----- Flüge manuell + Bearbeiten -----
+  function addFlight() {
+    const date = document.getElementById("flightDate").value;
+    const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
+    const toIata = document.getElementById("toIata").value.trim().toUpperCase();
+    const airline = document.getElementById("airline").value.trim();
+    const aircraft = document.getElementById("aircraft").value.trim();
+    const tripType = document.getElementById("tripType").value;
+    const speed = Number(document.getElementById("speed").value);
+    const errBox = document.getElementById("flightError");
+    errBox.textContent = "";
+
+    const errors = [];
+    if (!date) errors.push("Datum fehlt.");
+    if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
+    if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
+    if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
+    if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
+    if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+
+    if (errors.length) {
+      errBox.textContent = errors.join(" ");
+      return;
+    }
+
+    const distanceKm = calcDistanceKm(fromIata, toIata);
+    const durationHours = calcDurationHours(distanceKm, speed);
+
+    const flights = loadFlights();
+
+    if (editingFlightId === null) {
+      // neuer Flug
+      const newFlight = {
+        id: Date.now(),
+        date,
+        from: fromIata,
+        to: toIata,
+        airline,
+        aircraft,
+        tripType,
+        speedKmh: speed,
+        distanceKm,
+        durationHours
+      };
+      flights.push(newFlight);
+      // Felder wie bisher nach "Neu" leeren
+      document.getElementById("airline").value = "";
+      document.getElementById("aircraft").value = "";
+    } else {
+      // bestehenden Flug updaten
+      const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
+      if (idx !== -1) {
+        flights[idx] = {
+          ...flights[idx],
+          date,
+          from: fromIata,
+          to: toIata,
+          airline,
+          aircraft,
+          tripType,
+          speedKmh: speed,
+          distanceKm,
+          durationHours
+        };
+      }
+    }
+
+    saveFlights(flights);
+
+    // Edit-Mode zurücksetzen
+    editingFlightId = null;
+    document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+    renderAll();
+  }
+
+  function startEditFlight(id) {
+    const flights = loadFlights();
+    const f = flights.find(fl => String(fl.id) === String(id));
+    if (!f) return;
+
+    editingFlightId = f.id;
+
+    document.getElementById("flightDate").value = f.date || "";
+    document.getElementById("fromIata").value = f.from || "";
+    document.getElementById("toIata").value = f.to || "";
+    document.getElementById("airline").value = f.airline || "";
+    document.getElementById("aircraft").value = f.aircraft || "";
+    document.getElementById("tripType").value = f.tripType || "p";
+    document.getElementById("speed").value = f.speedKmh || 600;
+    document.getElementById("flightError").textContent = "";
+    document.getElementById("addFlightBtn").textContent = "Änderungen speichern";
+  }
+
+  function deleteFlight(id) {
+    const flights = loadFlights();
+    const next = flights.filter(f => String(f.id) !== String(id));
+    saveFlights(next);
+    if (String(editingFlightId) === String(id)) {
+      editingFlightId = null;
+      document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+      document.getElementById("flightError").textContent = "";
+    }
+    renderAll();
+  }
+
+  function clearAllFlights() {
+    if (!confirm("Alle gespeicherten Fl\u00fcge wirklich l\u00f6schen?")) return;
+    localStorage.removeItem(STORAGE_KEY_FLIGHTS);
+    editingFlightId = null;
+    document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+    renderAll();
+  }
+
+  // ----- Flüge aus Excel-CSV (dein Format) -----
+  function parseCsvFlights(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    if (!lines.length) throw new Error("CSV ist leer.");
+
+    const delimiter = lines[0].includes(";") ? ";" : ",";
+    const header = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+
+    const idxDatum   = header.findIndex(h => h === "datum");
+    const idxVon     = header.findIndex(h => h === "von-iata");
+    const idxNach    = header.findIndex(h => h === "nach-iata");
+    const idxAirline = header.findIndex(h => h === "airline");
+    const idxAircr   = header.findIndex(h => h === "aircraft");
+    const idxTyp     = header.findIndex(h => h === "typ");
+
+    if (idxDatum === -1 || idxVon === -1 || idxNach === -1) {
+      throw new Error("Spalten 'Datum', 'Von-IATA' und 'Nach-IATA' m\u00fcssen vorhanden sein.");
+    }
+
+    const flights = [];
+
+    function extractIata(s) {
+      const m = /\(([A-Za-z]{3})\)$/.exec(s.trim());
+      return m ? m[1].toUpperCase() : null;
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(delimiter);
+      if (!parts.length) continue;
+
+      let rawDate = (parts[idxDatum] || "").trim();
+
+      // DD.MM.YYYY -> YYYY-MM-DD
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(rawDate)) {
+        const [dd, mm, yyyy] = rawDate.split(".");
+        rawDate = `${yyyy}-${mm}-${dd}`;
+      } else if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        const d = new Date(rawDate);
+        if (!isNaN(d)) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth()+1).padStart(2,"0");
+          const day = String(d.getDate()).padStart(2,"0");
+          rawDate = `${y}-${m}-${day}`;
+        }
+      }
+
+      const fromStr = parts[idxVon]  || "";
+      const toStr   = parts[idxNach] || "";
+      const from = extractIata(fromStr);
+      const to   = extractIata(toStr);
+      if (!from || !to) continue;
+
+      const airline  = idxAirline >= 0 ? (parts[idxAirline] || "").trim() : "";
+      const aircraft = idxAircr   >= 0 ? (parts[idxAircr]   || "").trim() : "";
+      let tripType   = idxTyp     >= 0 ? (parts[idxTyp]     || "").trim().toLowerCase() : "p";
+      if (tripType.startsWith("g")) tripType = "g";
+      else tripType = "p";
+
+      const distanceKm = calcDistanceKm(from, to);
+      const durationHours = distanceKm ? calcDurationHours(distanceKm, 850) : null;
+
+      flights.push({
+        id: Date.now() + i,
+        date: rawDate,
+        from,
+        to,
+        airline,
+        aircraft,
+        tripType,
+        speedKmh: 850,
+        distanceKm,
+        durationHours
+      });
+    }
+
+    return flights;
+  }
+
+  function handleFlightsCsvLoad() {
+    const fileInput = document.getElementById("flightsFile");
+    const errBox    = document.getElementById("flightsImportError");
+    const infoBox   = document.getElementById("flightImportInfo");
+    errBox.textContent = "";
+    infoBox.textContent = "";
+
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      errBox.textContent = "Bitte eine Flights-CSV ausw\u00e4hlen.";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const imported = parseCsvFlights(text);
+
+        if (!imported.length) {
+          errBox.textContent = "Keine g\u00fcltigen Fl\u00fcge in der CSV gefunden.";
+          return;
+        }
+
+        const existing = loadFlights();
+        const all = existing.concat(imported);
+        saveFlights(all);
+        infoBox.textContent = imported.length + " Fl\u00fcge importiert.";
+        renderAll();
+      } catch (err) {
+        errBox.textContent = "Fehler beim Einlesen: " + err.message;
+      }
+    };
+    reader.onerror = () => {
+      errBox.textContent = "Fehler beim Lesen der Datei.";
+    };
+    reader.readAsText(file, "windows-1252");
+  }
+
+  // ----- Filter / Jahr / Suche -----
+  function getSelectedYear() {
+    const val = document.getElementById("yearSelect").value;
+    return val === "" ? null : Number(val);
+  }
+
+  function buildYearOptions(flights) {
+    const years = new Set();
+    for (const f of flights) {
+      if (!f.date) continue;
+      const y = new Date(f.date).getFullYear();
+      if (!isNaN(y)) years.add(y);
+    }
+    const arr = Array.from(years).sort((a,b)=>a-b);
+    const sel = document.getElementById("yearSelect");
+    const current = sel.value;
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "Alle Jahre";
+    sel.appendChild(optAll);
+    for (const y of arr) {
+      const opt = document.createElement("option");
+      opt.value = String(y);
+      opt.textContent = y;
+      sel.appendChild(opt);
+    }
+    if (current) sel.value = current;
+  }
+
+  function applyFilters(flights) {
+    const year = getSelectedYear();
+    const search = document.getElementById("searchInput").value.trim().toLowerCase();
+    let filtered = flights;
+    if (year) {
+      filtered = filtered.filter(f => {
+        const d = new Date(f.date);
+        return !isNaN(d) && d.getFullYear() === year;
+      });
+    }
+    if (search) {
+      filtered = filtered.filter(f => {
+        const aFrom = AIRPORTS[f.from] || {};
+        const aTo = AIRPORTS[f.to] || {};
+        const hay = [
+          f.from, f.to,
+          aFrom.city, aTo.city,
+          f.airline, f.aircraft
+        ].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(search);
+      });
+    }
+    return filtered;
+  }
+
+  // ----- Statistik-Helfer -----
+  function countOccurrences(array, keyFn) {
+    const map = {};
+    array.forEach(item => {
+      const key = keyFn(item);
+      if (!key) return;
+      map[key] = (map[key] || 0) + 1;
+    });
+    return map;
+  }
+
+  function sortedEntries(obj) {
+    return Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+  }
+
+  function buildStatsTable(entries) {
+    if (!entries.length) return "<span class=\"muted\">Keine Daten</span>";
+    let html = "<table><tbody>";
+    entries.forEach(([name,count])=>{
+      html += "<tr><td>"+name+"</td><td style=\"text-align:right;\">"+count+"</td></tr>";
+    });
+    html += "</tbody></table>";
+    return html;
+  }
+
+  function getMapSegments(flights) {
+    const segments = [];
+    flights.forEach(f => {
+      const a1 = AIRPORTS[f.from];
+      const a2 = AIRPORTS[f.to];
+      if (a1 && a2) segments.push([[a1.lat, a1.lon],[a2.lat,a2.lon]]);
+    });
+    return segments;
+  }
+
+  function renderMap(flights) {
+    if (!document.getElementById("map")) return;
+
+    // vorhandene Karte entfernen
+    if (leafletMap) {
+      leafletMap.remove();
+      leafletMap = null;
+    }
+
+    // neue Karte anlegen
+    leafletMap = L.map("map").setView([20, 0], 2);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 8
+    }).addTo(leafletMap);
+
+    // alle Airports aus den Flügen einsammeln (ein Punkt pro Airport)
+    const airportCodes = new Set();
+    flights.forEach(f => {
+      if (AIRPORTS[f.from]) airportCodes.add(f.from);
+      if (AIRPORTS[f.to])   airportCodes.add(f.to);
+    });
+
+    const bounds = [];
+    airportCodes.forEach(code => {
+      const a = AIRPORTS[code];
+      if (!a) return;
+      const latlng = [a.lat, a.lon];
+
+      // Marker mit Popup Stadt (IATA)
+      L.marker(latlng)
+        .addTo(leafletMap)
+        .bindPopup((a.city || code) + " (" + code + ")");
+
+      bounds.push(latlng);
+    });
+
+    // Karte auf alle Punkte zoomen
+    if (bounds.length) {
+      leafletMap.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }
+
+  function renderFullStatistics() {
+    const flights = loadFlights();
+    const year = getSelectedYear();
+    const flightsYear = year
+      ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
+      : flights;
+
+    const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
+    const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
+    const allAirportsSet = new Set();
+    flights.forEach(f=>{
+      if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
+      if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
+    });
+    const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
+    const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
+
+    document.getElementById("statsAllYears").innerHTML =
+      "<div class=\"stat-card\"><div class=\"stat-label\">Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
+
+    const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
+    const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
+    document.getElementById("statsSelectedYear").innerHTML =
+      "<div class=\"stat-card\"><div class=\"stat-label\">Jahr</div><div class=\"stat-value\">"+(year ?? "Alle")+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
+
+    // Airports: Hin- und Rückflug als 1 Besuch werten
+    const airportFrom = countOccurrences(flightsYear, f => {
+      const a = AIRPORTS[f.from];
+      return a ? (a.city || f.from) + " (" + f.from + ")" : null;
+    });
+    const airportTo = countOccurrences(flightsYear, f => {
+      const a = AIRPORTS[f.to];
+      return a ? (a.city || f.to) + " (" + f.to + ")" : null;
+    });
+    const mergedAirports = {};
+    for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+    for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+
+    // NEU: Besuche = ceil(Bewegungen / 2)
+    const visitCounts = {};
+    for (const [k,v] of Object.entries(mergedAirports)) {
+      visitCounts[k] = Math.ceil(v / 2);
+    }
+    const sortedAirports = sortedEntries(visitCounts);
+
+    const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
+    const sortedAirlines = sortedEntries(airlinesCounts);
+
+    const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
+    const sortedAircrafts = sortedEntries(aircraftCounts);
+
+    document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
+    document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
+    document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
+
+    document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
+    document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
+    document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
+
+    setTimeout(()=>renderMap(flightsYear),100);
+  }
+
+  // ----- Rendering Hauptseite -----
+  function renderFlightsTable(visibleFlights) {
+    const tbody = document.getElementById("flightTableBody");
+    tbody.innerHTML = "";
+    visibleFlights.forEach((f, idx) => {
+      const fromA = AIRPORTS[f.from] || {};
+      const toA = AIRPORTS[f.to] || {};
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>"+(idx+1)+"</td>"+
+        "<td>"+formatDate(f.date)+"</td>"+
+        "<td><div><span class=\"tag\">"+f.from+"</span></div><div class=\"muted\">"+(fromA.city || "")+"</div></td>"+
+        "<td><div><span class=\"tag\">"+f.to+"</span></div><div class=\"muted\">"+(toA.city || "")+"</div></td>"+
+        "<td>"+(f.airline || "–")+"</td>"+
+        "<td>"+(f.aircraft || "–")+"</td>"+
+        "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
+        "<td>"+formatHours(f.durationHours)+"</td>"+
+        "<td>"+(f.tripType || "–")+"</td>"+
+        "<td>"+
+          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\">✎</button> "+
+          "<button class=\"btn btn-secondary btn-sm\" data-delete-id=\""+f.id+"\">✕</button>"+
+        "</td>";
+      tbody.appendChild(tr);
+    });
+    // Delete
+    tbody.querySelectorAll("button[data-delete-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        deleteFlight(btn.getAttribute("data-delete-id"));
+      });
+    });
+    // Edit
+    tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        startEditFlight(btn.getAttribute("data-edit-id"));
+      });
+    });
+
+    document.getElementById("visibleCount").textContent =
+      visibleFlights.length + " sichtbar";
+  }
+
+  function renderSummary(flights, visibleFlights) {
+    const year = getSelectedYear();
+    document.getElementById("summaryYearLabel").textContent = year ? year : "Alle Jahre";
+
+    const statMilesEl = document.getElementById("statMiles");
+    const statKmEl = document.getElementById("statKm");
+    const statHoursEl = document.getElementById("statHours");
+    const statHoursTextEl = document.getElementById("statHoursText");
+    const statPgEl = document.getElementById("statPg");
+    const statAirlinesEl = document.getElementById("statAirlines");
+    const statAircraftsEl = document.getElementById("statAircrafts");
+    const flightCountLabel = document.getElementById("flightCountLabel");
+
+    const totalKm = visibleFlights.reduce((s,f)=> s + (f.distanceKm||0), 0);
+    const totalHours = visibleFlights.reduce((s,f)=> s + (f.durationHours||0), 0);
+    const totalFlights = visibleFlights.length;
+    const priv = visibleFlights.filter(f=>f.tripType==="p").length;
+    const gesch = visibleFlights.filter(f=>f.tripType==="g").length;
+
+    const airlines = new Set(visibleFlights.map(f => (f.airline||"").trim()).filter(Boolean));
+    const aircrafts = new Set(visibleFlights.map(f => (f.aircraft||"").trim()).filter(Boolean));
+
+    statKmEl.textContent = totalKm ? formatKm(totalKm) : "–";
+    statMilesEl.textContent = totalKm ? formatMiles(totalKm) : "–";
+    statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
+    statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
+    statPgEl.textContent = totalFlights ? (totalFlights+" (p: "+priv+", g: "+gesch+")") : "–";
+    statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
+    statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
+    flightCountLabel.textContent = totalFlights + (totalFlights === 1 ? " Flug" : " Fl\u00fcge");
+  }
+
+  function renderMiniStats(visibleFlights) {
+    const miniKm = visibleFlights.reduce((s,f)=>s+(f.distanceKm||0),0);
+    const miniHours = visibleFlights.reduce((s,f)=>s+(f.durationHours||0),0);
+    document.getElementById("miniStats").innerHTML =
+      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
+  }
+
+  function renderAll() {
+    updateAirportCount();
+    const flights = loadFlights();
+    buildYearOptions(flights);
+    const visible = applyFilters(flights);
+    renderFlightsTable(visible);
+    renderSummary(flights, visible);
+    renderMiniStats(visible);
+    if (document.getElementById("statsPage").style.display !== "none") {
+      renderFullStatistics();
+    }
+  }
+
+  // ----- Init -----
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
+    document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
+    document.getElementById("addFlightBtn").addEventListener("click", addFlight);
+    document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
+    document.getElementById("searchInput").addEventListener("input", renderAll);
+    document.getElementById("yearSelect").addEventListener("change", renderAll);
+    document.getElementById("resetYearBtn").addEventListener("click", () => {
+      document.getElementById("yearSelect").value = "";
+      renderAll();
+    });
+
+    const tabMain = document.getElementById("tabMain");
+    const tabStats = document.getElementById("tabStats");
+    const mainPage = document.getElementById("mainPage");
+    const statsPage = document.getElementById("statsPage");
+
+    tabMain.addEventListener("click", () => {
+      mainPage.style.display = "block";
+      statsPage.style.display = "none";
+      tabMain.classList.add("nav-active");
+      tabStats.classList.remove("nav-active");
+      renderAll();
+    });
+
+    tabStats.addEventListener("click", () => {
+      mainPage.style.display = "none";
+      statsPage.style.display = "block";
+      tabStats.classList.add("nav-active");
+      tabMain.classList.remove("nav-active");
+      renderFullStatistics();
+    });
+
+    renderAll();
   });
-}
-
-// --- Statistik ---
-function countOcc(arr,fn){const o={};arr.forEach(x=>{const k=fn(x);if(k)o[k]=(o[k]||0)+1});return o;}
-function sortedEntries(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]);}
-function buildStatsTable(e){
-  if(!e.length)return"<span class='muted'>Keine Daten</span>";
-  return"<table><tbody>"+e.map(x=>`<tr><td>${x[0]}</td><td style='text-align:right'>${x[1]}</td></tr>`).join("")+"</tbody></table>";
-}
-
-function renderFullStatistics(){
-  const f=loadFlights();
-  const y=getSelectedYear();
-  const fy=y?f.filter(x=>new Date(x.date).getFullYear()==y):f;
-
-  // Visits
-  const from=countOcc(fy,x=>`${AIRPORTS[x.from]?.city||x.from} (${x.from})`);
-  const to=countOcc(fy,x=>`${AIRPORTS[x.to]?.city||x.to} (${x.to})`);
-  const moves={};
-  for(const[k,v]of Object.entries(from))moves[k]=(moves[k]||0)+v;
-  for(const[k,v]of Object.entries(to))moves[k]=(moves[k]||0)+v;
-  const visits={};
-  for(const[k,v]of Object.entries(moves))visits[k]=Math.ceil(v/2);
-  const sortedAirports=sortedEntries(visits);
-
-  document.getElementById("statsAirports").innerHTML=buildStatsTable(sortedAirports);
-  document.getElementById("topAirports").innerHTML=buildStatsTable(sortedAirports.slice(0,5));
-
-  setTimeout(()=>renderMap(fy),100);
-}
-
-// --- Karte ---
-function renderMap(f){
-  if(!document.getElementById("map"))return;
-  if(leafletMap)leafletMap.remove();
-  leafletMap=L.map("map").setView([20,0],2);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:8}).addTo(leafletMap);
-  const c=new Set();
-  f.forEach(x=>{if(AIRPORTS[x.from])c.add(x.from);if(AIRPORTS[x.to])c.add(x.to);});
-  const b=[];
-  c.forEach(i=>{
-    const a=AIRPORTS[i];
-    const ll=[a.lat,a.lon];
-    L.marker(ll).addTo(leafletMap).bindPopup(`${a.city} (${i})`);
-    b.push(ll);
-  });
-  if(b.length)leafletMap.fitBounds(b,{padding:[20,20]});
-}
-
-// --- Table ---
-function renderFlightsTable(f){
-  flightTableBody.innerHTML = "";
-  f.forEach((x,i)=>{
-    const a=AIRPORTS[x.from]||{},b=AIRPORTS[x.to]||{};
-    flightTableBody.innerHTML+=`
-    <tr><td>${i+1}</td>
-    <td>${formatDate(x.date)}</td>
-    <td>${x.from}<br><span class='muted'>${a.city||""}</span></td>
-    <td>${x.to}<br><span class='muted'>${b.city||""}</span></td>
-    <td>${x.airline}</td>
-    <td>${x.aircraft}</td>
-    <td>${formatKm(x.distanceKm)}<br><span class='muted'>${formatMiles(x.distanceKm)}</span></td>
-    <td>${formatHours(x.durationHours)}</td>
-    <td>${x.tripType}</td>
-    <td>
-      <button data-edit='${x.id}' class='btn btn-secondary btn-sm'>✎</button>
-      <button data-del='${x.id}' class='btn btn-secondary btn-sm'>✕</button>
-    </td></tr>`;
-  });
-  [...flightTableBody.querySelectorAll("[data-edit]")].forEach(b=>b.onclick=()=>startEditFlight(b.dataset.edit));
-  [...flightTableBody.querySelectorAll("[data-del]")].forEach(b=>b.onclick=()=>deleteFlight(b.dataset.del));
-}
-
-// --- Render ALL ---
-function renderAll(){
-  updateAirportCount();
-  const f=loadFlights();
-  buildYearOptions(f);
-  const v=applyFilters(f);
-  renderFlightsTable(v);
-  if(statsPage.style.display!="none")renderFullStatistics();
-}
-
-// --- Init ---
-const flightDate=document.getElementById("flightDate");
-const fromIata=document.getElementById("fromIata");
-const toIata=document.getElementById("toIata");
-const airlineEl=document.getElementById("airline");
-const aircraftEl=document.getElementById("aircraft");
-const tripTypeEl=document.getElementById("tripType");
-const speedEl=document.getElementById("speed");
-const addFlightBtn=document.getElementById("addFlightBtn");
-
-document.getElementById("loadAirportBtn").onclick=handleAirportCsvLoad;
-document.getElementById("addFlightBtn").onclick=addFlight;
-document.getElementById("searchInput").oninput=renderAll;
-document.getElementById("yearSelect").onchange=renderAll;
-document.getElementById("resetYearBtn").onclick=()=>{yearSelect.value="";renderAll();};
-document.getElementById("clearAllFlightsBtn").onclick=()=>{if(confirm("Alle löschen?")){localStorage.removeItem(STORAGE_KEY_FLIGHTS);renderAll();}};
-document.getElementById("tabMain").onclick=()=>{mainPage.style.display="block";statsPage.style.display="none";renderAll();}
-document.getElementById("tabStats").onclick=()=>{mainPage.style.display="none";statsPage.style.display="block";renderFullStatistics();}
-
-renderAll();
 </script>
 </body>
 </html>
