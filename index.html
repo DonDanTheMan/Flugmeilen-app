@@ -4,122 +4,240 @@
   <meta charset="UTF-8" />
   <title>Flugmeilen Tracker</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#020617" />
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-  <meta name="theme-color" content="#111827">
 
-  <!-- Leaflet für die Karte -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <!-- Leaflet MarkerCluster Plugin -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #111827;
-      background: #0b1120;
+      color: #e5e7eb;
+      background: #020617;
     }
+
     body {
       margin: 0;
-      background: radial-gradient(circle at top, #1f2937, #020617);
       min-height: 100vh;
       color: #e5e7eb;
+      /* Radar- / Grid-Style Hintergrund */
+      background-color: #020617;
+      background-image:
+        radial-gradient(circle at top, rgba(34,197,94,0.25), transparent 55%),
+        linear-gradient(rgba(15,23,42,0.9), rgba(15,23,42,0.95)),
+        linear-gradient(transparent 23px, rgba(15,23,42,0.9) 24px),
+        linear-gradient(90deg, transparent 23px, rgba(15,23,42,0.9) 24px);
+      background-size:
+        100% 100%,
+        100% 100%,
+        24px 24px,
+        24px 24px;
+      background-position: 0 0, 0 0, 0 0, 0 0;
     }
+
     header {
-      padding: 0.9rem 1.2rem 0.6rem;
+      padding: 0.9rem 1.2rem 0.4rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 0.5rem;
+      border-bottom: 1px solid rgba(34,197,94,0.4);
+      backdrop-filter: blur(16px);
+      background: radial-gradient(circle at top left, rgba(34,197,94,0.16), rgba(15,23,42,0.95));
+      box-shadow: 0 14px 40px rgba(0,0,0,0.8);
     }
+
     header h1 {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #a7f3d0;
+      text-shadow:
+        0 0 8px rgba(34,197,94,0.6),
+        0 0 18px rgba(56,189,248,0.7);
     }
+
+    header h1 span.icon {
+      font-size: 1.5rem;
+    }
+
     header small {
       color: #9ca3af;
       font-size: 0.75rem;
     }
+
     main {
       max-width: 900px;
-      margin: 0 auto 2rem;
+      margin: 0.4rem auto 2rem;
       padding: 0 0.75rem 1.5rem;
     }
+
     .card {
-      background: rgba(15,23,42,0.95);
-      border-radius: 0.9rem;
-      padding: 0.9rem 0.9rem 0.9rem;
-      box-shadow: 0 18px 50px rgba(15,23,42,0.8);
-      border: 1px solid rgba(148,163,184,0.2);
+      background: radial-gradient(circle at top left, rgba(45,212,191,0.04), rgba(15,23,42,0.96));
+      border-radius: 1rem;
+      padding: 0.9rem;
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(15,23,42,0.9);
+      border: 1px solid rgba(75,85,99,0.9);
       margin-bottom: 0.9rem;
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
     }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      border: 1px solid rgba(34,197,94,0.07);
+      pointer-events: none;
+    }
+
     .card h2 {
       margin: 0 0 0.4rem;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #e5e7eb;
     }
+
+    .card h2 span.icon {
+      font-size: 1rem;
+      color: #6ee7b7;
+      text-shadow: 0 0 10px rgba(34,197,94,0.8);
+    }
+
     .muted {
       color: #9ca3af;
       font-size: 0.8rem;
     }
+
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 0.4rem 0.6rem;
+      gap: 0.5rem 0.7rem;
       margin-top: 0.4rem;
     }
+
     label {
       display: block;
       font-size: 0.78rem;
       margin-bottom: 0.15rem;
       color: #9ca3af;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
+
     input, select {
       width: 100%;
       box-sizing: border-box;
       padding: 0.35rem 0.55rem;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.95), #020617);
       color: #e5e7eb;
       font-size: 0.82rem;
-    }
-    input:focus, select:focus {
       outline: none;
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 1px rgba(37,99,235,0.4);
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
+
+    input:focus, select:focus {
+      border-color: rgba(56,189,248,0.9);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.7),
+        0 0 18px rgba(34,197,94,0.4);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), #020617);
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.35rem 0.8rem;
+      padding: 0.35rem 0.85rem;
       border-radius: 999px;
       border: none;
       font-size: 0.82rem;
       font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
-      transition: transform 0.05s ease, box-shadow 0.1s ease, background 0.15s ease;
+      gap: 0.25rem;
+      transition:
+        transform 0.05s ease,
+        box-shadow 0.12s ease,
+        background 0.15s ease,
+        border 0.15s ease;
     }
+
+    .btn span.icon {
+      font-size: 0.9rem;
+    }
+
     .btn-primary {
-      background: linear-gradient(135deg,#2563eb,#7c3aed);
-      color: #f9fafb;
-      box-shadow: 0 8px 18px rgba(37,99,235,0.5);
+      background: radial-gradient(circle at top left, #22d3ee, #16a34a);
+      color: #0b1120;
+      box-shadow: 0 12px 30px rgba(34,197,94,0.65);
+      border: 1px solid rgba(34,197,94,0.7);
+      text-shadow: 0 0 6px rgba(15,23,42,0.4);
     }
+
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 14px 28px rgba(37,99,235,0.6);
+      box-shadow: 0 18px 40px rgba(22,163,74,0.9);
     }
+
     .btn-secondary {
-      background: rgba(15,23,42,0.9);
+      background: radial-gradient(circle at top left, #020617, #020617);
       color: #e5e7eb;
-      border: 1px solid rgba(148,163,184,0.6);
+      border: 1px solid rgba(75,85,99,0.9);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.8);
     }
+
     .btn-secondary:hover {
-      background: rgba(30,64,175,0.7);
+      background: radial-gradient(circle at top left, #111827, #020617);
+      border-color: rgba(56,189,248,0.8);
+      box-shadow: 0 10px 28px rgba(15,23,42,0.9);
     }
+
+    .btn-warning {
+      background: radial-gradient(circle at top left, #22c55e, #eab308);
+      color: #111827;
+      border-color: rgba(250,204,21,0.9);
+      box-shadow: 0 12px 32px rgba(250,204,21,0.6);
+      text-shadow: 0 0 6px rgba(15,23,42,0.6);
+    }
+
+    .btn-warning:hover {
+      box-shadow: 0 16px 38px rgba(234,179,8,0.8);
+    }
+
     .btn-sm { padding: 0.2rem 0.6rem; font-size: 0.76rem; }
+
     .toolbar {
       display: flex;
       justify-content: space-between;
@@ -127,247 +245,425 @@
       flex-wrap: wrap;
       gap: 0.4rem;
     }
+
     .pill {
       border-radius: 999px;
-      padding: 0.05rem 0.5rem;
+      padding: 0.1rem 0.6rem;
       font-size: 0.75rem;
-      background: rgba(30,64,175,0.7);
+      background: rgba(8,47,73,0.9);
       color: #e5e7eb;
-      border: 1px solid rgba(191,219,254,0.7);
+      border: 1px solid rgba(56,189,248,0.6);
     }
+
+    .pill-soft {
+      background: rgba(15,23,42,0.9);
+      border-color: rgba(75,85,99,1);
+    }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
       gap: 0.4rem;
       margin-top: 0.4rem;
     }
+
     .stat-card {
-      background: rgba(15,23,42,0.9);
+      background: radial-gradient(circle at top left, rgba(22,163,74,0.04), rgba(15,23,42,0.96));
       border-radius: 0.8rem;
       padding: 0.4rem 0.6rem;
-      border: 1px solid rgba(148,163,184,0.35);
+      border: 1px solid rgba(55,65,81,0.95);
+      position: relative;
+      overflow: hidden;
     }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      border: 1px solid rgba(56,189,248,0.08);
+      pointer-events: none;
+    }
+
     .stat-label {
       font-size: 0.72rem;
       color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
+
+    .stat-label span.icon {
+      font-size: 0.85rem;
+      color: #6ee7b7;
+      text-shadow: 0 0 8px rgba(34,197,94,0.9);
+    }
+
     .stat-value {
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       margin-top: 0.1rem;
-    }
-    .stat-note {
-      font-size: 0.7rem;
-      color: #6b7280;
-    }
-    .badge {
-      border-radius: 999px;
-      padding: 0.05rem 0.4rem;
-      font-size: 0.72rem;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.7);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       color: #e5e7eb;
     }
+
+    .stat-note {
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 0.05rem 0.5rem;
+      font-size: 0.75rem;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(56,189,248,0.7);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .badge span.icon {
+      color: #22c55e;
+    }
+
     .table-wrapper {
       max-height: 360px;
       overflow: auto;
       border-radius: 0.8rem;
-      border: 1px solid rgba(148,163,184,0.5);
+      border: 1px solid rgba(55,65,81,1);
       margin-top: 0.4rem;
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.8);
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.78rem;
     }
+
     th, td {
       padding: 0.35rem 0.4rem;
       text-align: left;
-      border-bottom: 1px solid rgba(55,65,81,0.8);
+      border-bottom: 1px solid rgba(31,41,55,1);
       vertical-align: top;
     }
+
     th {
       position: sticky;
       top: 0;
-      background: rgba(15,23,42,0.97);
+      background: radial-gradient(circle at top, rgba(15,23,42,1), rgba(2,6,23,1));
       z-index: 1;
       text-transform: uppercase;
       font-size: 0.7rem;
       color: #9ca3af;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.08em;
     }
+
     tbody tr:nth-child(even) {
-      background: rgba(15,23,42,0.85);
+      background: rgba(15,23,42,0.96);
     }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(2,6,23,0.96);
+    }
+
+    tbody tr:hover {
+      background: radial-gradient(circle at left, rgba(34,197,94,0.18), rgba(15,23,42,0.98));
+    }
+
+    table td:first-child,
+    table th:first-child {
+      width: 2.5rem;
+      text-align: right;
+      color: #6b7280;
+    }
+
+    table td:nth-child(2),
+    table th:nth-child(2) {
+      width: 6rem;
+    }
+
     .tag {
       border-radius: 999px;
       padding: 0.05rem 0.4rem;
       font-size: 0.72rem;
-      border: 1px solid rgba(129,140,248,0.8);
-      background: rgba(30,64,175,0.5);
+      border: 1px solid rgba(56,189,248,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,1), rgba(15,23,42,1));
       color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
     }
+
+    .tag span.icon {
+      font-size: 0.85rem;
+      color: #2dd4bf;
+    }
+
+    .trip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(75,85,99,1);
+      background: radial-gradient(circle at top left, #020617, #020617);
+    }
+
+    .trip-badge span.icon {
+      font-size: 0.85rem;
+    }
+
+    .trip-privat {
+      border-color: rgba(34,197,94,0.9);
+      background: radial-gradient(circle at top left, rgba(22,163,74,0.8), rgba(5,46,22,0.9));
+      color: #ecfdf5;
+    }
+
+    .trip-geschaeft {
+      border-color: rgba(234,179,8,0.9);
+      background: radial-gradient(circle at top left, rgba(133,77,14,0.9), rgba(30,64,175,0.9));
+      color: #fefce8;
+    }
+
     .error {
       color: #fecaca;
       font-size: 0.78rem;
       margin-top: 0.25rem;
     }
+
     input[type="file"] {
       font-size: 0.75rem;
     }
+
     .flex-row {
       display: flex;
       gap: 0.4rem;
       align-items: center;
       flex-wrap: wrap;
     }
+
     .nav-bar {
       display:flex;
       gap:0.6rem;
-      padding:0.3rem 1rem 0.6rem;
+      padding:0.3rem 1rem 0.7rem;
       max-width:900px;
-      margin:0 auto;
+      margin:0 auto 0.4rem;
     }
+
+    .nav-btn {
+      flex:1;
+      justify-content:center;
+      background: radial-gradient(circle at top left, #020617, #020617);
+      border:1px solid rgba(55,65,81,1);
+      color:#e5e7eb;
+      border-radius:999px;
+      padding:0.35rem 0.5rem;
+      font-size:0.8rem;
+      display:inline-flex;
+      align-items:center;
+      gap:0.35rem;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+    }
+
+    .nav-btn span.icon {
+      font-size:0.95rem;
+    }
+
     .nav-active {
-      background: linear-gradient(135deg,#2563eb,#7c3aed);
-      color:#f9fafb;
-      box-shadow:0 8px 18px rgba(37,99,235,0.5);
+      background: radial-gradient(circle at top left, #22d3ee, #16a34a);
+      color:#020617;
+      box-shadow:0 12px 34px rgba(34,197,94,0.75);
       border-color:transparent;
+      text-shadow:0 0 6px rgba(15,23,42,0.7);
     }
+
+    .edit-active {
+      border-color: rgba(250,204,21,0.9);
+      box-shadow:
+        0 0 0 1px rgba(250,204,21,0.5),
+        0 26px 70px rgba(0,0,0,1);
+    }
+
+    #map {
+      background: radial-gradient(circle at center, rgba(15,23,42,1), #020617);
+      box-shadow:
+        0 16px 40px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(15,23,42,1);
+    }
+
     @media (max-width: 480px) {
       header { flex-direction: column; align-items: flex-start; }
       .table-wrapper { max-height: 300px; }
+      .nav-bar { padding:0.4rem 0.6rem 0.8rem; }
     }
+	.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3.5rem;
+  background: rgba(15,23,42,0.98);
+  border-top: 1px solid rgba(148,163,184,0.4);
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  z-index: 1000;
+  backdrop-filter: blur(16px);
+}
+
+.bottom-nav .nav-item {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.08rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  transition:
+    color 0.15s ease,
+    background 0.18s ease,
+    transform 0.08s ease;
+}
+
+.bottom-nav .nav-icon {
+  font-size: 1.1rem;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.bottom-nav .nav-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.bottom-nav .nav-item.nav-active {
+  color: #e5e7eb;
+  background: radial-gradient(circle at top,
+              rgba(56,189,248,0.3),
+              transparent 55%);
+}
+
+.bottom-nav .nav-item.nav-active .nav-icon {
+  transform: translateY(-1px) scale(1.05);
+  filter: drop-shadow(0 0 4px rgba(56,189,248,0.9));
+}
+
+.bottom-nav .nav-item.nav-active .nav-label {
+  font-weight: 600;
+}
+
+.bottom-nav .nav-item:active {
+  transform: scale(0.96);
+}
+/* Seiten-Transition: alle <main>-Seiten */
+main[id$="Page"] {
+  opacity: 0;
+  transform: translateY(6px) scale(0.99);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.2s ease-out;
+}
+
+/* aktive Seite */
+main[id$="Page"].page-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
   </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>Flugmeilen</h1>
+    <h1><span class="icon">🛰️</span>FLUGMEILEN</h1>
     <small>Lokale Web-App &ndash; Daten bleiben auf dem Ger&auml;t</small>
   </div>
   <div class="flex-row">
     <select id="yearSelect" class="badge"></select>
-    <button id="resetYearBtn" class="btn btn-secondary btn-sm" type="button">Alle Jahre</button>
+    <button id="resetYearBtn" class="btn btn-secondary btn-sm" type="button">
+      <span class="icon">📅</span>Alle Jahre
+    </button>
   </div>
 </header>
 
-<nav class="nav-bar">
-  <button id="tabMain"   class="btn btn-secondary btn-sm nav-active">Fl&uuml;ge</button>
-  <button id="tabStats"  class="btn btn-secondary btn-sm">Statistik</button>
-</nav>
-
-<!-- Seite 1: Flüge / Eingabe -->
-<main id="mainPage">
-  <!-- Airport Import -->
+<main id="dashboardPage">
+  <!-- Gesamtübersicht -->
   <section class="card">
-    <div class="toolbar">
-      <div>
-        <h2>Flughafen-Daten</h2>
-        <div class="muted">CSV mit IATA, Stadt, Breite, L&auml;nge aus deinem Excelblatt <b>FlughafenDaten</b> importieren.</div>
-      </div>
-      <span id="airportCount" class="badge">0 Airports</span>
+    <h2>🏠 Dashboard</h2>
+    <div class="muted">
+      Kompakte &Uuml;bersicht &uuml;ber alle deine gespeicherten Fl&uuml;ge.
     </div>
-    <div class="form-grid" style="margin-top:0.5rem;">
-      <div>
-        <label for="airportFile">airports.csv w&auml;hlen</label>
-        <input type="file" id="airportFile" accept=".csv,text/csv" />
-      </div>
-      <div>
-        <label>&nbsp;</label>
-        <button id="loadAirportBtn" class="btn btn-secondary btn-sm" type="button">CSV laden</button>
-      </div>
-      <div style="grid-column:1/-1">
-        <div class="muted">
-          Erwartete Spaltennamen: <span class="pill">IATA</span>,
-          <span class="pill">Stadt</span>,
-          <span class="pill">Breite</span>,
-          <span class="pill">L&auml;nge</span> (Trennzeichen ; oder ,).
-        </div>
-      </div>
-    </div>
-    <div id="airportError" class="error"></div>
+    <div id="dashboardOverview" class="stats-grid" style="margin-top:0.5rem;"></div>
   </section>
 
-  <!-- Flüge aus Excel-CSV importieren -->
+  <!-- Logbuch alle Jahre -->
   <section class="card">
-    <div class="toolbar">
-      <div>
-        <h2>Fl&uuml;ge aus Excel-CSV importieren</h2>
-        <div class="muted">
-          Pro Jahr ein CSV (z.B. <code>flights_2014.csv</code>) mit Spalten
-          <span class="pill">Datum</span>,
-          <span class="pill">Von-IATA</span>,
-          <span class="pill">Nach-IATA</span>,
-          <span class="pill">Airline</span>,
-          <span class="pill">Aircraft</span>,
-          <span class="pill">Typ (p/g)</span>.
-          IATA steht dabei wie in Excel als <code>Z&uuml;rich (ZRH)</code>.
-        </div>
-      </div>
-      <span id="flightImportInfo" class="badge"></span>
-    </div>
-    <div class="form-grid" style="margin-top:0.5rem;">
-      <div>
-        <label for="flightsFile">flights_YYYY.csv w&auml;hlen</label>
-        <input type="file" id="flightsFile" accept=".csv,text/csv" />
-      </div>
-      <div>
-        <label>&nbsp;</label>
-        <button id="loadFlightsBtn" class="btn btn-secondary btn-sm" type="button">
-          Fl&uuml;ge laden
-        </button>
-      </div>
-    </div>
-    <div id="flightsImportError" class="error"></div>
+    <h2>🧾 Logbuch (alle Jahre)</h2>
+    <div id="dashboardLogbook"></div>
   </section>
+</main>
 
-  <!-- Übersicht -->
+<!-- Seite: Flüge -->
+<main id="flightsPage" style="display:none;">
   <section class="card">
     <div class="toolbar">
-      <h2>&Uuml;bersicht <span id="summaryYearLabel" class="pill"></span></h2>
+      <h2><span class="icon">📋</span>&Uuml;bersicht <span id="summaryYearLabel" class="pill pill-soft"></span></h2>
       <div class="flex-row">
-        <span id="flightCountLabel" class="badge">0 Fl&uuml;ge</span>
+        <span id="flightCountLabel" class="badge">
+          <span class="icon">🧮</span>0 Fl&uuml;ge
+        </span>
       </div>
     </div>
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Total Miles (Filter)</div>
+        <div class="stat-label"><span class="icon">🛣</span>Total Miles (Filter)</div>
         <div id="statMiles" class="stat-value">–</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Total Km (Filter)</div>
+        <div class="stat-label"><span class="icon">📏</span>Total Km (Filter)</div>
         <div id="statKm" class="stat-value">–</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Total Flugzeit (Filter)</div>
+        <div class="stat-label"><span class="icon">⏱</span>Total Flugzeit (Filter)</div>
         <div id="statHours" class="stat-value">–</div>
         <div id="statHoursText" class="stat-note"></div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Fl&uuml;ge p / g (Filter)</div>
+        <div class="stat-label"><span class="icon">👥</span>Fl&uuml;ge p / g (Filter)</div>
         <div id="statPg" class="stat-value">–</div>
-        <div id="statPgNote" class="stat-note">p = privat, g = gesch&auml;ftlich</div>
+        <div id="statPgNote" class="stat-note">🏝 = privat, 💼 = gesch&auml;ftlich</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Airlines (Filter)</div>
+        <div class="stat-label"><span class="icon">🛫</span>Airlines (Filter)</div>
         <div id="statAirlines" class="stat-value">–</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Aircrafts (Filter)</div>
+        <div class="stat-label"><span class="icon">✈️</span>Aircrafts (Filter)</div>
         <div id="statAircrafts" class="stat-value">–</div>
       </div>
     </div>
   </section>
 
-  <!-- Mini-Statistik -->
   <section class="card">
-    <h2>Mini-Statistik (Filter)</h2>
+    <h2><span class="icon">⚡</span>Mini-Statistik (Filter)</h2>
     <div id="miniStats" class="stats-grid"></div>
   </section>
 
-  <!-- Flug hinzufügen / bearbeiten -->
-  <section class="card">
-    <h2>Neuen Flug hinzuf&uuml;gen</h2>
+  <section class="card" id="flightFormCard">
+    <h2><span class="icon">📝</span>Flug erfassen / bearbeiten</h2>
     <div class="form-grid">
       <div>
         <label for="flightDate">Datum</label>
@@ -392,8 +688,8 @@
       <div>
         <label for="tripType">Privat / Gesch&auml;ft</label>
         <select id="tripType">
-          <option value="p">Privat</option>
-          <option value="g">Gesch&auml;ft</option>
+          <option value="p">Privat (🏝)</option>
+          <option value="g">Gesch&auml;ft (💼)</option>
         </select>
       </div>
       <div>
@@ -402,22 +698,32 @@
       </div>
       <div>
         <label>&nbsp;</label>
-        <button id="addFlightBtn" class="btn btn-primary" type="button">+ Flug speichern</button>
+        <div class="flex-row">
+          <button id="addFlightBtn" class="btn btn-primary" type="button">
+            <span class="icon">➕</span>Flug speichern
+          </button>
+          <button id="cancelEditBtn" class="btn btn-secondary btn-sm" type="button" style="display:none;">
+            <span class="icon">↩</span>Abbrechen
+          </button>
+        </div>
       </div>
     </div>
     <div id="flightError" class="error"></div>
   </section>
 
-  <!-- Flüge Tabelle -->
   <section class="card">
     <div class="toolbar">
       <div class="flex-row">
-        <h2 style="margin:0;">Fl&uuml;ge</h2>
-        <span id="visibleCount" class="badge">0 sichtbar</span>
+        <h2 style="margin:0;"><span class="icon">📑</span>Fl&uuml;gliste</h2>
+        <span id="visibleCount" class="badge">
+          <span class="icon">👀</span>0 sichtbar
+        </span>
       </div>
       <div class="flex-row">
         <input type="search" id="searchInput" placeholder="Suche (IATA, Stadt, Airline)" />
-        <button id="clearAllFlightsBtn" class="btn btn-secondary btn-sm" type="button">Alle l&ouml;schen</button>
+        <button id="clearAllFlightsBtn" class="btn btn-secondary btn-sm" type="button">
+          <span class="icon">🗑</span>Alle l&ouml;schen
+        </button>
       </div>
     </div>
     <div class="table-wrapper">
@@ -432,7 +738,7 @@
           <th>Aircraft</th>
           <th>Distanz</th>
           <th>Dauer</th>
-          <th>p/g</th>
+          <th>Typ</th>
           <th></th>
         </tr>
         </thead>
@@ -442,40 +748,40 @@
   </section>
 </main>
 
-<!-- Seite 2: Statistik -->
+<!-- Seite: Statistik -->
 <main id="statsPage" style="display:none;">
   <section class="card">
-    <h2>📊 Gesamtstatistik (alle Fl&uuml;ge)</h2>
+    <h2><span class="icon">📊</span>Gesamtstatistik (alle Fl&uuml;ge)</h2>
     <div id="statsAllYears" class="stats-grid"></div>
   </section>
 
   <section class="card">
-    <h2>📅 Statistik f&uuml;r gew&auml;hltes Jahr</h2>
+    <h2><span class="icon">📅</span>Statistik f&uuml;r gew&auml;hltes Jahr</h2>
     <div id="statsSelectedYear" class="stats-grid"></div>
   </section>
 
   <section class="card">
-    <h2>🌍 Weltkarte aller Fl&uuml;ge (gew&auml;hltes Jahr / Filter)</h2>
+    <h2><span class="icon">🌍</span>Weltkarte aller Fl&uuml;ge (gew&auml;hltes Jahr / Filter)</h2>
     <div id="map" style="height:350px; border-radius:12px;"></div>
   </section>
 
   <section class="card">
-    <h2>✈ Flugh&auml;fen</h2>
+    <h2><span class="icon">✈️</span>Flugh&auml;fen (Besuche)</h2>
     <div id="statsAirports"></div>
   </section>
 
   <section class="card">
-    <h2>🛫 Airlines</h2>
+    <h2><span class="icon">🛫</span>Airlines</h2>
     <div id="statsAirlines"></div>
   </section>
 
   <section class="card">
-    <h2>🛩 Flugzeugtypen</h2>
+    <h2><span class="icon">🛩</span>Flugzeugtypen</h2>
     <div id="statsAircrafts"></div>
   </section>
 
   <section class="card">
-    <h2>🏆 Top 5</h2>
+    <h2><span class="icon">🏆</span>Top 5</h2>
     <div class="form-grid">
       <div>
         <h3>Flugh&auml;fen</h3>
@@ -491,15 +797,165 @@
       </div>
     </div>
   </section>
+    <section class="card">
+    <h2><span class="icon">📘</span>Logbuch (gew&auml;hltes Jahr)</h2>
+    <div id="yearLogbook"></div>
+  </section>
+</main>
+
+<!-- Seite: Daten & Import -->
+<main id="dataPage" style="display:none;">
+  <section class="card">
+    <div class="toolbar">
+      <div>
+        <h2><span class="icon">🛬</span>Flughafen-Daten</h2>
+        <div class="muted">CSV mit IATA, Stadt, Breite, L&auml;nge aus deinem Excelblatt <b>FlughafenDaten</b> importieren.</div>
+      </div>
+      <span id="airportCount" class="badge"><span class="icon">🛰️</span>0 Airports</span>
+    </div>
+    <div class="form-grid" style="margin-top:0.5rem;">
+      <div>
+        <label for="airportFile">airports.csv w&auml;hlen</label>
+        <input type="file" id="airportFile" accept=".csv,text/csv" />
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="loadAirportBtn" class="btn btn-secondary btn-sm" type="button">
+          <span class="icon">📥</span>CSV laden
+        </button>
+      </div>
+      <div style="grid-column:1/-1">
+        <div class="muted">
+          Erwartete Spaltennamen: <span class="pill pill-soft">IATA</span>,
+          <span class="pill pill-soft">Stadt</span>,
+          <span class="pill pill-soft">Breite</span>,
+          <span class="pill pill-soft">L&auml;nge</span> (Trennzeichen ; oder ,).
+        </div>
+      </div>
+    </div>
+    <div id="airportError" class="error"></div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div>
+        <h2><span class="icon">📄</span>Fl&uuml;ge aus Excel-CSV importieren</h2>
+        <div class="muted">
+          Pro Jahr ein CSV (z.B. <code>flights_2014.csv</code>) mit Spalten
+          <span class="pill pill-soft">Datum</span>,
+          <span class="pill pill-soft">Von-IATA</span>,
+          <span class="pill pill-soft">Nach-IATA</span>,
+          <span class="pill pill-soft">Airline</span>,
+          <span class="pill pill-soft">Aircraft</span>,
+          <span class="pill pill-soft">Typ (p/g)</span>.
+          IATA steht dabei wie in Excel als <code>Z&uuml;rich (ZRH)</code>.
+        </div>
+      </div>
+      <span id="flightImportInfo" class="badge"></span>
+    </div>
+    <div class="form-grid" style="margin-top:0.5rem;">
+      <div>
+        <label for="flightsFile">flights_YYYY.csv w&auml;hlen</label>
+        <input type="file" id="flightsFile" accept=".csv,text/csv" />
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="loadFlightsBtn" class="btn btn-secondary btn-sm" type="button">
+          <span class="icon">📥</span>Fl&uuml;ge laden
+        </button>
+      </div>
+    </div>
+    <div id="flightsImportError" class="error"></div>
+  </section>
+</main>
+
+<main id="profilePage" style="display:none;">
+  <section class="card">
+    <h2>👤 Profil</h2>
+    <div class="muted">
+      &Uuml;bersicht &uuml;ber alle Airlines in deinen Flugdaten
+      und ob ein Logo hinterlegt ist.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🖼 Airline-Logos</h2>
+    <div id="profileAirlineLogos" class="stats-grid"></div>
+  </section>
 </main>
 
 <script>
   const STORAGE_KEY_FLIGHTS = "flugmeilen_flights_v3";
   const STORAGE_KEY_AIRPORTS = "flugmeilen_airports_v3";
+  
+  // Airline -> Logo-Datei (Schlüssel in GROSSSCHRIFT)
+const AIRLINE_LOGOS = {
+  "SWISS": "img/airlines/Swiss.png",
+  "LUFTHANSA": "img/airlines/Lufthansa.png",
+  "EUROWINGS": "img/airlines/Eurowings.png",
+  "EDELWEISS": "img/airlines/Edelweiss.png",
+  "RYANAIR": "img/airlines/Ryanair.png",
+  "EASYJET": "img/airlines/Easyjet.png",
+  "AIR FRANCE": "img/airlines/Air France.png",
+  "AIR BALTIC": "img/airlines/Air Baltic.png",
+  "AUSTRIAN": "img/airlines/Austrian.png",
+  "HELVETIC": "img/airlines/Helvetic.png",
+  "TURKISH AIRLINES": "img/airlines/Turkish Airlines.png",
+  "EMIRATES": "img/airlines/Emirates.png",
+  "AIR DOLOMITI": "img/airlines/Air Dolomiti.png",
+  "BRUSSELS AIRLINES": "img/airlines/Brussels Airlines.png",
+  "AEGAEN": "img/airlines/Aegaen.png",
+  "AIR ALGERIE": "img/airlines/Air Algerie.png",
+  "AIR BERLIN": "img/airlines/Air Berlin.png",
+  "AIR CHINA": "img/airlines/Air China.png",
+  "AIR INDIA": "img/airlines/Air India.png",
+  "AIR MALTA": "img/airlines/Air Malta.png",
+  "BANGKOK AIRWAYS": "img/airlines/Bangkok Airways.png",
+  "BRITISH AIRWAYS": "img/airlines/British Airways.png",
+  "CHINA EASTERN": "img/airlines/China Eastern.png",
+  "DELTA AIRLINES": "img/airlines/Delta Airlines.png",
+  "EGYPTAIR": "img/airlines/Egyptair.png",
+  "ETHIOPIAN": "img/airlines/Ethiopian.png",
+  "ETIHAD": "img/airlines/Etihad.png",
+  "EUROWINGS": "img/airlines/Eurowings.png",
+  "FINNAIR": "img/airlines/Finnair.png",
+  "GERMANIA": "img/airlines/Germania.png",
+  "HAWAIIAN": "img/airlines/Hawaiian.png",
+  "IBERIA": "img/airlines/Iberia.png",
+  "KLM": "img/airlines/KLM.png",
+  "LATAM": "img/airlines/Latam.png",
+  "MALAWIAN AIRWAYS": "img/airlines/Malawian Airways.png",
+  "NIKI": "img/airlines/Niki.png",
+  "QANTAS": "img/airlines/Qantas.png",
+  "QATAR": "img/airlines/Qatar Airways.png",
+  "SAUDIA": "img/airlines/Saudia.png",
+  "SOUTH AFRICAN": "img/airlines/South African.png",
+  "SUNEXPRESS": "img/airlines/SunExpress.png",
+  "TAP": "img/airlines/Tap.png",
+  "THAI SMILE": "img/airlines/Thai Smile.png",
+  "TIGERAIR": "img/airlines/Tigerair.png",
+  "UNITED": "img/airlines/United.png",
+  "VIRGIN AU": "img/airlines/Virgin AU.png",
+  "VUELING": "img/airlines/Vueling.png",
+  "XIAMEN AIR": "img/airlines/Xiamen Air.png",
+  
+  // hier kannst du beliebig erweitern
+};
+
+function logAllAirlinesFromData() {
+  const flights = loadFlights();
+  const set = new Set(
+    flights
+      .map(f => (f.airline || "").trim())
+      .filter(Boolean)
+      .map(a => a.toUpperCase())
+  );
+  console.log("Distinct airlines in deinen Flugdaten:", Array.from(set));
+}
 
   let AIRPORTS = loadAirportsFromStorage();
   let leafletMap = null;
-  let editingFlightId = null; // <--- NEU: für Bearbeiten
+  let editingFlightId = null;
 
   function loadAirportsFromStorage() {
     try {
@@ -529,7 +985,6 @@
     localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(flights));
   }
 
-  // ----- Mathe / Format -----
   function deg2rad(deg) { return deg * Math.PI / 180; }
 
   function calcDistanceKm(fromCode, toCode) {
@@ -592,7 +1047,6 @@
     return d.toLocaleDateString();
   }
 
-  // ----- Airports CSV -----
   function parseCsvAirports(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
     if (!lines.length) throw new Error("CSV ist leer.");
@@ -612,8 +1066,8 @@
       const code = (parts[idxIata] || "").trim().toUpperCase();
       if (!code || code.length !== 3) continue;
       const city = (parts[idxCity] || "").trim();
-      const lat = parseFloat((parts[idxLat] || "").replace(",","."));  // leicht angepasst: nur erste , -> .
-      const lon = parseFloat((parts[idxLon] || "").replace(",","."));  // dito
+      const lat = parseFloat((parts[idxLat] || "").replace(",",".")); 
+      const lon = parseFloat((parts[idxLon] || "").replace(",",".")); 
       if (!isFinite(lat) || !isFinite(lon)) continue;
       result[code] = { city, lat, lon };
     }
@@ -649,10 +1103,28 @@
   function updateAirportCount() {
     const el = document.getElementById("airportCount");
     const n = Object.keys(AIRPORTS).length;
-    el.textContent = n + (n === 1 ? " Airport" : " Airports");
+    el.innerHTML = "<span class=\"icon\">🛰️</span>"+n + (n === 1 ? " Airport" : " Airports");
   }
 
-  // ----- Flüge manuell + Bearbeiten -----
+  function setEditMode(active) {
+    const card = document.getElementById("flightFormCard");
+    const btn = document.getElementById("addFlightBtn");
+    const cancel = document.getElementById("cancelEditBtn");
+    if (active) {
+      card.classList.add("edit-active");
+      btn.classList.add("btn-warning");
+      btn.classList.remove("btn-primary");
+      cancel.style.display = "inline-flex";
+      btn.innerHTML = '<span class="icon">💾</span>&Auml;nderungen speichern';
+    } else {
+      card.classList.remove("edit-active");
+      btn.classList.remove("btn-warning");
+      btn.classList.add("btn-primary");
+      cancel.style.display = "none";
+      btn.innerHTML = '<span class="icon">➕</span>Flug speichern';
+    }
+  }
+
   function addFlight() {
     const date = document.getElementById("flightDate").value;
     const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
@@ -683,7 +1155,6 @@
     const flights = loadFlights();
 
     if (editingFlightId === null) {
-      // neuer Flug
       const newFlight = {
         id: Date.now(),
         date,
@@ -697,11 +1168,9 @@
         durationHours
       };
       flights.push(newFlight);
-      // Felder wie bisher nach "Neu" leeren
       document.getElementById("airline").value = "";
       document.getElementById("aircraft").value = "";
     } else {
-      // bestehenden Flug updaten
       const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
       if (idx !== -1) {
         flights[idx] = {
@@ -720,10 +1189,8 @@
     }
 
     saveFlights(flights);
-
-    // Edit-Mode zurücksetzen
     editingFlightId = null;
-    document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+    setEditMode(false);
     renderAll();
   }
 
@@ -742,7 +1209,21 @@
     document.getElementById("tripType").value = f.tripType || "p";
     document.getElementById("speed").value = f.speedKmh || 600;
     document.getElementById("flightError").textContent = "";
-    document.getElementById("addFlightBtn").textContent = "Änderungen speichern";
+
+    setEditMode(true);
+  }
+
+  function cancelEdit() {
+    editingFlightId = null;
+    document.getElementById("flightDate").value = "";
+    document.getElementById("fromIata").value = "";
+    document.getElementById("toIata").value = "";
+    document.getElementById("airline").value = "";
+    document.getElementById("aircraft").value = "";
+    document.getElementById("tripType").value = "p";
+    document.getElementById("speed").value = 600;
+    document.getElementById("flightError").textContent = "";
+    setEditMode(false);
   }
 
   function deleteFlight(id) {
@@ -751,8 +1232,7 @@
     saveFlights(next);
     if (String(editingFlightId) === String(id)) {
       editingFlightId = null;
-      document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
-      document.getElementById("flightError").textContent = "";
+      setEditMode(false);
     }
     renderAll();
   }
@@ -761,11 +1241,10 @@
     if (!confirm("Alle gespeicherten Fl\u00fcge wirklich l\u00f6schen?")) return;
     localStorage.removeItem(STORAGE_KEY_FLIGHTS);
     editingFlightId = null;
-    document.getElementById("addFlightBtn").textContent = "+ Flug speichern";
+    setEditMode(false);
     renderAll();
   }
 
-  // ----- Flüge aus Excel-CSV (dein Format) -----
   function parseCsvFlights(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
     if (!lines.length) throw new Error("CSV ist leer.");
@@ -797,7 +1276,6 @@
 
       let rawDate = (parts[idxDatum] || "").trim();
 
-      // DD.MM.YYYY -> YYYY-MM-DD
       if (/^\d{2}\.\d{2}\.\d{4}$/.test(rawDate)) {
         const [dd, mm, yyyy] = rawDate.split(".");
         rawDate = `${yyyy}-${mm}-${dd}`;
@@ -820,8 +1298,7 @@
       const airline  = idxAirline >= 0 ? (parts[idxAirline] || "").trim() : "";
       const aircraft = idxAircr   >= 0 ? (parts[idxAircr]   || "").trim() : "";
       let tripType   = idxTyp     >= 0 ? (parts[idxTyp]     || "").trim().toLowerCase() : "p";
-      if (tripType.startsWith("g")) tripType = "g";
-      else tripType = "p";
+      if (tripType.startsWith("g")) tripType = "g"; else tripType = "p";
 
       const distanceKm = calcDistanceKm(from, to);
       const durationHours = distanceKm ? calcDurationHours(distanceKm, 850) : null;
@@ -882,7 +1359,6 @@
     reader.readAsText(file, "windows-1252");
   }
 
-  // ----- Filter / Jahr / Suche -----
   function getSelectedYear() {
     const val = document.getElementById("yearSelect").value;
     return val === "" ? null : Number(val);
@@ -937,7 +1413,6 @@
     return filtered;
   }
 
-  // ----- Statistik-Helfer -----
   function countOccurrences(array, keyFn) {
     const map = {};
     array.forEach(item => {
@@ -962,32 +1437,21 @@
     return html;
   }
 
-  function getMapSegments(flights) {
-    const segments = [];
-    flights.forEach(f => {
-      const a1 = AIRPORTS[f.from];
-      const a2 = AIRPORTS[f.to];
-      if (a1 && a2) segments.push([[a1.lat, a1.lon],[a2.lat,a2.lon]]);
-    });
-    return segments;
-  }
-
+  // Karte mit Clustering
   function renderMap(flights) {
-    if (!document.getElementById("map")) return;
+    const mapDiv = document.getElementById("map");
+    if (!mapDiv) return;
 
-    // vorhandene Karte entfernen
     if (leafletMap) {
       leafletMap.remove();
       leafletMap = null;
     }
 
-    // neue Karte anlegen
     leafletMap = L.map("map").setView([20, 0], 2);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 8
     }).addTo(leafletMap);
 
-    // alle Airports aus den Flügen einsammeln (ein Punkt pro Airport)
     const airportCodes = new Set();
     flights.forEach(f => {
       if (AIRPORTS[f.from]) airportCodes.add(f.from);
@@ -995,136 +1459,391 @@
     });
 
     const bounds = [];
-    airportCodes.forEach(code => {
-      const a = AIRPORTS[code];
-      if (!a) return;
-      const latlng = [a.lat, a.lon];
 
-      // Marker mit Popup Stadt (IATA)
-      L.marker(latlng)
-        .addTo(leafletMap)
-        .bindPopup((a.city || code) + " (" + code + ")");
+    if (typeof L.markerClusterGroup === "function") {
+      const markerCluster = L.markerClusterGroup();
 
-      bounds.push(latlng);
-    });
+      airportCodes.forEach(code => {
+        const a = AIRPORTS[code];
+        if (!a) return;
 
-    // Karte auf alle Punkte zoomen
+        const latlng = [a.lat, a.lon];
+
+        const marker = L.marker(latlng).bindPopup(
+          (a.city || code) + " (" + code + ")"
+        );
+
+        markerCluster.addLayer(marker);
+        bounds.push(latlng);
+      });
+
+      leafletMap.addLayer(markerCluster);
+    } else {
+      console.warn("Leaflet.markercluster nicht verf\u00fcgbar – verwende normale Marker.");
+      airportCodes.forEach(code => {
+        const a = AIRPORTS[code];
+        if (!a) return;
+
+        const latlng = [a.lat, a.lon];
+
+        L.marker(latlng)
+          .addTo(leafletMap)
+          .bindPopup((a.city || code) + " (" + code + ")");
+
+        bounds.push(latlng);
+      });
+    }
+
     if (bounds.length) {
       leafletMap.fitBounds(bounds, { padding: [20, 20] });
     }
   }
 
-  function renderFullStatistics() {
-    const flights = loadFlights();
-    const year = getSelectedYear();
-    const flightsYear = year
-      ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
-      : flights;
+function renderDashboard() {
+  const flights = loadFlights();
+  const totalKm = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHours = flights.reduce((s,f)=>s+(f.durationHours||0),0);
+  const totalFlights = flights.length;
 
-    const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
-    const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
-    const allAirportsSet = new Set();
-    flights.forEach(f=>{
-      if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
-      if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
-    });
-    const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
-    const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
+  const airports = new Set();
+  const airlines = new Set();
+  flights.forEach(f => {
+    if (AIRPORTS[f.from]) airports.add(f.from);
+    if (AIRPORTS[f.to])   airports.add(f.to);
+    const a = (f.airline || "").trim();
+    if (a) airlines.add(a);
+  });
 
-    document.getElementById("statsAllYears").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
+  const el = document.getElementById("dashboardOverview");
+  if (!el) return;
 
-    const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
-    const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
-    document.getElementById("statsSelectedYear").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Jahr</div><div class=\"stat-value\">"+(year ?? "Alle")+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Fl\u00fcge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
+  el.innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-label\">✈️ Fl&uuml;ge gesamt</div><div class=\"stat-value\">"+totalFlights+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">📏 Km gesamt</div><div class=\"stat-value\">"+totalKm.toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">🛣 Miles gesamt</div><div class=\"stat-value\">"+Math.round(totalKm*0.621371).toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">⏱ Flugzeit gesamt</div><div class=\"stat-value\">"+formatHours(totalHours)+"</div><div class=\"stat-note\">"+hoursToText(totalHours)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">🛬 Besuchte Airports</div><div class=\"stat-value\">"+airports.size+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\">🛫 Airlines</div><div class=\"stat-value\">"+airlines.size+"</div></div>";
 
-    // Airports: Hin- und Rückflug als 1 Besuch werten
-    const airportFrom = countOccurrences(flightsYear, f => {
-      const a = AIRPORTS[f.from];
-      return a ? (a.city || f.from) + " (" + f.from + ")" : null;
-    });
-    const airportTo = countOccurrences(flightsYear, f => {
-      const a = AIRPORTS[f.to];
-      return a ? (a.city || f.to) + " (" + f.to + ")" : null;
-    });
-    const mergedAirports = {};
-    for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
-    for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+  renderDashboardLogbook(flights);
+}
 
-    // NEU: Besuche = ceil(Bewegungen / 2)
-    const visitCounts = {};
-    for (const [k,v] of Object.entries(mergedAirports)) {
-      visitCounts[k] = Math.ceil(v / 2);
-    }
-    const sortedAirports = sortedEntries(visitCounts);
+function renderDashboardLogbook(flights) {
+  const logEl = document.getElementById("dashboardLogbook");
+  if (!logEl) return;
 
-    const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
-    const sortedAirlines = sortedEntries(airlinesCounts);
-
-    const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
-    const sortedAircrafts = sortedEntries(aircraftCounts);
-
-    document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
-    document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
-    document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
-
-    document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
-    document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
-    document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
-
-    setTimeout(()=>renderMap(flightsYear),100);
+  if (!flights.length) {
+    logEl.innerHTML = "<span class=\"muted\">Noch keine Fl&uuml;ge erfasst.</span>";
+    return;
   }
 
+  const flightsWithDist = flights.filter(f => f.distanceKm);
+  let longest = null;
+  let shortest = null;
+  flightsWithDist.forEach(f => {
+    if (!longest || f.distanceKm > longest.distanceKm) longest = f;
+    if (!shortest || f.distanceKm < shortest.distanceKm) shortest = f;
+  });
+
+  const routeCounts = countOccurrences(flights, f => {
+    if (!f.from || !f.to) return null;
+    return f.from + " \u2192 " + f.to;
+  });
+  const sortedRoutes = sortedEntries(routeCounts);
+  const topRouteEntry = sortedRoutes.length ? sortedRoutes[0] : null;
+
+  function airportLabel(code) {
+    const a = AIRPORTS[code];
+    return a ? (a.city || code) + " (" + code + ")" : code;
+  }
+
+  let html = "<div class=\"muted\"><ul style=\"padding-left:1.1rem; margin:0;\">";
+  if (longest) {
+    html += "<li><b>L&auml;ngster Flug (gesamt):</b> "+
+      formatDate(longest.date)+" – "+
+      airportLabel(longest.from)+" \u2192 "+airportLabel(longest.to)+
+      " ("+formatKm(longest.distanceKm)+", "+formatHours(longest.durationHours)+")</li>";
+  }
+  if (shortest) {
+    html += "<li><b>K&uuml;rzester Flug (gesamt):</b> "+
+      formatDate(shortest.date)+" – "+
+      airportLabel(shortest.from)+" \u2192 "+airportLabel(shortest.to)+
+      " ("+formatKm(shortest.distanceKm)+", "+formatHours(shortest.durationHours)+")</li>";
+  }
+  if (topRouteEntry) {
+    const [routeKey, count] = topRouteEntry;
+    html += "<li><b>Meistgeflogene Route (gesamt):</b> "+routeKey+" ("+count+"x)</li>";
+  }
+  html += "</ul></div>";
+
+  logEl.innerHTML = html;
+}
+
+function renderProfile() {
+  const flights = loadFlights();
+  const set = new Set(
+    flights
+      .map(f => (f.airline || "").trim())
+      .filter(Boolean)
+      .map(a => a.toUpperCase())
+  );
+
+  const el = document.getElementById("profileAirlineLogos");
+  if (!el) return;
+
+  if (!set.size) {
+    el.innerHTML = "<span class=\"muted\">Noch keine Airlines vorhanden.</span>";
+    return;
+  }
+
+  let html = "";
+  set.forEach(nameUpper => {
+    const logo = AIRLINE_LOGOS ? AIRLINE_LOGOS[nameUpper] : null;
+    const hasLogo = !!logo;
+    const niceName = nameUpper; // oder später hübscher formatieren
+
+    html += "<div class=\"stat-card\">"+
+              "<div class=\"stat-label\">"+niceName+"</div>"+
+              "<div class=\"stat-value\">"+
+                (hasLogo
+                  ? "<img src=\""+logo+"\" alt=\""+niceName+"\" style=\"height:24px;max-width:80px;object-fit:contain;\">"
+                  : "<span class=\"muted\">kein Logo hinterlegt</span>"
+                )+
+              "</div>"+
+            "</div>";
+  });
+
+  el.innerHTML = html;
+}
+
+
+ function renderFullStatistics() {
+  const flights = loadFlights();
+  const year = getSelectedYear();
+  const flightsYear = year
+    ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
+    : flights;
+
+  // --- Gesamtstatistik (alle Jahre) ---
+  const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
+  const allAirportsSet = new Set();
+  flights.forEach(f=>{
+    if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
+    if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
+  });
+  const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
+  const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
+
+  document.getElementById("statsAllYears").innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛫</span>Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛩</span>Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
+
+  // --- Statistik für gewähltes Jahr bzw. alle ---
+  const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
+  document.getElementById("statsSelectedYear").innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📅</span>Bereich</div><div class=\"stat-value\">"+(year ?? "Alle Jahre")+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
+
+  // --- Flughäfen / Airlines / Aircrafts für den gewählten Bereich ---
+  const airportFrom = countOccurrences(flightsYear, f => {
+    const a = AIRPORTS[f.from];
+    return a ? (a.city || f.from) + " (" + f.from + ")" : null;
+  });
+  const airportTo = countOccurrences(flightsYear, f => {
+    const a = AIRPORTS[f.to];
+    return a ? (a.city || f.to) + " (" + f.to + ")" : null;
+  });
+  const mergedAirports = {};
+  for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+  for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+
+  // Hin- und Rückflug als 1 Besuch
+  const visitCounts = {};
+  for (const [k,v] of Object.entries(mergedAirports)) {
+    visitCounts[k] = Math.ceil(v / 2);
+  }
+  const sortedAirports = sortedEntries(visitCounts);
+
+  const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
+  const sortedAirlines = sortedEntries(airlinesCounts);
+
+  const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
+  const sortedAircrafts = sortedEntries(aircraftCounts);
+
+  document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
+  document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
+  document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
+
+  document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
+  document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
+  document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
+
+  // --- 🧾 Logbuch (Jahr ODER alle Jahre) ---
+  const logEl = document.getElementById("yearLogbook");
+  if (logEl) {
+    // Bereich für Logbuch: wenn Jahr gewählt -> dieses Jahr, sonst alle Flüge
+    const flightsScope = year ? flightsYear : flights;
+
+    if (!flightsScope.length) {
+      logEl.innerHTML = "<span class=\"muted\">Keine Fl&uuml;ge im gew&auml;hlten Bereich.</span>";
+    } else {
+      function airportLabel(code) {
+        const a = AIRPORTS[code];
+        return a ? (a.city || code) + " (" + code + ")" : code;
+      }
+
+      // Längster / kürzester Flug nach Distanz
+      const flightsWithDist = flightsScope.filter(f => f.distanceKm);
+      let longest = null;
+      let shortest = null;
+      flightsWithDist.forEach(f => {
+        if (!longest || f.distanceKm > longest.distanceKm) longest = f;
+        if (!shortest || f.distanceKm < shortest.distanceKm) shortest = f;
+      });
+
+      // Meistgeflogene Route im Bereich
+      const routeCounts = countOccurrences(flightsScope, f => {
+        if (!f.from || !f.to) return null;
+        return f.from + " \u2192 " + f.to;
+      });
+      const sortedRoutes = sortedEntries(routeCounts);
+      const topRouteEntry = sortedRoutes.length ? sortedRoutes[0] : null;
+
+      let html = "<div class=\"muted\"><ul style=\"padding-left:1.1rem; margin:0;\">";
+
+      if (longest) {
+        html += "<li><b>L&auml;ngster Flug:</b> "+
+          formatDate(longest.date)+" – "+
+          airportLabel(longest.from)+" \u2192 "+airportLabel(longest.to)+
+          " ("+formatKm(longest.distanceKm)+", "+formatHours(longest.durationHours)+")</li>";
+      }
+      if (shortest) {
+        html += "<li><b>K&uuml;rzester Flug:</b> "+
+          formatDate(shortest.date)+" – "+
+          airportLabel(shortest.from)+" \u2192 "+airportLabel(shortest.to)+
+          " ("+formatKm(shortest.distanceKm)+", "+formatHours(shortest.durationHours)+")</li>";
+      }
+      if (topRouteEntry) {
+        const [routeKey, count] = topRouteEntry;
+        html += "<li><b>Meistgeflogene Route:</b> "+routeKey+
+          " ("+count+"x)</li>";
+      }
+
+      // Nur wenn ein konkretes Jahr gewählt ist: neue Flughäfen berechnen
+      if (year) {
+        const earlierFlights = flights.filter(f => {
+          if (!f.date) return false;
+          const d = new Date(f.date);
+          return !isNaN(d) && d.getFullYear() < year;
+        });
+        const earlierAirports = new Set();
+        earlierFlights.forEach(f => {
+          if (AIRPORTS[f.from]) earlierAirports.add(f.from);
+          if (AIRPORTS[f.to])   earlierAirports.add(f.to);
+        });
+
+        const yearAirports = new Set();
+        flightsYear.forEach(f => {
+          if (AIRPORTS[f.from]) yearAirports.add(f.from);
+          if (AIRPORTS[f.to])   yearAirports.add(f.to);
+        });
+
+        const newAirports = [];
+        yearAirports.forEach(code => {
+          if (!earlierAirports.has(code)) newAirports.push(code);
+        });
+        newAirports.sort();
+
+        if (newAirports.length) {
+          const labels = newAirports.map(airportLabel);
+          html += "<li><b>Neue Flugh&auml;fen in diesem Jahr:</b> "+labels.join(", ")+"</li>";
+        } else {
+          html += "<li><b>Neue Flugh&auml;fen in diesem Jahr:</b> keine neuen Flugh&auml;fen.</li>";
+        }
+      }
+      // wenn kein Jahr gewählt → keine neue-Flughäfen-Zeile (bleibt einfach weg)
+
+      html += "</ul></div>";
+      logEl.innerHTML = html;
+    }
+  }
+
+  // Karte für den Bereich
+  setTimeout(()=>renderMap(flightsYear),100);
+}
+
   // ----- Rendering Hauptseite -----
+
+  // Airline-Logo oder Text anzeigen
+  function renderAirlineLogo(name) {
+    if (!name) return "–";
+    const raw = name.trim();
+    if (!raw) return "–";
+
+    const key = raw.toUpperCase();          // wir matchen gegen GROSSSCHRIFT
+    const url = AIRLINE_LOGOS[key];
+
+    // kein Logo hinterlegt? -> Text anzeigen
+    if (!url) {
+      return raw;
+    }
+
+    // Logo mit Tooltip
+    return `<img src="${url}" alt="${raw}" title="${raw}"
+                style="height:20px; max-width:70px; object-fit:contain; vertical-align:middle;">`;
+  }
+
   function renderFlightsTable(visibleFlights) {
     const tbody = document.getElementById("flightTableBody");
     tbody.innerHTML = "";
     visibleFlights.forEach((f, idx) => {
       const fromA = AIRPORTS[f.from] || {};
       const toA = AIRPORTS[f.to] || {};
+      const tripLabel = f.tripType === "g"
+        ? "<span class=\"trip-badge trip-geschaeft\"><span class=\"icon\">💼</span>Gesch&auml;ft</span>"
+        : f.tripType === "p"
+          ? "<span class=\"trip-badge trip-privat\"><span class=\"icon\">🏝</span>Privat</span>"
+          : "<span class=\"trip-badge\">–</span>";
       const tr = document.createElement("tr");
       tr.innerHTML =
         "<td>"+(idx+1)+"</td>"+
         "<td>"+formatDate(f.date)+"</td>"+
-        "<td><div><span class=\"tag\">"+f.from+"</span></div><div class=\"muted\">"+(fromA.city || "")+"</div></td>"+
-        "<td><div><span class=\"tag\">"+f.to+"</span></div><div class=\"muted\">"+(toA.city || "")+"</div></td>"+
-        "<td>"+(f.airline || "–")+"</td>"+
+        "<td><div><span class=\"tag\"><span class=\"icon\">🛫</span>"+f.from+"</span></div><div class=\"muted\">"+(fromA.city || "")+"</div></td>"+
+        "<td><div><span class=\"tag\"><span class=\"icon\">🛬</span>"+f.to+"</span></div><div class=\"muted\">"+(toA.city || "")+"</div></td>"+
+        "<td>"+renderAirlineLogo(f.airline)+"</td>"+
         "<td>"+(f.aircraft || "–")+"</td>"+
         "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
         "<td>"+formatHours(f.durationHours)+"</td>"+
-        "<td>"+(f.tripType || "–")+"</td>"+
+        "<td>"+tripLabel+"</td>"+
         "<td>"+
-          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\">✎</button> "+
-          "<button class=\"btn btn-secondary btn-sm\" data-delete-id=\""+f.id+"\">✕</button>"+
+          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\"><span class=\"icon\">✏️</span></button> "+
+          "<button class=\"btn btn-secondary btn-sm\" data-delete-id=\""+f.id+"\"><span class=\"icon\">🗑</span></button>"+
         "</td>";
       tbody.appendChild(tr);
     });
-    // Delete
     tbody.querySelectorAll("button[data-delete-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         deleteFlight(btn.getAttribute("data-delete-id"));
       });
     });
-    // Edit
     tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         startEditFlight(btn.getAttribute("data-edit-id"));
       });
     });
 
-    document.getElementById("visibleCount").textContent =
-      visibleFlights.length + " sichtbar";
+    document.getElementById("visibleCount").innerHTML =
+      "<span class=\"icon\">👀</span>"+visibleFlights.length+" sichtbar";
   }
 
   function renderSummary(flights, visibleFlights) {
@@ -1153,19 +1872,22 @@
     statMilesEl.textContent = totalKm ? formatMiles(totalKm) : "–";
     statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
     statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
-    statPgEl.textContent = totalFlights ? (totalFlights+" (p: "+priv+", g: "+gesch+")") : "–";
+    statPgEl.innerHTML = totalFlights
+      ? totalFlights+" (🏝 "+priv+" / 💼 "+gesch+")"
+      : "–";
     statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
     statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
-    flightCountLabel.textContent = totalFlights + (totalFlights === 1 ? " Flug" : " Fl\u00fcge");
+    flightCountLabel.innerHTML =
+      "<span class=\"icon\">🧮</span>"+totalFlights + (totalFlights === 1 ? " Flug" : " Fl&uuml;ge");
   }
 
   function renderMiniStats(visibleFlights) {
     const miniKm = visibleFlights.reduce((s,f)=>s+(f.distanceKm||0),0);
     const miniHours = visibleFlights.reduce((s,f)=>s+(f.durationHours||0),0);
     document.getElementById("miniStats").innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\">Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\">Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
 
   function renderAll() {
@@ -1181,42 +1903,155 @@
     }
   }
 
-  // ----- Init -----
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
-    document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
-    document.getElementById("addFlightBtn").addEventListener("click", addFlight);
-    document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
-    document.getElementById("searchInput").addEventListener("input", renderAll);
-    document.getElementById("yearSelect").addEventListener("change", renderAll);
-    document.getElementById("resetYearBtn").addEventListener("click", () => {
-      document.getElementById("yearSelect").value = "";
-      renderAll();
-    });
+  function renderSummary(flights, visibleFlights) {
+    const year = getSelectedYear();
+    document.getElementById("summaryYearLabel").textContent = year ? year : "Alle Jahre";
 
-    const tabMain = document.getElementById("tabMain");
-    const tabStats = document.getElementById("tabStats");
-    const mainPage = document.getElementById("mainPage");
-    const statsPage = document.getElementById("statsPage");
+    const statMilesEl = document.getElementById("statMiles");
+    const statKmEl = document.getElementById("statKm");
+    const statHoursEl = document.getElementById("statHours");
+    const statHoursTextEl = document.getElementById("statHoursText");
+    const statPgEl = document.getElementById("statPg");
+    const statAirlinesEl = document.getElementById("statAirlines");
+    const statAircraftsEl = document.getElementById("statAircrafts");
+    const flightCountLabel = document.getElementById("flightCountLabel");
 
-    tabMain.addEventListener("click", () => {
-      mainPage.style.display = "block";
-      statsPage.style.display = "none";
-      tabMain.classList.add("nav-active");
-      tabStats.classList.remove("nav-active");
-      renderAll();
-    });
+    const totalKm = visibleFlights.reduce((s,f)=> s + (f.distanceKm||0), 0);
+    const totalHours = visibleFlights.reduce((s,f)=> s + (f.durationHours||0), 0);
+    const totalFlights = visibleFlights.length;
+    const priv = visibleFlights.filter(f=>f.tripType==="p").length;
+    const gesch = visibleFlights.filter(f=>f.tripType==="g").length;
 
-    tabStats.addEventListener("click", () => {
-      mainPage.style.display = "none";
-      statsPage.style.display = "block";
-      tabStats.classList.add("nav-active");
-      tabMain.classList.remove("nav-active");
+    const airlines = new Set(visibleFlights.map(f => (f.airline||"").trim()).filter(Boolean));
+    const aircrafts = new Set(visibleFlights.map(f => (f.aircraft||"").trim()).filter(Boolean));
+
+    statKmEl.textContent = totalKm ? formatKm(totalKm) : "–";
+    statMilesEl.textContent = totalKm ? formatMiles(totalKm) : "–";
+    statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
+    statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
+    statPgEl.innerHTML = totalFlights
+      ? totalFlights+" (🏝 "+priv+" / 💼 "+gesch+")"
+      : "–";
+    statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
+    statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
+    flightCountLabel.innerHTML =
+      "<span class=\"icon\">🧮</span>"+totalFlights + (totalFlights === 1 ? " Flug" : " Fl\u00fcge");
+  }
+
+  function renderMiniStats(visibleFlights) {
+    const miniKm = visibleFlights.reduce((s,f)=>s+(f.distanceKm||0),0);
+    const miniHours = visibleFlights.reduce((s,f)=>s+(f.durationHours||0),0);
+    document.getElementById("miniStats").innerHTML =
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
+  }
+
+  function renderAll() {
+    updateAirportCount();
+    const flights = loadFlights();
+    buildYearOptions(flights);
+    const visible = applyFilters(flights);
+    renderFlightsTable(visible);
+    renderSummary(flights, visible);
+    renderMiniStats(visible);
+    if (document.getElementById("statsPage").style.display !== "none") {
       renderFullStatistics();
-    });
+    }
+  }
 
+  document.addEventListener("DOMContentLoaded", () => {
+  // Event-Listener & Buttons
+  document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
+  document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
+  document.getElementById("addFlightBtn").addEventListener("click", addFlight);
+  document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
+  document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
+  document.getElementById("searchInput").addEventListener("input", renderAll);
+  document.getElementById("yearSelect").addEventListener("change", renderAll);
+  document.getElementById("resetYearBtn").addEventListener("click", () => {
+    document.getElementById("yearSelect").value = "";
     renderAll();
+    logAllAirlinesFromData();
   });
+
+  // ----- Neue Tab Navigation (Dashboard, Flüge, Statistik, Daten, Profil) -----
+  const pages = {
+    dashboardPage: document.getElementById("dashboardPage"),
+    flightsPage:   document.getElementById("flightsPage"),
+    statsPage:     document.getElementById("statsPage"),
+    dataPage:      document.getElementById("dataPage"),
+    profilePage:   document.getElementById("profilePage")
+  };
+
+  function showPage(targetId) {
+  // Seiten show/hide + animierbare Klasse setzen
+  Object.entries(pages).forEach(([id, el]) => {
+    if (!el) return;
+    const isActive = (id === targetId);
+    el.style.display = isActive ? "block" : "none";
+    if (isActive) {
+      el.classList.add("page-active");
+    } else {
+      el.classList.remove("page-active");
+    }
+  });
+
+  // aktive Nav markieren
+  document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+    const target = btn.getAttribute("data-target");
+    if (target === targetId) btn.classList.add("nav-active");
+    else btn.classList.remove("nav-active");
+  });
+
+  // passenden Inhalt rendern
+  if (targetId === "dashboardPage") {
+    renderDashboard();
+  } else if (targetId === "flightsPage") {
+    renderAll();
+  } else if (targetId === "statsPage") {
+    renderFullStatistics();
+  } else if (targetId === "dataPage") {
+    updateAirportCount();
+  } else if (targetId === "profilePage") {
+    renderProfile();
+  }
+}
+
+  // Klick-Handler für Bottom-Navigation
+  document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-target");
+      showPage(target);
+    });
+  });
+
+  // Start: Dashboard anzeigen
+  showPage("dashboardPage");
+});
+   
 </script>
+<nav class="bottom-nav">
+  <button class="nav-item nav-active" data-target="dashboardPage">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Home</span>
+  </button>
+  <button class="nav-item" data-target="flightsPage">
+    <span class="nav-icon">✈️</span>
+    <span class="nav-label">Flüge</span>
+  </button>
+  <button class="nav-item" data-target="statsPage">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Stats</span>
+  </button>
+  <button class="nav-item" data-target="dataPage">
+    <span class="nav-icon">🛠️</span>
+    <span class="nav-label">Daten</span>
+  </button>
+  <button class="nav-item" data-target="profilePage">
+    <span class="nav-icon">👤</span>
+    <span class="nav-label">Profil</span>
+  </button>
+</nav>
 </body>
 </html>
