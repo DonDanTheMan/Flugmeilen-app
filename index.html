@@ -617,75 +617,135 @@
       .table-wrapper { max-height: 300px; }
       .nav-bar { padding:0.4rem 0.6rem 0.8rem; }
     }
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* =========================
+   Bottom Nav – App Style
+   ========================= */
 
-  height: 2.9rem; /* sweet spot */
-  background: rgba(15,23,42,0.98);
-  border-top: 1px solid rgba(148,163,184,0.4);
-  display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  z-index: 1000;
-  backdrop-filter: blur(16px);
+:root{
+  --nav-h: 56px;                 /* Desktop/Tablet */
+  --nav-h-mobile: 48px;          /* Phone */
+  --nav-safe: env(safe-area-inset-bottom, 0px);
+  --nav-bg: rgba(10, 16, 28, 0.78);
+  --nav-border: rgba(148,163,184,0.22);
+  --nav-text: #9ca3af;
+  --nav-text-active: #e5e7eb;
+  --nav-accent: rgba(56,189,248,0.95);
 }
 
-.bottom-nav .nav-item {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: #9ca3af;
+.bottom-nav{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-  font-size: 0.62rem;
+  height: calc(var(--nav-h) + var(--nav-safe));
+  padding-bottom: var(--nav-safe);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+
+  background: linear-gradient(180deg, rgba(10,16,28,0.65), var(--nav-bg));
+  border-top: 1px solid var(--nav-border);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  z-index: 1000;
+}
+
+.bottom-nav .nav-item{
+  flex: 1;
+  height: var(--nav-h);
+
+  border: 0;
+  background: transparent;
+  color: var(--nav-text);
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 
-  gap: 0.05rem;          
+  padding: 6px 0 7px;
+  gap: 2px;
+
   cursor: pointer;
-  padding: 0.08rem 0;    
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 
-  transition: color 0.15s ease, background 0.18s ease, transform 0.08s ease;
+  transition: color .15s ease, transform .08s ease, opacity .15s ease;
 }
 
-.bottom-nav .nav-icon {
-  font-size: 1rem;     
+.bottom-nav .nav-icon{
+  font-size: 18px;     /* kompakt, aber gut tappbar */
   line-height: 1;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  opacity: .95;
 }
 
-.bottom-nav .nav-label {
-  font-size: 0.52rem;
-  letter-spacing: 0.04em;
+.bottom-nav .nav-label{
+  font-size: 10px;     /* App-typisch */
+  letter-spacing: .08em;
   text-transform: uppercase;
+  opacity: .85;
 }
 
-.bottom-nav .nav-item.nav-active {
-  color: #e5e7eb;
-  background: radial-gradient(circle at top, rgba(56,189,248,0.3), transparent 55%);
+.bottom-nav .nav-item.nav-active{
+  color: var(--nav-text-active);
 }
 
-.bottom-nav .nav-item.nav-active .nav-icon {
-  transform: translateY(-1px) scale(1.05);
-  filter: drop-shadow(0 0 4px rgba(56,189,248,0.9));
+.bottom-nav .nav-item.nav-active .nav-icon{
+  transform: translateY(-1px);
 }
 
-.bottom-nav .nav-item.nav-active .nav-label {
-  font-weight: 600;
+/* Dezentere Active-Markierung: kleines Pill + kein fetter Glow */
+.bottom-nav .nav-item.nav-active::after{
+  content: "";
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  margin-top: 2px;
+  background: var(--nav-accent);
+  box-shadow: 0 0 10px rgba(56,189,248,0.35);
+  opacity: .9;
 }
 
-.bottom-nav .nav-item:active {
-  transform: scale(0.96);
+.bottom-nav .nav-item:active{
+  transform: scale(0.97);
 }
 
+/* Phone: nochmal schlanker */
+@media (max-width: 600px){
+  .bottom-nav{
+    height: calc(var(--nav-h-mobile) + var(--nav-safe));
+  }
+  .bottom-nav .nav-item{
+    height: var(--nav-h-mobile);
+    padding: 5px 0 6px;
+  }
+  .bottom-nav .nav-icon{ font-size: 17px; }
+  .bottom-nav .nav-label{
+    font-size: 9px;
+    letter-spacing: .07em;
+  }
+}
 
-@media (max-width: 600px) {
-  .bottom-nav { height: 2.35rem; }
-  .bottom-nav .nav-label { font-size: 0.6rem; }
+/* sehr kleine Phones: Labels ausblenden -> ultra appig */
+@media (max-width: 420px){
+  .bottom-nav .nav-label{ display:none; }
+  .bottom-nav .nav-item{ gap: 0; }
+  .bottom-nav .nav-icon{ font-size: 18px; }
+}
+
+body{
+  padding-bottom: calc(var(--nav-h) + var(--nav-safe) + 10px);
+}
+
+@media (max-width: 600px){
+  body{
+    padding-bottom: calc(var(--nav-h-mobile) + var(--nav-safe) + 10px);
+  }
 }
 
 main[id$="Page"] {
