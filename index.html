@@ -56,6 +56,8 @@
         24px 24px;
       background-position: 0 0, 0 0, 0 0, 0 0;
     }
+	
+	body { padding-bottom: 3.2rem; }
 
     header {
       padding: 0.9rem 1.2rem 0.4rem;
@@ -637,28 +639,28 @@
   background: transparent;
   color: #9ca3af;
 
-  font-size: 0.62rem;    /* lesbar, aber kompakt */
+  font-size: 0.62rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 
-  gap: 0.12rem;          /* nicht zu eng */
+  gap: 0.05rem;          
   cursor: pointer;
-  padding: 0.18rem 0;    /* mehr Luft */
+  padding: 0.08rem 0;    
 
   transition: color 0.15s ease, background 0.18s ease, transform 0.08s ease;
 }
 
 .bottom-nav .nav-icon {
-  font-size: 1.1rem;     /* bleibt wie bei dir */
+  font-size: 1rem;     
   line-height: 1;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .bottom-nav .nav-label {
-  font-size: 0.62rem;    /* identisch wie nav-item, wirkt „stabil“ */
-  letter-spacing: 0.05em;
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -680,14 +682,12 @@
   transform: scale(0.96);
 }
 
-/* Mobile: minimal niedriger, aber nicht quetschen */
-@media (max-width: 480px) {
-  .bottom-nav { height: 2.75rem; }
+
+@media (max-width: 600px) {
+  .bottom-nav { height: 2.35rem; }
   .bottom-nav .nav-label { font-size: 0.6rem; }
 }
 
-
-/* Seiten-Transition: alle <main>-Seiten */
 main[id$="Page"] {
   opacity: 0;
   transform: translateY(6px) scale(0.99);
