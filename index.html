@@ -918,6 +918,93 @@ label span,
   opacity: 0.95;
 }
 
+/* Flights: Toolbar sticky, damit Suche/Buttons beim Scrollen bleiben */
+#flightsPage .flights-toolbar {
+  position: sticky;
+  top: 0.65rem;              /* falls du einen Header hast, ggf. erhöhen */
+  z-index: 50;
+  background: rgba(15,23,42,0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 0.9rem;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Damit die sticky Toolbar nicht am Card-Rand "klebt" */
+#flightsPage .card .flights-toolbar {
+  margin: -0.2rem 0 0.6rem;
+}
+
+/* Actions rechts kompakt & appig */
+#flightsPage .row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+#flightsPage .action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: rgba(15,23,42,0.65);
+  color: #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+#flightsPage .action-btn:hover {
+  background: rgba(56,189,248,0.12);
+  border-color: rgba(56,189,248,0.45);
+  transform: translateY(-1px);
+}
+
+#flightsPage .action-btn:active {
+  transform: scale(0.95);
+}
+
+#flightsPage .action-btn.danger:hover {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.45);
+}
+
+/* Empty State */
+#flightsPage .empty-state {
+  margin-top: 0.8rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px dashed rgba(148,163,184,0.35);
+  background: rgba(15,23,42,0.55);
+  color: #cbd5f5;
+}
+
+#flightsPage .empty-title {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+#flightsPage .empty-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 1100px){
+  main{
+    max-width: 1180px;   /* war kleiner */
+  }
+}
+@media (min-width: 1400px){
+  main{
+    max-width: 1320px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -987,50 +1074,7 @@ label span,
 
 <!-- Seite: Flüge -->
 <main id="flightsPage" style="display:none;">
-  <section class="card">
-    <div class="toolbar">
-      <h2><span class="icon">📋</span>&Uuml;bersicht <span id="summaryYearLabel" class="pill pill-soft"></span></h2>
-      <div class="flex-row">
-        <span id="flightCountLabel" class="badge">
-          <span class="icon">🧮</span>0 Fl&uuml;ge
-        </span>
-      </div>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">🛣</span>Total Miles (Filter)</div>
-        <div id="statMiles" class="stat-value">–</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">📏</span>Total Km (Filter)</div>
-        <div id="statKm" class="stat-value">–</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">⏱</span>Total Flugzeit (Filter)</div>
-        <div id="statHours" class="stat-value">–</div>
-        <div id="statHoursText" class="stat-note"></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">👥</span>Fl&uuml;ge p / g (Filter)</div>
-        <div id="statPg" class="stat-value">–</div>
-        <div id="statPgNote" class="stat-note">🏝 = privat, 💼 = gesch&auml;ftlich</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">🛫</span>Airlines (Filter)</div>
-        <div id="statAirlines" class="stat-value">–</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label"><span class="icon">✈️</span>Aircrafts (Filter)</div>
-        <div id="statAircrafts" class="stat-value">–</div>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2><span class="icon">⚡</span>Mini-Statistik (Filter)</h2>
-    <div id="miniStats" class="stats-grid"></div>
-  </section>
-
+  
   <section class="card" id="flightFormCard">
     <h2><span class="icon">📝</span>Flug erfassen / bearbeiten</h2>
     <div class="form-grid">
@@ -1063,7 +1107,7 @@ label span,
       </div>
       <div>
         <label for="speed">Ø Reisegeschwindigkeit [km/h]</label>
-        <input type="number" id="speed" value="600" min="300" max="1000" step="10" />
+        <input type="number" id="speed" value="600" min="300" max="1100" step="10" />
       </div>
       <div>
         <label>&nbsp;</label>
@@ -1081,7 +1125,7 @@ label span,
   </section>
 
   <section class="card">
-    <div class="toolbar">
+    <div class="toolbar flights-toolbar">
       <div class="flex-row">
         <h2 style="margin:0;"><span class="icon">📑</span>Fl&uuml;gliste</h2>
         <span id="visibleCount" class="badge">
@@ -1114,6 +1158,7 @@ label span,
         <tbody id="flightTableBody"></tbody>
       </table>
     </div>
+	<div id="flightsEmptyState" class="empty-state" style="display:none;"></div>
   </section>
 </main>
 
@@ -2528,10 +2573,11 @@ function renderDashboardLogbook(flights) {
         "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
         "<td>"+formatHours(f.durationHours)+"</td>"+
         "<td>"+tripLabel+"</td>"+
-        "<td>"+
-          "<button class=\"btn btn-secondary btn-sm\" data-edit-id=\""+f.id+"\"><span class=\"icon\">✏️</span></button> "+
-          "<button class=\"btn btn-secondary btn-sm\" data-delete-id=\""+f.id+"\"><span class=\"icon\">🗑</span></button>"+
-        "</td>";
+        "<td class=\"row-actions\">" +
+			"<button class=\"action-btn\" title=\"Bearbeiten\" aria-label=\"Bearbeiten\" data-edit-id=\""+f.id+"\">✏️</button>" +
+			"<button class=\"action-btn danger\" title=\"Löschen\" aria-label=\"Löschen\" data-id=\""+f.id+"\">🗑️</button>" +
+			"</td>";
+
       tbody.appendChild(tr);
     });
     tbody.querySelectorAll("button[data-delete-id]").forEach(btn => {
@@ -2547,6 +2593,37 @@ function renderDashboardLogbook(flights) {
 
     document.getElementById("visibleCount").innerHTML =
       "<span class=\"icon\">👀</span>"+visibleFlights.length+" sichtbar";
+	
+	const empty = document.getElementById("flightsEmptyState");
+if (empty) {
+  if (!visibleFlights.length) {
+    empty.style.display = "block";
+    empty.innerHTML = `
+      <div class="empty-title">Keine Flüge gefunden</div>
+      <div class="muted">Suchbegriff/Filter liefern keine Treffer.</div>
+      <div class="empty-actions">
+        <button class="btn btn-secondary btn-sm" type="button" id="resetFiltersBtn">Filter zurücksetzen</button>
+        <button class="btn btn-primary btn-sm" type="button" id="scrollToAddFlightBtn">+ Flug hinzufügen</button>
+      </div>
+    `;
+
+    const rf = document.getElementById("resetFiltersBtn");
+    if (rf) rf.onclick = () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("yearSelect").value = "";
+      renderAll();
+    };
+
+    const sa = document.getElementById("scrollToAddFlightBtn");
+    if (sa) sa.onclick = () => {
+      const card = document.getElementById("addFlightCard") || document.getElementById("flightDate")?.closest(".card");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+  } else {
+    empty.style.display = "none";
+    empty.innerHTML = "";
+  }
+}
   }
 
   function renderSummary(flights, visibleFlights) {
