@@ -1005,6 +1005,88 @@ label span,
   }
 }
 
+/* Stats: Ranking Bars */
+#statsPage .rank-bars{ display:flex; flex-direction:column; gap:0.35rem; }
+#statsPage .rank-row{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap:0.6rem;
+  align-items:center;
+  padding:0.35rem 0.5rem;
+  border-radius:0.7rem;
+  border:1px solid rgba(148,163,184,0.18);
+  background: rgba(15,23,42,0.55);
+}
+#statsPage .rank-bar{
+  height:8px;
+  border-radius:999px;
+  background: rgba(56,189,248,0.12);
+  overflow:hidden;
+  margin-top:0.25rem;
+}
+#statsPage .rank-bar > div{
+  height:100%;
+  background: rgba(56,189,248,0.85);
+  box-shadow: 0 0 10px rgba(56,189,248,0.35);
+}
+#statsPage .rank-name{ color:#e5e7eb; font-size:0.85rem; }
+#statsPage .rank-count{ color:#9ca3af; font-size:0.8rem; white-space:nowrap; }
+
+/* Stats: Expandable Rankings */
+#statsPage .rank-footer{
+  margin-top: 0.55rem;
+  display: flex;
+  justify-content: center;
+}
+
+#statsPage .rank-toggle{
+  border: 1px solid rgba(148,163,184,0.28);
+  background: rgba(15,23,42,0.6);
+  color: #e5e7eb;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+#statsPage .rank-toggle:hover{
+  background: rgba(56,189,248,0.12);
+  border-color: rgba(56,189,248,0.45);
+}
+
+#statsPage .rank-more{
+  display: none;
+  margin-top: 0.45rem;
+}
+
+#statsPage .rank-more.show{
+  display: block;
+}
+
+/* Stats: Ranking Search */
+#statsPage .rank-search {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+#statsPage .rank-search input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: rgba(15,23,42,0.65);
+  color: #e5e7eb;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+#statsPage .rank-search input:focus{
+  outline: none;
+  border-color: rgba(56,189,248,0.55);
+  box-shadow: 0 0 0 1px rgba(56,189,248,0.25);
+}
+
   </style>
 </head>
 <body>
@@ -1851,6 +1933,56 @@ function logAllAirlinesFromData() {
     return html;
   }
 
+function buildRankBarsExpandable(entries, topN = 10, options = {}) {
+  const {
+    withSearch = true,
+    searchPlaceholder = "Suchen...",
+    renderNameHtml = (name) => name
+  } = options;
+
+  if (!entries || !entries.length) return "<span class='muted'>Keine Daten</span>";
+
+  const uid = "rk_" + Math.random().toString(36).slice(2);
+  const max = entries[0][1] || 1;
+
+  const renderRows = (arr) => `
+    <div class="rank-bars">
+      ${arr.map(([name,count]) => `
+        <div class="rank-row" data-name="${String(name).toLowerCase()}">
+          <div>
+            <div class="rank-name">${renderNameHtml(name)}</div>
+            <div class="rank-bar"><div style="width:${Math.round(count/max*100)}%"></div></div>
+          </div>
+          <div class="rank-count">${count}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  const top = entries.slice(0, topN);
+  const rest = entries.slice(topN);
+
+  return `
+    ${withSearch ? `
+      <div class="rank-search">
+        <input type="search" id="${uid}_search" placeholder="${searchPlaceholder}">
+      </div>
+    ` : ""}
+
+    <div id="${uid}_wrap">
+      ${renderRows(top)}
+      ${rest.length ? `
+        <div id="${uid}_more" class="rank-more">${renderRows(rest)}</div>
+        <div class="rank-footer">
+          <button class="rank-toggle" type="button" data-toggle="${uid}" data-total="${entries.length}">
+            Alle anzeigen (${entries.length})
+          </button>
+        </div>
+      ` : `<div class="rank-footer"><span class="muted">Alle angezeigt (${entries.length})</span></div>`}
+    </div>
+  `;
+}
+
   // Karte mit Clustering
   function renderMap(flights) {
     const mapDiv = document.getElementById("map");
@@ -2428,9 +2560,21 @@ function renderDashboardLogbook(flights) {
   const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
   const sortedAircrafts = sortedEntries(aircraftCounts);
 
-  document.getElementById("statsAirports").innerHTML  = buildStatsTable(sortedAirports);
-  document.getElementById("statsAirlines").innerHTML  = buildStatsTable(sortedAirlines);
-  document.getElementById("statsAircrafts").innerHTML = buildStatsTable(sortedAircrafts);
+  document.getElementById("statsAirlines").innerHTML =
+  buildRankBarsExpandable(sortedAirlines, 10, {
+    withSearch: true,
+    searchPlaceholder: "Airline suchen…",
+    renderNameHtml: (name) => `${renderAirlineLogo(name)} <span style="margin-left:8px">${name}</span>`
+  });
+
+  document.getElementById("statsAirports").innerHTML =
+  buildRankBarsExpandable(sortedAirports, 10, { searchPlaceholder: "Airport suchen…" });
+
+  document.getElementById("statsAircrafts").innerHTML =
+  buildRankBarsExpandable(sortedAircrafts, 10, { searchPlaceholder: "Flugzeugtyp suchen…" });
+
+
+  wireRankTogglesAndSearch();
 
   document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
   document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
@@ -2809,7 +2953,55 @@ if (empty) {
   // Start: Dashboard anzeigen
   showPage("dashboardPage");
 });
-   
+
+function wireRankTogglesAndSearch() {
+  // Toggle
+  document.querySelectorAll("#statsPage .rank-toggle").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute("data-toggle");
+      const more = document.getElementById(id + "_more");
+      if (!more) return;
+
+      const isOpen = more.classList.toggle("show");
+      btn.textContent = isOpen
+        ? "Weniger anzeigen"
+        : `Alle anzeigen (${btn.getAttribute("data-total")})`;
+    };
+  });
+
+  // Search
+  document.querySelectorAll("#statsPage .rank-search input[type='search']").forEach(inp => {
+    inp.oninput = () => {
+      const q = inp.value.trim().toLowerCase();
+      const wrap = inp.closest(".card")?.querySelector(".rank-bars")?.parentElement;
+      const card = inp.closest(".card");
+      if (!card) return;
+
+      // Filter alle rank-rows innerhalb dieser Card
+      card.querySelectorAll(".rank-row").forEach(row => {
+        const name = row.getAttribute("data-name") || "";
+        row.style.display = (!q || name.includes(q)) ? "" : "none";
+      });
+
+      // Wenn Suche aktiv: "more" automatisch öffnen, damit man auch darunter findet
+      const toggle = card.querySelector(".rank-toggle");
+      if (toggle) {
+        const id = toggle.getAttribute("data-toggle");
+        const more = document.getElementById(id + "_more");
+        if (more) {
+          if (q) {
+            more.classList.add("show");
+            toggle.textContent = "Weniger anzeigen";
+          } else {
+            more.classList.remove("show");
+            toggle.textContent = `Alle anzeigen (${toggle.getAttribute("data-total")})`;
+          }
+        }
+      }
+    };
+  });
+}
+
 </script>
 <nav class="bottom-nav">
   <button class="nav-item nav-active" data-target="dashboardPage">
