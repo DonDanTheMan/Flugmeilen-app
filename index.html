@@ -1086,6 +1086,43 @@ label span,
   border-color: rgba(56,189,248,0.55);
   box-shadow: 0 0 0 1px rgba(56,189,248,0.25);
 }
+#statsPage .airport-flag { font-size: 1rem; margin-right: 0.35rem; }
+#statsPage .airport-name { vertical-align: middle; }
+
+.flag-img {
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.flag-img {
+  box-shadow: 0 0 4px rgba(56,189,248,0.25);
+}
+
+.leaflet-container { border-radius: 12px; }
+
+.airport-dot{
+  filter: drop-shadow(0 0 6px rgba(56,189,248,.6));
+}
+
+.marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
+  background: rgba(15,23,42,.55) !important;
+  border: 1px solid rgba(56,189,248,.6) !important;
+  box-shadow: 0 0 14px rgba(56,189,248,.35);
+}
+.marker-cluster div{
+  background: rgba(2,6,23,.75) !important;
+  color: #e5e7eb !important;
+  border-radius: 999px !important;
+}
+
+.airport-dot {
+  filter: drop-shadow(0 0 6px rgba(56,189,248,.6));
+}
+.flag-img {
+  border-radius: 3px;
+}
 
   </style>
 </head>
@@ -1265,6 +1302,11 @@ label span,
     <h2><span class="icon">✈️</span>Flugh&auml;fen (Besuche)</h2>
     <div id="statsAirports"></div>
   </section>
+  
+  <section class="card">
+    <h2>🌍 Länder</h2>
+    <div id="statsCountries"></div>
+  </section>
 
   <section class="card">
     <h2><span class="icon">🛫</span>Airlines</h2>
@@ -1292,10 +1334,6 @@ label span,
         <div id="topAircrafts"></div>
       </div>
     </div>
-  </section>
-    <section class="card">
-    <h2><span class="icon">📘</span>Logbuch (gew&auml;hltes Jahr)</h2>
-    <div id="yearLogbook"></div>
   </section>
 </main>
 
@@ -1543,32 +1581,120 @@ function logAllAirlinesFromData() {
     return d.toLocaleDateString();
   }
 
-  function parseCsvAirports(text) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-    if (!lines.length) throw new Error("CSV ist leer.");
-    const delimiter = lines[0].includes(";") ? ";" : ",";
-    const header = lines[0].split(delimiter).map(h => h.trim());
-    const idxIata = header.findIndex(h => h.toLowerCase() === "iata");
-    const idxCity = header.findIndex(h => h.toLowerCase() === "stadt");
-    const idxLat  = header.findIndex(h => h.toLowerCase() === "breite");
-    const idxLon  = header.findIndex(h => h.toLowerCase() === "l\u00e4nge" || h.toLowerCase() === "laenge");
-    if (idxIata === -1 || idxCity === -1 || idxLat === -1 || idxLon === -1) {
-      throw new Error("Erwartete Spalten IATA, Stadt, Breite, L\u00e4nge nicht gefunden.");
-    }
-    const result = {};
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(delimiter);
-      if (!parts.length) continue;
-      const code = (parts[idxIata] || "").trim().toUpperCase();
-      if (!code || code.length !== 3) continue;
-      const city = (parts[idxCity] || "").trim();
-      const lat = parseFloat((parts[idxLat] || "").replace(",",".")); 
-      const lon = parseFloat((parts[idxLon] || "").replace(",",".")); 
-      if (!isFinite(lat) || !isFinite(lon)) continue;
-      result[code] = { city, lat, lon };
-    }
-    return result;
+function parseCsvAirports(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+  if (!lines.length) throw new Error("CSV ist leer.");
+
+  const delimiter = lines[0].includes(";") ? ";" : ",";
+  const headerRaw = lines[0].split(delimiter).map(h => h.trim());
+
+  // Header normalisieren: BOM weg, spaces weg, umlaut->ae/oe/ue
+  const headerNorm = headerRaw.map(h =>
+    h
+      .toLowerCase()
+      .replace(/^\ufeff/, "")
+      .replace(/\s+/g, "")
+      .replace(/ä/g, "ae")
+      .replace(/ö/g, "oe")
+      .replace(/ü/g, "ue")
+      .replace(/ß/g, "ss")
+  );
+
+  function findCol(...names) {
+    return headerNorm.findIndex(h => names.includes(h));
   }
+
+  const idxIata = findCol("iata");
+  const idxCity = findCol("stadt", "city");
+  const idxLat  = findCol("breite", "lat", "latitude");
+  // ✅ hier auch "laenge" UND "laenge"/"lange" UND "laenge" abdecken
+  const idxLon  = findCol("laenge", "lange", "laenge", "lon", "long", "longitude");
+  const idxIso2 = findCol("iso2", "country", "land");
+
+  if (idxIata === -1 || idxCity === -1 || idxLat === -1 || idxLon === -1) {
+    throw new Error("Spalten nicht gefunden. Gefunden wurden: " + headerRaw.join(" | "));
+  }
+
+  const result = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(delimiter);
+    if (!parts.length) continue;
+
+    const code = (parts[idxIata] || "").trim().toUpperCase();
+    if (!code || code.length !== 3) continue;
+
+    const city = (parts[idxCity] || "").trim();
+
+    const lat = parseFloat((parts[idxLat] || "").replace(",", "."));
+    const lon = parseFloat((parts[idxLon] || "").replace(",", "."));
+    if (!isFinite(lat) || !isFinite(lon)) continue;
+
+    const iso2 = idxIso2 >= 0 ? (parts[idxIso2] || "").trim().toUpperCase() : "";
+
+    result[code] = { city, lat, lon, country: iso2 };
+  }
+
+  return result;
+}
+
+function renderFlagImg(iso2, size = 18) {
+  if (!iso2 || iso2.length !== 2) return "";
+  const code = iso2.toLowerCase();
+  return `
+    <img
+      src="https://flagcdn.com/w20/${code}.png"
+      srcset="https://flagcdn.com/w40/${code}.png 2x"
+      width="${size}"
+      height="${Math.round(size * 0.75)}"
+      class="flag-img"
+      alt="${iso2}"
+      loading="lazy"
+    >
+  `;
+}
+
+function countryToFlagEmoji(countryCode) {
+  if (!countryCode || countryCode.length !== 2) return "";
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map(c => 127397 + c.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
+
+function renderAirportWithFlag(iata) {
+  const a = AIRPORTS[iata];
+  if (!a) return iata;
+
+  const flag = renderFlagImg(a.country);
+  return `
+    ${flag}
+    <span class="airport-name">${a.city} (${iata})</span>
+  `;
+}
+
+function computeCountryCounts(flights) {
+  const airportVisits = {};
+
+  flights.forEach(f => {
+    [f.from, f.to].forEach(code => {
+      const a = AIRPORTS[code];
+      if (!a || !a.country) return;
+
+      const country = a.country.toUpperCase();
+      airportVisits[country] = (airportVisits[country] || 0) + 1;
+    });
+  });
+
+  // Hin- & Rückflug = 1 Besuch
+  const countryVisits = {};
+  for (const [country, count] of Object.entries(airportVisits)) {
+    countryVisits[country] = Math.ceil(count / 2);
+  }
+
+  return sortedEntries(countryVisits);
+}
 
   function handleAirportCsvLoad() {
     const fileInput = document.getElementById("airportFile");
@@ -1593,7 +1719,7 @@ function logAllAirlinesFromData() {
       }
     };
     reader.onerror = () => { errBox.textContent = "Fehler beim Lesen der Datei."; };
-    reader.readAsText(file, "windows-1252");
+    reader.readAsText(file, "utf-8");
   }
 
   function updateAirportCount() {
@@ -1985,65 +2111,118 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
 
   // Karte mit Clustering
   function renderMap(flights) {
-    const mapDiv = document.getElementById("map");
-    if (!mapDiv) return;
+  const mapDiv = document.getElementById("map");
+  if (!mapDiv) return;
 
-    if (leafletMap) {
-      leafletMap.remove();
-      leafletMap = null;
-    }
+  // alte Karte entfernen
+  if (leafletMap) {
+    leafletMap.remove();
+    leafletMap = null;
+  }
 
-    leafletMap = L.map("map").setView([20, 0], 2);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 8
-    }).addTo(leafletMap);
+  // neue Karte
+  leafletMap = L.map("map", { zoomControl: true }).setView([20, 0], 2);
 
-    const airportCodes = new Set();
-    flights.forEach(f => {
-      if (AIRPORTS[f.from]) airportCodes.add(f.from);
-      if (AIRPORTS[f.to])   airportCodes.add(f.to);
+  // Dark Tiles (passt zum Neon UI)
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 10,
+    attribution: "&copy; OpenStreetMap &copy; CARTO"
+  }).addTo(leafletMap);
+
+  // -------------------------------
+  // 1) Airports + Visits berechnen
+  // -------------------------------
+  const visitCounts = {};
+  flights.forEach(f => {
+    if (AIRPORTS[f.from]) visitCounts[f.from] = (visitCounts[f.from] || 0) + 1;
+    if (AIRPORTS[f.to])   visitCounts[f.to]   = (visitCounts[f.to]   || 0) + 1;
+  });
+  // Hin- & Rückflug = 1 Besuch
+  Object.keys(visitCounts).forEach(k => {
+    visitCounts[k] = Math.ceil(visitCounts[k] / 2);
+  });
+
+  // alle Airports sammeln
+  const airportCodes = new Set();
+  flights.forEach(f => {
+    if (AIRPORTS[f.from]) airportCodes.add(f.from);
+    if (AIRPORTS[f.to])   airportCodes.add(f.to);
+  });
+
+  const bounds = [];
+
+  // -------------------------------
+  // 2) Marker Layer (Cluster / Fallback)
+  // -------------------------------
+  let layer;
+
+  if (typeof L.markerClusterGroup === "function") {
+    layer = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 45
+    });
+  } else {
+    console.warn("⚠ markerCluster nicht geladen – Fallback ohne Cluster");
+    layer = L.layerGroup();
+  }
+
+  airportCodes.forEach(code => {
+    const a = AIRPORTS[code];
+    if (!a) return;
+
+    const latlng = [a.lat, a.lon];
+    bounds.push(latlng);
+
+    // Neon-Radar-Punkt
+    const marker = L.circleMarker(latlng, {
+      radius: 5,
+      className: "airport-dot",
+      weight: 1,
+      opacity: 0.9,
+      fillOpacity: 0.9
     });
 
-    const bounds = [];
+    marker.bindPopup(
+      airportPopupHtml(code, visitCounts)
+    );
 
-    if (typeof L.markerClusterGroup === "function") {
-      const markerCluster = L.markerClusterGroup();
+    layer.addLayer(marker);
+  });
 
-      airportCodes.forEach(code => {
-        const a = AIRPORTS[code];
-        if (!a) return;
+  leafletMap.addLayer(layer);
 
-        const latlng = [a.lat, a.lon];
-
-        const marker = L.marker(latlng).bindPopup(
-          (a.city || code) + " (" + code + ")"
-        );
-
-        markerCluster.addLayer(marker);
-        bounds.push(latlng);
-      });
-
-      leafletMap.addLayer(markerCluster);
-    } else {
-      console.warn("Leaflet.markercluster nicht verf\u00fcgbar – verwende normale Marker.");
-      airportCodes.forEach(code => {
-        const a = AIRPORTS[code];
-        if (!a) return;
-
-        const latlng = [a.lat, a.lon];
-
-        L.marker(latlng)
-          .addTo(leafletMap)
-          .bindPopup((a.city || code) + " (" + code + ")");
-
-        bounds.push(latlng);
-      });
-    }
-
-    if (bounds.length) {
-      leafletMap.fitBounds(bounds, { padding: [20, 20] });
-    }
+  // -------------------------------
+  // 3) Zoom auf Inhalt
+  // -------------------------------
+  if (bounds.length) {
+    leafletMap.fitBounds(bounds, { padding: [20, 20] });
   }
+}
+
+function airportPopupHtml(iata, visitCounts){
+  const a = AIRPORTS[iata];
+  if (!a) return iata;
+
+  const iso2 = (a.country || "").toLowerCase();
+  const flag = iso2
+    ? `<img class="flag-img" src="https://flagcdn.com/w20/${iso2}.png">`
+    : "";
+
+  const visits = visitCounts?.[iata] ?? 0;
+
+  return `
+    <div style="display:flex;gap:8px;align-items:center;">
+      ${flag}
+      <div>
+        <div style="font-weight:700;">
+          ${a.city || iata} (${iata})
+        </div>
+        <div class="muted">Besuche: <b>${visits}</b></div>
+      </div>
+    </div>
+  `;
+}
 
 function renderDashboardDetails(flights) {
   const totalKmEl        = document.getElementById("dashTotalKm");
@@ -2221,39 +2400,107 @@ function cityName(code) {
 
 function renderDashboard() {
   const flights = loadFlights();
-  if (!flights.length) return;
 
+  // Falls du ein Empty-State hast, könntest du hier was anzeigen.
+  // Wichtig: NICHT returnen bevor wir evtl. "0"-Werte setzen, aber
+  // wir machen es hier schlicht null-safe.
+  const setText = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+
+  const setHtml = (id, html) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  };
+
+  if (!flights || !flights.length) {
+    // optional: leere Werte setzen
+    setText("dashTotalKm", "0 km");
+    setText("dashLongestRoute", "–");
+    setText("dashLongestDesc", "");
+    setText("dashShortestRoute", "–");
+    setText("dashShortestDesc", "");
+    setText("dashMostRoute", "–");
+    setText("dashMostRouteCount", "");
+    // falls du Länder-KPI hast:
+    setText("dashCountries", "0");
+    return;
+  }
+
+  // --- Totals ---
   const totalKm = flights.reduce((s, f) => s + (f.distanceKm || 0), 0);
-  document.getElementById("dashTotalKm").textContent =
-    totalKm.toLocaleString() + " km";
+  setText("dashTotalKm", totalKm.toLocaleString() + " km");
 
-  // --- Längster Flug ---
-  const longest = [...flights].sort((a,b) => (b.distanceKm || 0) - (a.distanceKm || 0))[0];
-  if (longest) {
-    document.getElementById("dashLongestRoute").textContent = `${longest.from} → ${longest.to}`;
-    document.getElementById("dashLongestDesc").textContent =
-      `${Math.round(longest.distanceKm)} km`;
-  }
-
-  // --- Kürzester Flug ---
-  const shortest = [...flights].sort((a,b) => (a.distanceKm || 0) - (b.distanceKm || 0))[0];
-  if (shortest) {
-    document.getElementById("dashShortestRoute").textContent = `${shortest.from} → ${shortest.to}`;
-    document.getElementById("dashShortestDesc").textContent =
-      `${Math.round(shortest.distanceKm)} km`;
-  }
-
-  // --- meistgeflogene Route ---
-  const map = {};
+  // --- Airports + Countries ---
+  const airports = new Set();
   flights.forEach(f => {
-    const key = `${f.from} → ${f.to}`;
-    map[key] = (map[key] || 0) + 1;
+    if (f.from && AIRPORTS[f.from]) airports.add(f.from);
+    if (f.to && AIRPORTS[f.to]) airports.add(f.to);
   });
-  const most = Object.entries(map).sort((a,b) => b[1]-a[1])[0];
-  if (most) {
-    document.getElementById("dashMostRoute").textContent = most[0];
-    document.getElementById("dashMostRouteCount").textContent =
-      `${most[1]}× geflogen`;
+
+  const countries = new Set();
+  airports.forEach(code => {
+    const a = AIRPORTS[code];
+    const iso2 = a && a.country ? String(a.country).trim().toUpperCase() : "";
+    if (iso2) countries.add(iso2);
+  });
+
+  // Wenn du irgendwo ein Element hast, das Länder zeigt (optional)
+  // z.B. <div id="dashCountries"></div>
+  setText("dashCountries", String(countries.size));
+
+  // --- Helper: Route Label optional mit Stadt/Flagge ---
+  const flag = (iso2) => countryToFlagEmoji ? countryToFlagEmoji(iso2) : "";
+  const airportLabel = (iata) => {
+    const a = AIRPORTS[iata];
+    if (!a) return iata;
+    const f = a.country ? flag(a.country) : "";
+    const city = a.city ? a.city : "";
+    // Format: "🇨🇭 Zürich (ZRH)" oder "ZRH"
+    return (f ? f + " " : "") + (city ? (city + " (" + iata + ")") : iata);
+  };
+  const routeLabel = (from, to) => `${airportLabel(from)} → ${airportLabel(to)}`;
+
+  // --- Longest / Shortest in 1 pass (statt sort) ---
+  let longest = null;
+  let shortest = null;
+
+  for (const f of flights) {
+    const d = f.distanceKm || 0;
+    if (!d) continue;
+    if (!longest || d > (longest.distanceKm || 0)) longest = f;
+    if (!shortest || d < (shortest.distanceKm || 0)) shortest = f;
+  }
+
+  if (longest) {
+    setText("dashLongestRoute", routeLabel(longest.from, longest.to));
+    setText("dashLongestDesc", `${Math.round(longest.distanceKm)} km`);
+  }
+
+  if (shortest) {
+    setText("dashShortestRoute", routeLabel(shortest.from, shortest.to));
+    setText("dashShortestDesc", `${Math.round(shortest.distanceKm)} km`);
+  }
+
+  // --- Most flown route ---
+  const routeCounts = {};
+  for (const f of flights) {
+    if (!f.from || !f.to) continue;
+    const key = `${f.from}→${f.to}`;
+    routeCounts[key] = (routeCounts[key] || 0) + 1;
+  }
+
+  let mostKey = null;
+  let mostCount = 0;
+  for (const [k, v] of Object.entries(routeCounts)) {
+    if (v > mostCount) { mostCount = v; mostKey = k; }
+  }
+
+  if (mostKey) {
+    const [from, to] = mostKey.split("→");
+    setText("dashMostRoute", routeLabel(from, to));
+    setText("dashMostRouteCount", `${mostCount}× geflogen`);
   }
 }
 
@@ -2299,6 +2546,13 @@ function renderDashboard() {
     const a = (f.airline || "").trim();
     if (a) airlines.add(a);
   });
+  
+  const countries = new Set();
+  airports.forEach(code => {
+  const a = AIRPORTS[code];
+  const iso2 = a && a.country ? String(a.country).trim().toUpperCase() : "";
+   if (iso2) countries.add(iso2);
+  });
 
   const kpiEl = document.getElementById("dashboardKpis");
   if (kpiEl) {
@@ -2306,10 +2560,11 @@ function renderDashboard() {
     kpiEl.innerHTML = "<span class=\"muted\">Noch keine Fl&uuml;ge gespeichert.</span>";
   } else {
     kpiEl.innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge gesamt</div><div class=\"stat-value\" data-animate=\""+totalFlights+"\">0</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km gesamt</div><div class=\"stat-value\" data-animate=\""+totalKm+"\">0</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen gesamt</div><div class=\"stat-value\" data-animate=\""+totalMiles+"\">0</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Flugzeit gesamt</div><div class=\"stat-value\">"+formatHours(totalHours)+"</div><div class=\"stat-note\">"+hoursToText(totalHours)+"</div></div>"+
+	  "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge gesamt</div><div class=\"stat-value\" data-animate=\""+totalFlights+"\">0</div></div>"+
+	  "<div class=\"stat-card\"><div class=\"stat-label\">🌍 Länder</div><div class=\"stat-value\">"+countries.size+"</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Besuchte Airports</div><div class=\"stat-value\" data-animate=\""+airports.size+"\">0</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛫</span>Airlines</div><div class=\"stat-value\" data-animate=\""+airlines.size+"\">0</div></div>";
     
@@ -2514,12 +2769,21 @@ function renderDashboardLogbook(flights) {
   });
   const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
   const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
+  
+  const countrySet = new Set();
+flights.forEach(f => {
+  const from = AIRPORTS[f.from];
+  const to   = AIRPORTS[f.to];
+  if (from?.country) countrySet.add(from.country.toUpperCase());
+  if (to?.country)   countrySet.add(to.country.toUpperCase());
+});
 
   document.getElementById("statsAllYears").innerHTML =
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
+	"<div class='stat-card'>" +  "<div class='stat-label'>🌍 Länder</div>" +  "<div class='stat-value'>" + countrySet.size + "</div>" +"</div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛫</span>Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛩</span>Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
@@ -2568,107 +2832,37 @@ function renderDashboardLogbook(flights) {
   });
 
   document.getElementById("statsAirports").innerHTML =
-  buildRankBarsExpandable(sortedAirports, 10, { searchPlaceholder: "Airport suchen…" });
+  buildRankBarsExpandable(sortedAirports, 10, {
+    withSearch: true,
+    searchPlaceholder: "Airport suchen…",
+    renderNameHtml: (name) => {
+      // name ist bei dir "Stadt (IATA)" → IATA herausziehen:
+      const m = /\(([A-Z]{3})\)\s*$/.exec(name);
+      const iata = m ? m[1] : name.trim();
+      return renderAirportWithFlag(iata);
+
+    }
+  });
 
   document.getElementById("statsAircrafts").innerHTML =
   buildRankBarsExpandable(sortedAircrafts, 10, { searchPlaceholder: "Flugzeugtyp suchen…" });
 
+  const sortedCountries = computeCountryCounts(flightsYear);
+document.getElementById("statsCountries").innerHTML =
+  buildRankBarsExpandable(sortedCountries, 10, {
+    withSearch: true,
+    searchPlaceholder: "Land suchen…",
+    renderNameHtml: (iso2) => `
+      ${renderFlagImg(iso2)}
+      <span class="country-code">${iso2}</span>
+    `
+  });
 
-  wireRankTogglesAndSearch();
+wireRankTogglesAndSearch();
 
   document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
   document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
   document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
-
-  // --- 🧾 Logbuch (Jahr ODER alle Jahre) ---
-  const logEl = document.getElementById("yearLogbook");
-  if (logEl) {
-    // Bereich für Logbuch: wenn Jahr gewählt -> dieses Jahr, sonst alle Flüge
-    const flightsScope = year ? flightsYear : flights;
-
-    if (!flightsScope.length) {
-      logEl.innerHTML = "<span class=\"muted\">Keine Fl&uuml;ge im gew&auml;hlten Bereich.</span>";
-    } else {
-      function airportLabel(code) {
-        const a = AIRPORTS[code];
-        return a ? (a.city || code) + " (" + code + ")" : code;
-      }
-
-      // Längster / kürzester Flug nach Distanz
-      const flightsWithDist = flightsScope.filter(f => f.distanceKm);
-      let longest = null;
-      let shortest = null;
-      flightsWithDist.forEach(f => {
-        if (!longest || f.distanceKm > longest.distanceKm) longest = f;
-        if (!shortest || f.distanceKm < shortest.distanceKm) shortest = f;
-      });
-
-      // Meistgeflogene Route im Bereich
-      const routeCounts = countOccurrences(flightsScope, f => {
-        if (!f.from || !f.to) return null;
-        return f.from + " \u2192 " + f.to;
-      });
-      const sortedRoutes = sortedEntries(routeCounts);
-      const topRouteEntry = sortedRoutes.length ? sortedRoutes[0] : null;
-
-      let html = "<div class=\"muted\"><ul style=\"padding-left:1.1rem; margin:0;\">";
-
-      if (longest) {
-        html += "<li><b>L&auml;ngster Flug:</b> "+
-          formatDate(longest.date)+" – "+
-          airportLabel(longest.from)+" \u2192 "+airportLabel(longest.to)+
-          " ("+formatKm(longest.distanceKm)+", "+formatHours(longest.durationHours)+")</li>";
-      }
-      if (shortest) {
-        html += "<li><b>K&uuml;rzester Flug:</b> "+
-          formatDate(shortest.date)+" – "+
-          airportLabel(shortest.from)+" \u2192 "+airportLabel(shortest.to)+
-          " ("+formatKm(shortest.distanceKm)+", "+formatHours(shortest.durationHours)+")</li>";
-      }
-      if (topRouteEntry) {
-        const [routeKey, count] = topRouteEntry;
-        html += "<li><b>Meistgeflogene Route:</b> "+routeKey+
-          " ("+count+"x)</li>";
-      }
-
-      // Nur wenn ein konkretes Jahr gewählt ist: neue Flughäfen berechnen
-      if (year) {
-        const earlierFlights = flights.filter(f => {
-          if (!f.date) return false;
-          const d = new Date(f.date);
-          return !isNaN(d) && d.getFullYear() < year;
-        });
-        const earlierAirports = new Set();
-        earlierFlights.forEach(f => {
-          if (AIRPORTS[f.from]) earlierAirports.add(f.from);
-          if (AIRPORTS[f.to])   earlierAirports.add(f.to);
-        });
-
-        const yearAirports = new Set();
-        flightsYear.forEach(f => {
-          if (AIRPORTS[f.from]) yearAirports.add(f.from);
-          if (AIRPORTS[f.to])   yearAirports.add(f.to);
-        });
-
-        const newAirports = [];
-        yearAirports.forEach(code => {
-          if (!earlierAirports.has(code)) newAirports.push(code);
-        });
-        newAirports.sort();
-
-        if (newAirports.length) {
-          const labels = newAirports.map(airportLabel);
-          html += "<li><b>Neue Flugh&auml;fen in diesem Jahr:</b> "+labels.join(", ")+"</li>";
-        } else {
-          html += "<li><b>Neue Flugh&auml;fen in diesem Jahr:</b> keine neuen Flugh&auml;fen.</li>";
-        }
-      }
-      // wenn kein Jahr gewählt → keine neue-Flughäfen-Zeile (bleibt einfach weg)
-
-      html += "</ul></div>";
-      logEl.innerHTML = html;
-    }
-  }
 
   // Karte für den Bereich
   setTimeout(()=>renderMap(flightsYear),100);
@@ -2820,8 +3014,6 @@ if (empty) {
     buildYearOptions(flights);
     const visible = applyFilters(flights);
     renderFlightsTable(visible);
-    renderSummary(flights, visible);
-    renderMiniStats(visible);
     if (document.getElementById("statsPage").style.display !== "none") {
       renderFullStatistics();
     }
@@ -2877,8 +3069,6 @@ if (empty) {
     buildYearOptions(flights);
     const visible = applyFilters(flights);
     renderFlightsTable(visible);
-    renderSummary(flights, visible);
-    renderMiniStats(visible);
     if (document.getElementById("statsPage").style.display !== "none") {
       renderFullStatistics();
     }
