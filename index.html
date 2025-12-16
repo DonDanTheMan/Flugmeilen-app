@@ -1218,6 +1218,39 @@ label span,
   background: rgba(2,6,23,0.25);
 }
 
+.logo-tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-tooltip {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(56,189,248,0.35);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .15s ease, transform .15s ease;
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: #e5e7eb;
+}
+
+.logo-tile:hover .logo-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.logo-tooltip .muted {
+  color: #9ca3af;
+  font-size: 0.72rem;
+}
+
   </style>
 </head>
 <body>
@@ -3431,6 +3464,20 @@ function renderProfile(){
 
   function buildRows(){
     if (!listEl) return;
+    const flights = loadFlights();
+
+const airlineCounts = {};
+const airlinePriv = {};
+const airlineBiz = {};
+
+flights.forEach(f => {
+  const a = (f.airline || "").trim();
+  if (!a) return;
+  airlineCounts[a] = (airlineCounts[a] || 0) + 1;
+
+  if (f.tripType === "p") airlinePriv[a] = (airlinePriv[a] || 0) + 1;
+  if (f.tripType === "g") airlineBiz[a]  = (airlineBiz[a]  || 0) + 1;
+});
 
     const filtered = airlines.filter(a => a.toLowerCase().includes(query));
     const rows = filtered.filter(a => !onlyMissing || !hasLogoForAirline(a));
@@ -3453,13 +3500,24 @@ function renderProfile(){
     ? renderAirlineLogo(a)
     : "";
 
-  return `
-    <div class="logo-tile" data-name="${a.toLowerCase()}">
-      <div class="logo-status">${ok ? "✅" : "❌"}</div>
-      ${logoHtml || `<div style="height:44px"></div>`}
-      <div class="airline-name">${a}</div>
+  const count = airlineCounts[a] || 0;
+const p = airlinePriv[a] || 0;
+const g = airlineBiz[a] || 0;
+
+return `
+  <div class="logo-tile ${ok ? "" : "missing"}" title="${a}">
+    <div class="logo-status">${ok ? "✅" : "❌"}</div>
+
+    ${renderAirlineLogo(a) || `<div style="height:44px"></div>`}
+
+    <div class="airline-name">${a}</div>
+
+    <div class="logo-tooltip">
+      <div><b>✈️ ${count}</b> Flüge</div>
+      <div class="muted">🏝 ${p} &nbsp;&nbsp; 💼 ${g}</div>
     </div>
-  `;
+  </div>
+`;
 }).join("");
 
   }
