@@ -3295,18 +3295,31 @@ if (empty) {
     document.getElementById("yearSelect").value = "";
     renderAll();
     logAllAirlinesFromData();
-  document.addEventListener("click", (e) => {
-  const tile = e.target.closest(".logo-tile");
-  if (!tile) return;
+  function wireProfileLogoTooltips(){
+  const container =
+    document.getElementById("profileAirlineList") ||
+    document.getElementById("profileAirlineLogos");
 
-  // Tooltip toggeln
-  tile.classList.toggle("show-tooltip");
+  if (!container) return;
 
-  // andere schließen
-  document.querySelectorAll(".logo-tile.show-tooltip").forEach(t => {
-    if (t !== tile) t.classList.remove("show-tooltip");
+  // nur 1x binden
+  if (container.dataset.tooltipWired === "1") return;
+  container.dataset.tooltipWired = "1";
+
+  container.addEventListener("pointerup", (e) => {
+    const tile = e.target.closest(".logo-tile");
+    if (!tile || !container.contains(tile)) return;
+
+    // andere schließen
+    container.querySelectorAll(".logo-tile.show-tooltip").forEach(t => {
+      if (t !== tile) t.classList.remove("show-tooltip");
+    });
+
+    // toggeln
+    tile.classList.toggle("show-tooltip");
   });
-});
+}
+
 	
   });
 
@@ -3636,6 +3649,7 @@ return `
       renderProfile();
     };
   }
+  wireProfileLogoTooltips();
 }
 
 </script>
