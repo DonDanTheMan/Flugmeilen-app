@@ -1256,6 +1256,79 @@ label span,
   transform: translateY(0);
 }
 
+.dash-tiles{
+  display:grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap:.5rem;
+  margin-top:.6rem;
+}
+
+/* Standard: 3 Kacheln pro Reihe auf Desktop (12/4) */
+.dash-tiles .tile{
+  grid-column: span 4;
+}
+
+/* Breite Kacheln (z.B. Feed / Chart) */
+.dash-tiles .tile-wide{
+  grid-column: span 8;
+}
+
+/* Volle Breite (wenn nötig) */
+.dash-tiles .tile-full{
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px){
+  .dash-tiles .tile{ grid-column: span 6; }      /* 2 pro Reihe */
+  .dash-tiles .tile-wide{ grid-column: 1 / -1; }/* wide wird full */
+}
+@media (max-width: 520px){
+  .dash-tiles .tile{ grid-column: 1 / -1; }     /* 1 pro Reihe */
+}
+
+/* Quick action chips */
+.dash-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.4rem;
+  margin-top:.35rem;
+}
+
+/* Recent feed */
+.dash-recent{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:.5rem;
+  margin-top:.35rem;
+}
+.recent-card{
+  border:1px solid rgba(148,163,184,0.22);
+  background: rgba(15,23,42,0.55);
+  border-radius: .9rem;
+  padding:.55rem .6rem;
+}
+.recent-top{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.recent-route{ font-weight:800; }
+.recent-sub{ margin-top:.2rem; color:#9ca3af; font-size:.78rem; }
+
+/* Month bars */
+.dash-bars{
+  display:flex;
+  align-items:flex-end;
+  gap:.35rem;
+  height: 74px;
+  margin-top:.35rem;
+}
+.dash-bar{
+  flex:1;
+  min-width: 8px;
+  border-radius: 10px 10px 6px 6px;
+  background: rgba(56,189,248,0.35);
+  border: 1px solid rgba(56,189,248,0.25);
+}
+.dash-bar:hover{ filter: brightness(1.15); }
+.dash-bar-label{ text-align:center; font-size:.68rem; color:#9ca3af; margin-top:.35rem; }
+
   </style>
 </head>
 <body>
@@ -1273,53 +1346,9 @@ label span,
 </header>
 
 <main id="dashboardPage">
-  <!-- KPIs -->
   <section class="card">
-    <h2><span class="icon">🏠</span> Dashboard</h2>
-    <div class="muted">
-      &Uuml;bersicht &uuml;ber alle bisher erfassten Fl&uuml;ge.
-    </div>
-    <div id="dashboardKpis" class="stats-grid" style="margin-top:0.5rem;"></div>
-  </section>
-
-  <!-- Highlights -->
-  
-  <section class="card detail-card">
-  <h2>🛫 Meistgeflogene Airline</h2>
-  <div id="dashTopAirlineMain" class="detail-main">–</div>
-  <div id="dashTopAirlineSub" class="detail-sub"></div>
-  <div id="dashTopAirlineMeta" class="detail-sub"></div>
-</section>
-
-<section class="card detail-card">
-  <h2>🕒 Letzter Flug</h2>
-  <div id="dashLastFlightMain" class="detail-main">–</div>
-  <div id="dashLastFlightSub" class="detail-sub"></div>
-  <div id="dashLastFlightMeta" class="detail-sub"></div>
-</section>
-
-<section class="card detail-card">
-  <div class="dashboard-title">
-    <span class="icon">🔥</span> Längster Flug
-  </div>
-  <div id="dashLongestRoute" class="dashboard-value">–</div>
-  <div id="dashLongestDesc" class="muted"></div>
-</section>
-
-<section class="card detail-card">
-  <div class="dashboard-title">
-    <span class="icon">🚀</span> Kürzester Flug
-  </div>
-  <div id="dashShortestRoute" class="dashboard-value">–</div>
-  <div id="dashShortestDesc" class="muted"></div>
-</section>
-
-<section class="card detail-card">
-  <div class="dashboard-title">
-    <span class="icon">🔁</span> Häufigste Route
-  </div>
-  <div id="dashMostRoute" class="dashboard-value">–</div>
-  <div id="dashMostRouteCount" class="muted"></div>
+  <h2><span class="icon">🏠</span> Dashboard</h2>
+  <div id="dashboardTiles" class="dash-tiles"></div>
 </section>
 </main>
 
@@ -2606,110 +2635,249 @@ function cityName(code) {
   return a ? (a.city || code) : code;
 }
 
-function renderDashboard() {
-  const flights = loadFlights();
+function renderDashboardTiles() {
+  console.log("renderDashboardTiles() called");
 
-  // Falls du ein Empty-State hast, könntest du hier was anzeigen.
-  // Wichtig: NICHT returnen bevor wir evtl. "0"-Werte setzen, aber
-  // wir machen es hier schlicht null-safe.
-  const setText = (id, txt) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = txt;
-  };
+  const wrap = document.getElementById("dashboardTiles");
+  console.log("dashboardTiles:", wrap);
+  if (!wrap) return;
 
-  const setHtml = (id, html) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
-  };
+  // nie "leer" wirken lassen
+  wrap.innerHTML = `<div class="muted">Dashboard lädt…</div>`;
 
-  if (!flights || !flights.length) {
-    // optional: leere Werte setzen
-    setText("dashTotalKm", "0 km");
-    setText("dashLongestRoute", "–");
-    setText("dashLongestDesc", "");
-    setText("dashShortestRoute", "–");
-    setText("dashShortestDesc", "");
-    setText("dashMostRoute", "–");
-    setText("dashMostRouteCount", "");
-    // falls du Länder-KPI hast:
-    setText("dashCountries", "0");
-    return;
+  try {
+    const flightsAll = loadFlights();
+    const year = (typeof getSelectedYear === "function") ? getSelectedYear() : null;
+
+    const scoped = year
+      ? flightsAll.filter(f => {
+          const d = new Date(f.date);
+          return !isNaN(d) && d.getFullYear() === year;
+        })
+      : flightsAll;
+
+    const tripFilter = localStorage.getItem("dash_tripType"); // "p" | "g" | null
+    const flights = tripFilter ? scoped.filter(f => f.tripType === tripFilter) : scoped;
+
+    const scopeLabel = year ? `Jahr ${year}` : "Alle Jahre";
+    const typeLabel  = tripFilter ? (tripFilter === "g" ? "💼 Geschäft" : "🏝 Privat") : "";
+
+    // Empty State (wichtig: sonst wirkt’s "leer")
+    if (!flights.length) {
+      wrap.innerHTML = `
+        <div class="stat-card tile tile-full">
+          <div class="stat-label">ℹ️ Keine Flüge</div>
+          <div class="stat-value">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
+          <div class="stat-note">Importiere deine Flights-CSV oder erfasse einen Flug.</div>
+        </div>
+      `;
+      return;
+    }
+
+    // --- KPIs ---
+    const totalKm = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
+    const totalHours = flights.reduce((s,f)=>s+(f.durationHours||0),0);
+
+    const airportsSet = new Set();
+    const airlinesSet = new Set();
+    flights.forEach(f=>{
+      if (AIRPORTS?.[f.from]) airportsSet.add(f.from);
+      if (AIRPORTS?.[f.to])   airportsSet.add(f.to);
+      const a = (f.airline||"").trim();
+      if (a) airlinesSet.add(a);
+    });
+
+    const countriesSet = new Set();
+    airportsSet.forEach(code=>{
+      const c = (AIRPORTS?.[code]?.country || "").toUpperCase();
+      if (c && c.length === 2) countriesSet.add(c);
+    });
+
+    // --- Highlights ---
+    const flightsWithDist = flights.filter(f=>f.distanceKm);
+    const longest = flightsWithDist.length ? [...flightsWithDist].sort((a,b)=>b.distanceKm-a.distanceKm)[0] : null;
+    const shortest = flightsWithDist.length ? [...flightsWithDist].sort((a,b)=>a.distanceKm-b.distanceKm)[0] : null;
+
+    const routeCounts = countOccurrences(flights, f => (f.from && f.to) ? `${f.from} → ${f.to}` : null);
+    const topRoute = sortedEntries(routeCounts)[0] || null;
+
+    const airlineCounts = countOccurrences(flights, f => (f.airline||"").trim() || null);
+    const topAirline = sortedEntries(airlineCounts)[0] || null;
+
+    const movement = {};
+    flights.forEach(f=>{
+      if (f.from) movement[f.from] = (movement[f.from]||0)+1;
+      if (f.to)   movement[f.to]   = (movement[f.to]||0)+1;
+    });
+    const visits = {};
+    Object.entries(movement).forEach(([k,v])=>visits[k]=Math.ceil(v/2));
+    const topAirport = Object.entries(visits).sort((a,b)=>b[1]-a[1])[0] || null;
+
+    const airportCity = (code) => AIRPORTS?.[code]?.city || "";
+    const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
+
+    // --- Recent ---
+    const sortedByDate = [...flights].filter(f=>f.date).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const recent = sortedByDate.slice(0,5);
+
+    // --- Month Bars ---
+    const yearNow = new Date().getFullYear();
+    const barsYear = year || yearNow;
+    const buckets = Array.from({length:12}, ()=>0);
+    flights.forEach(f=>{
+      const d=new Date(f.date);
+      if (isNaN(d) || d.getFullYear()!==barsYear) return;
+      buckets[d.getMonth()] += (f.distanceKm||0);
+    });
+    const max = Math.max(...buckets, 1);
+
+    // Hilfsfunktion: Route "ZRH → JFK" sauber parsen
+    function parseRouteKey(routeKey){
+      const parts = String(routeKey).split("→").map(s=>s.trim());
+      return { from: parts[0] || "", to: parts[1] || "" };
+    }
+
+    // ======= Render =======
+    wrap.innerHTML = `
+      <div class="stat-card tile tile-full">
+        <div class="stat-label">🧭 Bereich</div>
+        <div class="stat-value">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
+        <div class="stat-note">Dashboard zeigt immer den aktuell gewählten Filter.</div>
+      </div>
+
+      <div class="stat-card tile"><div class="stat-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
+      <div class="stat-card tile"><div class="stat-label">📏 Km</div><div class="stat-value">${Math.round(totalKm).toLocaleString()}</div></div>
+      <div class="stat-card tile"><div class="stat-label">⏱ Zeit</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
+      <div class="stat-card tile"><div class="stat-label">🛬 Airports</div><div class="stat-value">${airportsSet.size}</div></div>
+      <div class="stat-card tile"><div class="stat-label">🛫 Airlines</div><div class="stat-value">${airlinesSet.size}</div></div>
+      <div class="stat-card tile"><div class="stat-label">🌍 Länder</div><div class="stat-value">${countriesSet.size}</div></div>
+
+      <div class="stat-card tile">
+        <div class="stat-label">🏔 Längster Flug</div>
+        <div class="stat-value">${longest ? `${longest.from} → ${longest.to}` : "–"}</div>
+        <div class="stat-note">${longest ? `${airportLabel(longest.from)} → ${airportLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
+      </div>
+
+      <div class="stat-card tile">
+        <div class="stat-label">🧊 Kürzester Flug</div>
+        <div class="stat-value">${shortest ? `${shortest.from} → ${shortest.to}` : "–"}</div>
+        <div class="stat-note">${shortest ? `${airportLabel(shortest.from)} → ${airportLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
+      </div>
+
+      <div class="stat-card tile">
+        <div class="stat-label">🔁 Häufigste Route</div>
+        <div class="stat-value">${topRoute ? topRoute[0] : "–"}</div>
+        <div class="stat-note">${
+          topRoute
+            ? (() => {
+                const p = parseRouteKey(topRoute[0]);
+                return `${airportLabel(p.from)} → ${airportLabel(p.to)} · ${topRoute[1]}×`;
+              })()
+            : ""
+        }</div>
+      </div>
+
+      <div class="stat-card tile">
+        <div class="stat-label">🏆 Top Airline</div>
+        <div class="stat-value">${
+          topAirline
+            ? `${(typeof renderAirlineLogo==="function") ? renderAirlineLogo(topAirline[0]) : ""} <span style="margin-left:8px">${topAirline[0]}</span>`
+            : "–"
+        }</div>
+        <div class="stat-note">${topAirline ? `${topAirline[1]}×` : ""}</div>
+      </div>
+
+      <div class="stat-card tile">
+        <div class="stat-label">🛬 Top Airport</div>
+        <div class="stat-value">${topAirport ? airportLabel(topAirport[0]) : "–"}</div>
+        <div class="stat-note">${topAirport ? `${topAirport[1]} Besuche` : ""}</div>
+      </div>
+
+      <div class="stat-card tile tile-wide">
+        <div class="stat-label">⚡ Quick Actions</div>
+        <div class="dash-actions">
+          <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashThisYear">📅 ${yearNow}</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🏝 Privat</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
+        </div>
+        <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
+      </div>
+
+      <div class="stat-card tile tile-wide">
+        <div class="stat-label">🧾 Zuletzt geflogen</div>
+        <div class="dash-recent">
+          ${recent.map(f=>{
+            const logo = (typeof renderAirlineLogo==="function") ? renderAirlineLogo((f.airline||"").trim()) : "";
+            const typ = f.tripType==="g" ? "💼" : "🏝";
+            return `
+              <div class="recent-card">
+                <div class="recent-top">
+                  <div class="recent-route">${f.from} → ${f.to}</div>
+                  <div style="display:flex;align-items:center;gap:.35rem;">${logo}<span>${typ}</span></div>
+                </div>
+                <div class="recent-sub">${formatDate(f.date)} · ${airportLabel(f.from)} → ${airportLabel(f.to)}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="stat-card tile tile-full">
+        <div class="stat-label">📆 Km pro Monat</div>
+        <div class="stat-note">${year ? `${year}` : `${barsYear} (bei „Alle Jahre“ zeigen wir das aktuelle Jahr)`}</div>
+        <div class="dash-bars">
+          ${buckets.map((km,i)=>{
+            const h = Math.round((km/max)*100);
+            const px = Math.max(6, Math.round(h*0.72));
+            return `
+              <div style="flex:1;">
+                <div class="dash-bar" title="${i+1}: ${Math.round(km)} km" style="height:${px}px;"></div>
+                <div class="dash-bar-label">${String(i+1).padStart(2,"0")}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+
+    // ======= Actions wiring =======
+    document.getElementById("dashGoAdd")?.addEventListener("click", () => {
+      window.showPage?.("flightsPage");
+      setTimeout(()=>document.getElementById("flightFormCard")?.scrollIntoView({behavior:"smooth"}), 120);
+    });
+
+    document.getElementById("dashThisYear")?.addEventListener("click", () => {
+      const ys = document.getElementById("yearSelect");
+      if (ys) ys.value = String(yearNow);
+      renderAll?.();
+      renderDashboard?.();
+    });
+
+    document.getElementById("dashPriv")?.addEventListener("click", () => {
+      localStorage.setItem("dash_tripType", "p");
+      renderDashboard?.();
+    });
+
+    document.getElementById("dashBiz")?.addEventListener("click", () => {
+      localStorage.setItem("dash_tripType", "g");
+      renderDashboard?.();
+    });
+
+    document.getElementById("dashClearFilters")?.addEventListener("click", () => {
+      localStorage.removeItem("dash_tripType");
+      renderDashboard?.();
+    });
+
+  } catch (err) {
+    console.error("Dashboard render error:", err);
+    wrap.innerHTML = `<div class="error">Dashboard Fehler: ${err.message}</div>`;
   }
+}
 
-  // --- Totals ---
-  const totalKm = flights.reduce((s, f) => s + (f.distanceKm || 0), 0);
-  setText("dashTotalKm", totalKm.toLocaleString() + " km");
-
-  // --- Airports + Countries ---
-  const airports = new Set();
-  flights.forEach(f => {
-    if (f.from && AIRPORTS[f.from]) airports.add(f.from);
-    if (f.to && AIRPORTS[f.to]) airports.add(f.to);
-  });
-
-  const countries = new Set();
-  airports.forEach(code => {
-    const a = AIRPORTS[code];
-    const iso2 = a && a.country ? String(a.country).trim().toUpperCase() : "";
-    if (iso2) countries.add(iso2);
-  });
-
-  // Wenn du irgendwo ein Element hast, das Länder zeigt (optional)
-  // z.B. <div id="dashCountries"></div>
-  setText("dashCountries", String(countries.size));
-
-  // --- Helper: Route Label optional mit Stadt/Flagge ---
-  const flag = (iso2) => countryToFlagEmoji ? countryToFlagEmoji(iso2) : "";
-  const airportLabel = (iata) => {
-    const a = AIRPORTS[iata];
-    if (!a) return iata;
-    const f = a.country ? flag(a.country) : "";
-    const city = a.city ? a.city : "";
-    // Format: "🇨🇭 Zürich (ZRH)" oder "ZRH"
-    return (f ? f + " " : "") + (city ? (city + " (" + iata + ")") : iata);
-  };
-  const routeLabel = (from, to) => `${airportLabel(from)} → ${airportLabel(to)}`;
-
-  // --- Longest / Shortest in 1 pass (statt sort) ---
-  let longest = null;
-  let shortest = null;
-
-  for (const f of flights) {
-    const d = f.distanceKm || 0;
-    if (!d) continue;
-    if (!longest || d > (longest.distanceKm || 0)) longest = f;
-    if (!shortest || d < (shortest.distanceKm || 0)) shortest = f;
-  }
-
-  if (longest) {
-    setText("dashLongestRoute", routeLabel(longest.from, longest.to));
-    setText("dashLongestDesc", `${Math.round(longest.distanceKm)} km`);
-  }
-
-  if (shortest) {
-    setText("dashShortestRoute", routeLabel(shortest.from, shortest.to));
-    setText("dashShortestDesc", `${Math.round(shortest.distanceKm)} km`);
-  }
-
-  // --- Most flown route ---
-  const routeCounts = {};
-  for (const f of flights) {
-    if (!f.from || !f.to) continue;
-    const key = `${f.from}→${f.to}`;
-    routeCounts[key] = (routeCounts[key] || 0) + 1;
-  }
-
-  let mostKey = null;
-  let mostCount = 0;
-  for (const [k, v] of Object.entries(routeCounts)) {
-    if (v > mostCount) { mostCount = v; mostKey = k; }
-  }
-
-  if (mostKey) {
-    const [from, to] = mostKey.split("→");
-    setText("dashMostRoute", routeLabel(from, to));
-    setText("dashMostRouteCount", `${mostCount}× geflogen`);
-  }
+function renderDashboard(){
+  renderDashboardTiles();
 }
 
 function animateNumber(el, to, durationMs) {
@@ -2737,52 +2905,6 @@ function animateKpiNumbers() {
     const target = el.getAttribute("data-animate");
     animateNumber(el, target, 800); // ~0.8s Animation
   });
-}
-
-function renderDashboard() {
-  const flights = loadFlights();
-  const totalKm = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
-  const totalMiles = Math.round(totalKm * 0.621371);
-  const totalHours = flights.reduce((s,f)=>s+(f.durationHours||0),0);
-  const totalFlights = flights.length;
-
-  const airports = new Set();
-  const airlines = new Set();
-  flights.forEach(f => {
-    if (AIRPORTS[f.from]) airports.add(f.from);
-    if (AIRPORTS[f.to])   airports.add(f.to);
-    const a = (f.airline || "").trim();
-    if (a) airlines.add(a);
-  });
-  
-  const countries = new Set();
-  airports.forEach(code => {
-  const a = AIRPORTS[code];
-  const iso2 = a && a.country ? String(a.country).trim().toUpperCase() : "";
-   if (iso2) countries.add(iso2);
-  });
-
-  const kpiEl = document.getElementById("dashboardKpis");
-  if (kpiEl) {
-  if (!flights.length) {
-    kpiEl.innerHTML = "<span class=\"muted\">Noch keine Fl&uuml;ge gespeichert.</span>";
-  } else {
-    kpiEl.innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km gesamt</div><div class=\"stat-value\" data-animate=\""+totalKm+"\">0</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen gesamt</div><div class=\"stat-value\" data-animate=\""+totalMiles+"\">0</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Flugzeit gesamt</div><div class=\"stat-value\">"+formatHours(totalHours)+"</div><div class=\"stat-note\">"+hoursToText(totalHours)+"</div></div>"+
-	  "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge gesamt</div><div class=\"stat-value\" data-animate=\""+totalFlights+"\">0</div></div>"+
-	  "<div class=\"stat-card\"><div class=\"stat-label\">🌍 Länder</div><div class=\"stat-value\">"+countries.size+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Besuchte Airports</div><div class=\"stat-value\" data-animate=\""+airports.size+"\">0</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛫</span>Airlines</div><div class=\"stat-value\" data-animate=\""+airlines.size+"\">0</div></div>";
-    
-    animateKpiNumbers(); // 🔥 Zahlen hochzählen
-  }
-}
-
-	renderDashboardTopCards(flights);
-	renderDashboardDetails(flights);
-
 }
 
 function renderDashboardHighlights(flights) {
@@ -3282,27 +3404,13 @@ if (empty) {
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-  // Event-Listener & Buttons
-  document.getElementById("loadAirportBtn").addEventListener("click", handleAirportCsvLoad);
-  document.getElementById("loadFlightsBtn").addEventListener("click", handleFlightsCsvLoad);
-  document.getElementById("addFlightBtn").addEventListener("click", addFlight);
-  document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
-  document.getElementById("clearAllFlightsBtn").addEventListener("click", clearAllFlights);
-  document.getElementById("searchInput").addEventListener("input", renderAll);
-  document.getElementById("yearSelect").addEventListener("change", renderAll);
-  document.getElementById("resetYearBtn").addEventListener("click", () => {
-    document.getElementById("yearSelect").value = "";
-    renderAll();
-    logAllAirlinesFromData();
-  function wireProfileLogoTooltips(){
+function wireProfileLogoTooltips(){
   const container =
     document.getElementById("profileAirlineList") ||
     document.getElementById("profileAirlineLogos");
 
   if (!container) return;
 
-  // nur 1x binden
   if (container.dataset.tooltipWired === "1") return;
   container.dataset.tooltipWired = "1";
 
@@ -3310,20 +3418,31 @@ if (empty) {
     const tile = e.target.closest(".logo-tile");
     if (!tile || !container.contains(tile)) return;
 
-    // andere schließen
     container.querySelectorAll(".logo-tile.show-tooltip").forEach(t => {
       if (t !== tile) t.classList.remove("show-tooltip");
     });
 
-    // toggeln
     tile.classList.toggle("show-tooltip");
   });
 }
 
-	
+  document.addEventListener("DOMContentLoaded", () => {
+  // Event-Listener & Buttons
+  document.getElementById("loadAirportBtn")?.addEventListener("click", handleAirportCsvLoad);
+  document.getElementById("loadFlightsBtn")?.addEventListener("click", handleFlightsCsvLoad);
+  document.getElementById("addFlightBtn")?.addEventListener("click", addFlight);
+  document.getElementById("cancelEditBtn")?.addEventListener("click", cancelEdit);
+  document.getElementById("clearAllFlightsBtn")?.addEventListener("click", clearAllFlights);
+  document.getElementById("searchInput")?.addEventListener("input", renderAll);
+  document.getElementById("yearSelect")?.addEventListener("change", renderAll);
+
+  document.getElementById("resetYearBtn")?.addEventListener("click", () => {
+    document.getElementById("yearSelect").value = "";
+    renderAll();
+    logAllAirlinesFromData();
   });
 
-  // ----- Neue Tab Navigation (Dashboard, Flüge, Statistik, Daten, Profil) -----
+  // Pages
   const pages = {
     dashboardPage: document.getElementById("dashboardPage"),
     flightsPage:   document.getElementById("flightsPage"),
@@ -3333,38 +3452,40 @@ if (empty) {
   };
 
   function showPage(targetId) {
-  // Seiten show/hide + animierbare Klasse setzen
-  Object.entries(pages).forEach(([id, el]) => {
-    if (!el) return;
-    const isActive = (id === targetId);
-    el.style.display = isActive ? "block" : "none";
-    if (isActive) {
-      el.classList.add("page-active");
-    } else {
-      el.classList.remove("page-active");
-    }
-  });
+    // show/hide
+	console.log("showPage ->", targetId);
+    Object.entries(pages).forEach(([id, el]) => {
+      if (!el) return;
+      const isActive = (id === targetId);
+      el.style.display = isActive ? "block" : "none";
+      el.classList.toggle("page-active", isActive);
+    });
 
-  // aktive Nav markieren
-  document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
-    const target = btn.getAttribute("data-target");
-    if (target === targetId) btn.classList.add("nav-active");
-    else btn.classList.remove("nav-active");
-  });
+    // nav-active markieren
+    document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+      btn.classList.toggle("nav-active", btn.getAttribute("data-target") === targetId);
+    });
 
-  // passenden Inhalt rendern
-  if (targetId === "dashboardPage") {
-    renderDashboard();
-  } else if (targetId === "flightsPage") {
-    renderAll();
-  } else if (targetId === "statsPage") {
-    renderFullStatistics();
-  } else if (targetId === "dataPage") {
-    updateAirportCount();
-  } else if (targetId === "profilePage") {
-    renderProfile();
+    // Render nach Umschalten
+    if (targetId === "dashboardPage") setTimeout(renderDashboardTiles, 0);
+    else if (targetId === "flightsPage") setTimeout(renderAll, 0);
+    else if (targetId === "statsPage") setTimeout(renderFullStatistics, 0);
+    else if (targetId === "dataPage") setTimeout(updateAirportCount, 0);
+    else if (targetId === "profilePage") setTimeout(renderProfile, 0);
   }
-}
+
+  // Klick-Handler (NUR EINMAL!)
+  document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showPage(btn.getAttribute("data-target"));
+    });
+  });
+
+  window.showPage = showPage;
+
+  // Start
+	showPage("dashboardPage");
+});
 
   // Klick-Handler für Bottom-Navigation
   document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
@@ -3373,10 +3494,6 @@ if (empty) {
       showPage(target);
     });
   });
-
-  // Start: Dashboard anzeigen
-  showPage("dashboardPage");
-});
 
 function wireRankTogglesAndSearch() {
   // Toggle
@@ -3649,7 +3766,7 @@ return `
       renderProfile();
     };
   }
-  wireProfileLogoTooltips();
+   wireProfileLogoTooltips();
 }
 
 </script>
