@@ -1251,6 +1251,11 @@ label span,
   font-size: 0.72rem;
 }
 
+.logo-tile.show-tooltip .logo-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
   </style>
 </head>
 <body>
@@ -3290,6 +3295,19 @@ if (empty) {
     document.getElementById("yearSelect").value = "";
     renderAll();
     logAllAirlinesFromData();
+  document.addEventListener("click", (e) => {
+  const tile = e.target.closest(".logo-tile");
+  if (!tile) return;
+
+  // Tooltip toggeln
+  tile.classList.toggle("show-tooltip");
+
+  // andere schließen
+  document.querySelectorAll(".logo-tile.show-tooltip").forEach(t => {
+    if (t !== tile) t.classList.remove("show-tooltip");
+  });
+});
+	
   });
 
   // ----- Neue Tab Navigation (Dashboard, Flüge, Statistik, Daten, Profil) -----
