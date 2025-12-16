@@ -1124,6 +1124,100 @@ label span,
   border-radius: 3px;
 }
 
+.logo-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .6rem;
+}
+
+.logo-tile {
+  position: relative;
+  padding: .6rem .5rem .55rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148,163,184,0.25);
+  background: rgba(15,23,42,0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: .35rem;
+}
+
+.logo-tile img {
+  width: 100%;
+  max-width: 110px;
+  height: 44px;
+  object-fit: contain;
+  background: rgba(2,6,23,0.35);
+  border-radius: .45rem;
+  padding: .25rem;
+}
+
+.logo-tile .airline-name {
+  font-weight: 700;
+  font-size: .78rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logo-tile .airline-meta {
+  font-size: .7rem;
+  color: #9ca3af;
+}
+
+.logo-tile .logo-status {
+  position: absolute;
+  top: .35rem;
+  right: .45rem;
+  font-size: .9rem;
+}
+
+.logo-left{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  min-width:0;
+}
+
+.logo-preview{
+  width:56px;
+  height:28px;
+  object-fit:contain;
+  border-radius:.35rem;
+  background: rgba(2,6,23,0.35);
+  border: 1px solid rgba(148,163,184,0.18);
+}
+
+.logo-airline{
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.logo-meta{
+  font-size:.75rem;
+  color:#9ca3af;
+  margin-top:.15rem;
+}
+
+.logo-status{
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  color:#9ca3af;
+  font-size:.78rem;
+}
+
+.logo-pill{
+  border-radius:999px;
+  padding:.15rem .5rem;
+  border:1px solid rgba(148,163,184,0.35);
+  background: rgba(2,6,23,0.25);
+}
+
   </style>
 </head>
 <body>
@@ -1246,7 +1340,7 @@ label span,
   <section class="card">
     <div class="toolbar flights-toolbar">
       <div class="flex-row">
-        <h2 style="margin:0;"><span class="icon">📑</span>Fl&uuml;gliste</h2>
+        <h2 style="margin:0;"><span class="icon">📑</span>Flugliste</h2>
         <span id="visibleCount" class="badge">
           <span class="icon">👀</span>0 sichtbar
         </span>
@@ -1404,18 +1498,84 @@ label span,
 </main>
 
 <main id="profilePage" style="display:none;">
+
   <section class="card">
-    <h2>👤 Profil</h2>
+    <h2><span class="icon">👤</span> Profil</h2>
     <div class="muted">
-      &Uuml;bersicht &uuml;ber alle Airlines in deinen Flugdaten
-      und ob ein Logo hinterlegt ist.
+      Einstellungen & Verwaltung (Logos, Backup, Daten-Check).
     </div>
+
+    <div class="form-grid" style="margin-top:.6rem;">
+      <div>
+        <label for="profileName">Name</label>
+        <input id="profileName" type="text" placeholder="Daniel" />
+      </div>
+
+      <div>
+        <label for="homeIata">Home-Airport (IATA)</label>
+        <input id="homeIata" type="text" maxlength="3" placeholder="ZRH" />
+      </div>
+
+      <div>
+        <label for="defaultSpeed">Standard-Speed (km/h)</label>
+        <input id="defaultSpeed" type="number" min="300" max="1100" step="10" placeholder="600" />
+      </div>
+
+      <div>
+        <label>&nbsp;</label>
+        <button id="saveProfileBtn" class="btn btn-primary" type="button">
+          <span class="icon">💾</span> Speichern
+        </button>
+      </div>
+    </div>
+
+    <div id="profileSavedNote" class="muted" style="margin-top:.4rem;"></div>
   </section>
 
   <section class="card">
-    <h2>🖼 Airline-Logos</h2>
-    <div id="profileAirlineLogos" class="stats-grid"></div>
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0;"><span class="icon">🖼</span> Airline-Logos</h2>
+        <div class="muted">Aus deinen gespeicherten Flügen automatisch erkannt.</div>
+      </div>
+
+      <div class="flex-row">
+        <span id="profileLogoStats" class="badge">–</span>
+        <button id="toggleMissingBtn" class="btn btn-secondary btn-sm" type="button">
+          <span class="icon">🕵️</span> Nur fehlende
+        </button>
+      </div>
+    </div>
+
+    <div class="rank-search" style="margin-top:.5rem;">
+      <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
+    </div>
+
+    <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
   </section>
+
+  <section class="card">
+    <h2><span class="icon">💾</span> Backup</h2>
+    <div class="muted">Exportiert/Importiert deine Flüge & Airports (localStorage).</div>
+
+    <div class="flex-row" style="margin-top:.6rem;">
+      <button id="exportBtn" class="btn btn-secondary btn-sm" type="button">
+        <span class="icon">⬇️</span> Export JSON
+      </button>
+
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+        <span class="icon">⬆️</span> Import JSON
+        <input id="importFile" type="file" accept="application/json" style="display:none;">
+      </label>
+
+      <button id="resetDataBtn" class="btn btn-secondary btn-sm" type="button">
+        <span class="icon">🧨</span> Reset (alles)
+      </button>
+    </div>
+
+    <div id="backupMsg" class="muted" style="margin-top:.4rem;"></div>
+  </section>
+
 </main>
 
 <script>
@@ -1472,6 +1632,8 @@ const AIRLINE_LOGOS = {
   "VIRGIN AU": "img/airlines/Virgin AU.png",
   "VUELING": "img/airlines/Vueling.png",
   "XIAMEN AIR": "img/airlines/Xiamen Air.png",
+  "CHINA SOUTHERN": "img/airlines/China Southern.png",
+  "GERMANWINGS": "img/airlines/Germanwings.png",
   
   // hier kannst du beliebig erweitern
 };
@@ -2114,90 +2276,98 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const mapDiv = document.getElementById("map");
   if (!mapDiv) return;
 
-  // alte Karte entfernen
+  // Wenn die Karte schon existiert, entfernen wir sie
   if (leafletMap) {
     leafletMap.remove();
     leafletMap = null;
   }
 
-  // neue Karte
-  leafletMap = L.map("map", { zoomControl: true }).setView([20, 0], 2);
+  // Erstelle eine neue Karte
+  leafletMap = L.map("map").setView([20, 0], 2);
 
-  // Dark Tiles (passt zum Neon UI)
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 10,
-    attribution: "&copy; OpenStreetMap &copy; CARTO"
-  }).addTo(leafletMap);
+  // --- Basemaps ---
+  const streetLayer = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    {
+      maxZoom: 10,
+      attribution: "&copy; OpenStreetMap &copy; CARTO"
+    }
+  );
 
-  // -------------------------------
-  // 1) Airports + Visits berechnen
-  // -------------------------------
-  const visitCounts = {};
-  flights.forEach(f => {
-    if (AIRPORTS[f.from]) visitCounts[f.from] = (visitCounts[f.from] || 0) + 1;
-    if (AIRPORTS[f.to])   visitCounts[f.to]   = (visitCounts[f.to]   || 0) + 1;
-  });
-  // Hin- & Rückflug = 1 Besuch
-  Object.keys(visitCounts).forEach(k => {
-    visitCounts[k] = Math.ceil(visitCounts[k] / 2);
-  });
+  const satelliteLayer = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 19,
+      attribution:
+        "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+    }
+  );
 
-  // alle Airports sammeln
+  // Standardmäßig Street Layer anzeigen
+  streetLayer.addTo(leafletMap);
+
+  // --- Overlay: Airports (Cluster) ---
   const airportCodes = new Set();
   flights.forEach(f => {
     if (AIRPORTS[f.from]) airportCodes.add(f.from);
-    if (AIRPORTS[f.to])   airportCodes.add(f.to);
+    if (AIRPORTS[f.to]) airportCodes.add(f.to);
   });
 
   const bounds = [];
-
-  // -------------------------------
-  // 2) Marker Layer (Cluster / Fallback)
-  // -------------------------------
-  let layer;
-
-  if (typeof L.markerClusterGroup === "function") {
-    layer = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 45
-    });
-  } else {
-    console.warn("⚠ markerCluster nicht geladen – Fallback ohne Cluster");
-    layer = L.layerGroup();
-  }
+  const markerCluster =
+    typeof L.markerClusterGroup === "function"
+      ? L.markerClusterGroup()
+      : L.layerGroup();
 
   airportCodes.forEach(code => {
     const a = AIRPORTS[code];
     if (!a) return;
 
     const latlng = [a.lat, a.lon];
-    bounds.push(latlng);
 
-    // Neon-Radar-Punkt
     const marker = L.circleMarker(latlng, {
-      radius: 5,
-      className: "airport-dot",
-      weight: 1,
-      opacity: 0.9,
-      fillOpacity: 0.9
-    });
+  radius: 6,
+  className: "airport-dot",
+  weight: 1,
+  opacity: 0.9,
+  fillOpacity: 0.95
+}).bindPopup(
+  (a.city || code) + " (" + code + ")"
+);
 
-    marker.bindPopup(
-      airportPopupHtml(code, visitCounts)
-    );
+markerCluster.addLayer(marker);
 
-    layer.addLayer(marker);
+
+    markerCluster.addLayer(marker);
+    bounds.push(latlng);
   });
 
-  leafletMap.addLayer(layer);
+  markerCluster.addTo(leafletMap);
 
-  // -------------------------------
-  // 3) Zoom auf Inhalt
-  // -------------------------------
+  // --- Layer Control (Basemap Toggle + Overlay Toggle) ---
+  const baseMaps = {
+    "Street View": streetLayer,
+    "Satellite": satelliteLayer
+  };
+
+  const overlays = {
+    "Airports": markerCluster
+  };
+
+  L.control.layers(baseMaps, overlays, { collapsed: true }).addTo(leafletMap);
+
+  // 🔧 Wichtig: wenn Layer gewechselt wird → Größe neu berechnen
+  leafletMap.on("baselayerchange", () => {
+    setTimeout(() => leafletMap.invalidateSize(), 80);
+  });
+
+  // Setze die Kartenansicht auf die Flughäfen
   if (bounds.length) {
     leafletMap.fitBounds(bounds, { padding: [20, 20] });
   }
+
+  // 🔧 Wichtig bei Tabs/hidden container
+  setTimeout(() => leafletMap.invalidateSize(), 150);
 }
 
 function airportPopupHtml(iata, visitCounts){
@@ -3190,6 +3360,206 @@ function wireRankTogglesAndSearch() {
       }
     };
   });
+}
+
+const STORAGE_KEY_PROFILE = "flugmeilen_profile_v1";
+
+function loadProfile(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveProfile(obj){
+  localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(obj || {}));
+}
+
+function getAllAirlinesFromFlights(flights){
+  const set = new Set();
+  flights.forEach(f => {
+    const a = (f.airline || "").trim();
+    if (a) set.add(a);
+  });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+
+function hasLogoForAirline(name){
+  if (!name) return false;
+
+  // wichtig: direkt AIRLINE_LOGOS verwenden, nicht window.AIRLINE_LOGOS
+  if (typeof AIRLINE_LOGOS === "undefined" || !AIRLINE_LOGOS) return false;
+
+  const key = name.trim();
+
+  // exakt / upper / lower
+  if (AIRLINE_LOGOS[key]) return true;
+  if (AIRLINE_LOGOS[key.toUpperCase()]) return true;
+  if (AIRLINE_LOGOS[key.toLowerCase()]) return true;
+
+  // normalisiert vergleichen (leerzeichen/sonderzeichen ignorieren)
+  const norm = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return Object.keys(AIRLINE_LOGOS).some(k =>
+    k.toLowerCase().replace(/[^a-z0-9]/g, "") === norm
+  );
+}
+
+function renderProfile(){
+  const flights = loadFlights();
+  const airlines = getAllAirlinesFromFlights(flights);
+
+  // --- Profile form ---
+  const p = loadProfile();
+  const nameEl = document.getElementById("profileName");
+  const homeEl = document.getElementById("homeIata");
+  const speedEl = document.getElementById("defaultSpeed");
+  const noteEl = document.getElementById("profileSavedNote");
+
+  if (nameEl) nameEl.value = p.name || "";
+  if (homeEl) homeEl.value = p.homeIata || "";
+  if (speedEl) speedEl.value = p.defaultSpeedKmh || "";
+
+  if (noteEl) noteEl.textContent = "";
+
+  // --- Logos list ---
+  const listEl = document.getElementById("profileAirlineList");
+  const statsEl = document.getElementById("profileLogoStats");
+  const searchEl = document.getElementById("profileLogoSearch");
+
+  let onlyMissing = false;
+  let query = "";
+
+  function buildRows(){
+    if (!listEl) return;
+
+    const filtered = airlines.filter(a => a.toLowerCase().includes(query));
+    const rows = filtered.filter(a => !onlyMissing || !hasLogoForAirline(a));
+
+    const missingCount = airlines.filter(a => !hasLogoForAirline(a)).length;
+    const okCount = airlines.length - missingCount;
+
+    if (statsEl) {
+      statsEl.textContent = `✅ ${okCount} / ❌ ${missingCount} / 🔢 ${airlines.length}`;
+    }
+
+    if (!rows.length){
+      listEl.innerHTML = `<div class="muted">Keine Treffer.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = rows.map(a => {
+  const ok = hasLogoForAirline(a);
+  const logoHtml = (typeof renderAirlineLogo === "function")
+    ? renderAirlineLogo(a)
+    : "";
+
+  return `
+    <div class="logo-tile" data-name="${a.toLowerCase()}">
+      <div class="logo-status">${ok ? "✅" : "❌"}</div>
+      ${logoHtml || `<div style="height:44px"></div>`}
+      <div class="airline-name">${a}</div>
+    </div>
+  `;
+}).join("");
+
+  }
+
+  buildRows();
+
+  const toggleBtn = document.getElementById("toggleMissingBtn");
+  if (toggleBtn){
+    toggleBtn.onclick = () => {
+      onlyMissing = !onlyMissing;
+      toggleBtn.innerHTML = onlyMissing
+        ? `<span class="icon">👀</span> Alle anzeigen`
+        : `<span class="icon">🕵️</span> Nur fehlende`;
+      buildRows();
+    };
+  }
+
+  if (searchEl){
+    searchEl.oninput = () => {
+      query = (searchEl.value || "").trim().toLowerCase();
+      buildRows();
+    };
+  }
+
+  // --- Save profile ---
+  const saveBtn = document.getElementById("saveProfileBtn");
+  if (saveBtn){
+    saveBtn.onclick = () => {
+      const obj = {
+        name: (nameEl?.value || "").trim(),
+        homeIata: (homeEl?.value || "").trim().toUpperCase(),
+        defaultSpeedKmh: Number(speedEl?.value || 0) || 0
+      };
+      saveProfile(obj);
+      if (noteEl) noteEl.textContent = "✅ Gespeichert.";
+      setTimeout(()=>{ if(noteEl) noteEl.textContent=""; }, 1500);
+    };
+  }
+
+  // --- Backup / Restore ---
+  const backupMsg = document.getElementById("backupMsg");
+
+  const exportBtn = document.getElementById("exportBtn");
+  if (exportBtn){
+    exportBtn.onclick = () => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        flights: loadFlights(),
+        airports: loadAirportsFromStorage ? loadAirportsFromStorage() : AIRPORTS
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "flugmeilen-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      if (backupMsg) backupMsg.textContent = "⬇️ Export erstellt.";
+    };
+  }
+
+  const importFile = document.getElementById("importFile");
+  if (importFile){
+    importFile.onchange = () => {
+      const file = importFile.files && importFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data.flights)) saveFlights(data.flights);
+          if (data.airports && typeof data.airports === "object") {
+            AIRPORTS = data.airports;
+            saveAirportsToStorage();
+          }
+          if (backupMsg) backupMsg.textContent = "✅ Import erledigt.";
+          renderAll?.();
+        } catch(err){
+          if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: " + err.message;
+        } finally {
+          importFile.value = "";
+        }
+      };
+      reader.readAsText(file);
+    };
+  }
+
+  const resetBtn = document.getElementById("resetDataBtn");
+  if (resetBtn){
+    resetBtn.onclick = () => {
+      if (!confirm("Wirklich ALLES löschen? (Flüge + Airports + Profil)")) return;
+      localStorage.removeItem(STORAGE_KEY_FLIGHTS);
+      localStorage.removeItem(STORAGE_KEY_AIRPORTS);
+      localStorage.removeItem(STORAGE_KEY_PROFILE);
+      AIRPORTS = {};
+      if (backupMsg) backupMsg.textContent = "🧨 Reset durchgeführt.";
+      renderAll?.();
+      renderProfile();
+    };
+  }
 }
 
 </script>
