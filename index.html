@@ -1100,6 +1100,17 @@ label span,
   box-shadow: 0 0 4px rgba(56,189,248,0.25);
 }
 
+.flag-img.inline{
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.airport-code{
+  font-weight: 600;
+}
+
 .leaflet-container { border-radius: 12px; }
 
 .airport-dot{
@@ -1790,6 +1801,24 @@ const AIRLINE_LOGOS = {
   // hier kannst du beliebig erweitern
 };
 
+function getHomeAirportIata(){
+  try {
+    const raw = localStorage.getItem("flugmeilen_profile_v1");
+    if (!raw) return "";
+    const p = JSON.parse(raw);
+
+    // dein Feld heißt sehr wahrscheinlich genau so:
+    const v = p["homeIata"] || p.homeAirport || p.homeAirportIata || "";
+    const s = String(v).trim();
+
+    // IATA extrahieren (falls jemand "Zürich (ZRH)" gespeichert hat)
+    const m = s.match(/([A-Za-z]{3})/);
+    return m ? m[1].toUpperCase() : "";
+  } catch (e) {
+    return "";
+  }
+}
+
 function logAllAirlinesFromData() {
   const flights = loadFlights();
   const set = new Set(
@@ -1986,6 +2015,24 @@ function renderAirportWithFlag(iata) {
     ${flag}
     <span class="airport-name">${a.city} (${iata})</span>
   `;
+}
+function flagImgHtml(iso2){
+  const cc = (iso2 || "").toLowerCase();
+  if (!cc || cc.length !== 2) return "";
+  return `<img class="flag-img inline" src="https://flagcdn.com/w20/${cc}.png" alt="">`;
+}
+
+function airportCodeWithFlag(iata){
+  const a = AIRPORTS[iata];
+  if (!a) return iata;
+  const iso2 = (a.country || "").toLowerCase();
+  const flag = iso2 ? `<img class="flag-img inline" src="https://flagcdn.com/w20/${iso2}.png" alt="">` : "";
+  return `${flag}<span class="airport-code">${iata}</span>`;
+}
+
+function airportCityLabel(iata){
+  const a = AIRPORTS[iata];
+  return a ? (a.city || iata) : iata;
 }
 
 function computeCountryCounts(flights) {
@@ -2789,14 +2836,36 @@ function renderDashboardTiles() {
     const airlineCounts = countOccurrences(flights, f => (f.airline||"").trim() || null);
     const topAirline = sortedEntries(airlineCounts)[0] || null;
 
-    const movement = {};
-    flights.forEach(f=>{
-      if (f.from) movement[f.from] = (movement[f.from]||0)+1;
-      if (f.to)   movement[f.to]   = (movement[f.to]||0)+1;
-    });
-    const visits = {};
-    Object.entries(movement).forEach(([k,v])=>visits[k]=Math.ceil(v/2));
-    const topAirport = Object.entries(visits).sort((a,b)=>b[1]-a[1])[0] || null;
+// Airport visits (hin+rück = 1 Besuch)
+const movement = {};
+flights.forEach(f=>{
+  const from = String(f.from || "").trim().toUpperCase();
+  const to   = String(f.to   || "").trim().toUpperCase();
+  if (from) movement[from] = (movement[from] || 0) + 1;
+  if (to)   movement[to]   = (movement[to]   || 0) + 1;
+});
+
+const visits = {};
+Object.entries(movement).forEach(([k,v])=>{
+  visits[k] = Math.ceil(v / 2);
+});
+
+const homeAirport = getHomeAirportIata();
+
+// Debug (einmal checken)
+console.log("Home airport:", homeAirport);
+console.log("Top 5 visits (raw):", Object.entries(visits).sort((a,b)=>b[1]-a[1]).slice(0,5));
+
+// Top Airport OHNE Home Airport
+const topAirport = Object.entries(visits)
+  .filter(([iata]) => {
+  const code = String(iata || "").trim().toUpperCase();
+  return code && code !== homeAirport;
+})
+
+  .sort((a,b)=>b[1]-a[1])[0] || null;
+
+console.log("Top airport (filtered):", topAirport);
 
     const airportCity = (code) => AIRPORTS?.[code]?.city || "";
     const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
@@ -2839,43 +2908,39 @@ function renderDashboardTiles() {
 
       <div class="stat-card tile">
         <div class="stat-label">🏔 Längster Flug</div>
-        <div class="stat-value">${longest ? `${longest.from} → ${longest.to}` : "–"}</div>
-        <div class="stat-note">${longest ? `${airportLabel(longest.from)} → ${airportLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
+        <div class="stat-value">${longest  ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
+		<div class="stat-note"> ${longest  ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
       </div>
 
       <div class="stat-card tile">
         <div class="stat-label">🧊 Kürzester Flug</div>
-        <div class="stat-value">${shortest ? `${shortest.from} → ${shortest.to}` : "–"}</div>
-        <div class="stat-note">${shortest ? `${airportLabel(shortest.from)} → ${airportLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
+        <div class="stat-value">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
+        <div class="stat-note">${shortest  ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
       </div>
 
       <div class="stat-card tile">
         <div class="stat-label">🔁 Häufigste Route</div>
-        <div class="stat-value">${topRoute ? topRoute[0] : "–"}</div>
-        <div class="stat-note">${
-          topRoute
-            ? (() => {
-                const p = parseRouteKey(topRoute[0]);
-                return `${airportLabel(p.from)} → ${airportLabel(p.to)} · ${topRoute[1]}×`;
-              })()
-            : ""
-        }</div>
+        <div class="stat-value">${topRoute  ? (() => {
+        const [from,to] = topRoute[0].split("→").map(s=>s.trim());
+        return `${airportCodeWithFlag(from)} → ${airportCodeWithFlag(to)}`;
+      })()    : "–"}</div>
+       <div class="stat-note">${topRoute  ? (() => {
+        const [from,to] = topRoute[0].split("→").map(s=>s.trim());
+        return `${airportCityLabel(from)} → ${airportCityLabel(to)} · ${topRoute[1]}×`;
+      })()  : ""}</div>
       </div>
 
       <div class="stat-card tile">
         <div class="stat-label">🏆 Top Airline</div>
-        <div class="stat-value">${
-          topAirline
-            ? `${(typeof renderAirlineLogo==="function") ? renderAirlineLogo(topAirline[0]) : ""} <span style="margin-left:8px">${topAirline[0]}</span>`
-            : "–"
-        }</div>
+        <div class="stat-value">${ topAirline ? `${(typeof renderAirlineLogo==="function") ? renderAirlineLogo(topAirline[0]) : ""} <span style="margin-left:8px">${topAirline[0]}</span>` : "–"}</div>
         <div class="stat-note">${topAirline ? `${topAirline[1]}×` : ""}</div>
       </div>
 
       <div class="stat-card tile">
         <div class="stat-label">🛬 Top Airport</div>
-        <div class="stat-value">${topAirport ? airportLabel(topAirport[0]) : "–"}</div>
-        <div class="stat-note">${topAirport ? `${topAirport[1]} Besuche` : ""}</div>
+        <div class="stat-value">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
+        <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
+
       </div>
 
       <div class="stat-card tile tile-full">
