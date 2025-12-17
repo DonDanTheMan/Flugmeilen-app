@@ -1282,9 +1282,6 @@ label span,
   .dash-tiles .tile{ grid-column: span 6; }      /* 2 pro Reihe */
   .dash-tiles .tile-wide{ grid-column: 1 / -1; }/* wide wird full */
 }
-@media (max-width: 520px){
-  .dash-tiles .tile{ grid-column: 1 / -1; }     /* 1 pro Reihe */
-}
 
 /* Quick action chips */
 .dash-actions{
@@ -1328,6 +1325,47 @@ label span,
 }
 .dash-bar:hover{ filter: brightness(1.15); }
 .dash-bar-label{ text-align:center; font-size:.68rem; color:#9ca3af; margin-top:.35rem; }
+
+/* Default (Web/Desktop): wie bisher – 1-Spalte bzw. deine aktuelle Breite */
+.dash-tiles{
+  display: grid;
+  gap: .6rem;
+  grid-template-columns: 1fr;
+}
+/* Mobile allgemein: 2 Spalten */
+@media (max-width: 520px){
+  .dash-tiles{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+  }
+
+  /* Kacheln kompakter machen */
+  .dash-tiles .stat-card{
+    padding: .55rem .6rem;
+    border-radius: .9rem;
+  }
+  .dash-tiles .stat-label{
+    font-size: .68rem;
+    letter-spacing: .06em;
+  }
+  .dash-tiles .stat-value{
+    font-size: 1.05rem;
+  }
+  .dash-tiles .stat-note{
+    font-size: .68rem;
+    line-height: 1.2;
+  }
+}
+
+/* Sehr kleine Geräte: 3 Spalten (optional) */
+@media (max-width: 380px){
+  .dash-tiles{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dash-tiles .stat-value{
+    font-size: .95rem;
+  }
+}
 
   </style>
 </head>
