@@ -1310,18 +1310,81 @@ label span,
   display:flex;
   align-items:flex-end;
   gap:.35rem;
-  height: 74px;
-  margin-top:.35rem;
+  margin-top:.6rem;
+  padding-top:.25rem;
+  min-height: 110px;   /* statt fixer height */
 }
+
+.dash-bars > div{
+  flex: 1;
+  min-width: 0;
+}
+
 .dash-bar{
-  flex:1;
-  min-width: 8px;
+  width: 100%;
+  min-height: 8px;
   border-radius: 10px 10px 6px 6px;
   background: rgba(56,189,248,0.35);
   border: 1px solid rgba(56,189,248,0.25);
 }
+
 .dash-bar:hover{ filter: brightness(1.15); }
-.dash-bar-label{ text-align:center; font-size:.68rem; color:#9ca3af; margin-top:.35rem; }
+
+.dash-bar-label{
+  text-align:center;
+  font-size:.68rem;
+  color:#9ca3af;
+  margin-top:.25rem;
+}
+
+/* Mobile etwas kompakter */
+@media (max-width: 520px){
+  .dash-bars{ min-height: 90px; }
+  .dash-bar-label{ font-size: .62rem; }
+}
+
+.dash-bar-wrap{
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.dash-bar::after{
+  content: attr(data-km);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15,23,42,0.95);
+  color: #e5e7eb;
+  font-size: .65rem;
+  padding: .18rem .4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.dash-bar::before{
+  content:"";
+  position:absolute;
+  bottom: calc(100% - 2px);
+  left:50%;
+  transform: translateX(-50%);
+  border:5px solid transparent;
+  border-top-color: rgba(15,23,42,0.95);
+  opacity:0;
+  transition: opacity .15s ease;
+}
+
+.dash-bar:hover::after,
+.dash-bar:hover::before,
+.dash-bar.show-tooltip::after,
+.dash-bar.show-tooltip::before{
+  opacity:1;
+  transform: translateX(-50%) translateY(-4px);
+}
 
 @media (max-width: 520px){
   .dash-tiles{
@@ -2855,7 +2918,13 @@ function renderDashboardTiles() {
             const px = Math.max(6, Math.round(h*0.72));
             return `
               <div style="flex:1;">
-                <div class="dash-bar" title="${i+1}: ${Math.round(km)} km" style="height:${px}px;"></div>
+                <div class="dash-bar-wrap">
+  <div class="dash-bar"
+       data-km="${Math.round(km)} km"
+       style="height:${px}px;">
+  </div>
+</div>
+
                 <div class="dash-bar-label">${String(i+1).padStart(2,"0")}</div>
               </div>
             `;
@@ -3507,6 +3576,17 @@ function wireProfileLogoTooltips(){
 
   // Start
 	showPage("dashboardPage");
+});
+
+document.addEventListener("pointerup", (e) => {
+  const bar = e.target.closest(".dash-bar");
+  if (!bar) return;
+
+  // andere schließen
+  document.querySelectorAll(".dash-bar.show-tooltip")
+    .forEach(b => b !== bar && b.classList.remove("show-tooltip"));
+
+  bar.classList.toggle("show-tooltip");
 });
 
   // Klick-Handler für Bottom-Navigation
