@@ -1257,30 +1257,27 @@ label span,
 }
 
 .dash-tiles{
-  display:grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap:.5rem;
-  margin-top:.6rem;
+  display: grid;
+  grid-template-columns: 1fr; /* Desktop */
+  gap: .65rem;
 }
 
-/* Standard: 3 Kacheln pro Reihe auf Desktop (12/4) */
-.dash-tiles .tile{
-  grid-column: span 4;
+@media (min-width: 900px){
+  .dash-tiles{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .65rem;
+  }
 }
 
-/* Breite Kacheln (z.B. Feed / Chart) */
-.dash-tiles .tile-wide{
-  grid-column: span 8;
+.dash-tiles{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
 }
 
 /* Volle Breite (wenn nötig) */
 .dash-tiles .tile-full{
   grid-column: 1 / -1;
-}
-
-@media (max-width: 900px){
-  .dash-tiles .tile{ grid-column: span 6; }      /* 2 pro Reihe */
-  .dash-tiles .tile-wide{ grid-column: 1 / -1; }/* wide wird full */
 }
 
 /* Quick action chips */
@@ -1326,44 +1323,31 @@ label span,
 .dash-bar:hover{ filter: brightness(1.15); }
 .dash-bar-label{ text-align:center; font-size:.68rem; color:#9ca3af; margin-top:.35rem; }
 
-/* Default (Web/Desktop): wie bisher – 1-Spalte bzw. deine aktuelle Breite */
-.dash-tiles{
-  display: grid;
-  gap: .6rem;
-  grid-template-columns: 1fr;
-}
-/* Mobile allgemein: 2 Spalten */
 @media (max-width: 520px){
   .dash-tiles{
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .5rem;
   }
 
-  /* Kacheln kompakter machen */
+  /* kompaktere Kacheln */
   .dash-tiles .stat-card{
     padding: .55rem .6rem;
     border-radius: .9rem;
   }
+
   .dash-tiles .stat-label{
     font-size: .68rem;
     letter-spacing: .06em;
   }
+
   .dash-tiles .stat-value{
     font-size: 1.05rem;
+    line-height: 1.15;
   }
+
   .dash-tiles .stat-note{
     font-size: .68rem;
     line-height: 1.2;
-  }
-}
-
-/* Sehr kleine Geräte: 3 Spalten (optional) */
-@media (max-width: 380px){
-  .dash-tiles{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .dash-tiles .stat-value{
-    font-size: .95rem;
   }
 }
 
@@ -2831,7 +2815,7 @@ function renderDashboardTiles() {
         <div class="stat-note">${topAirport ? `${topAirport[1]} Besuche` : ""}</div>
       </div>
 
-      <div class="stat-card tile tile-wide">
+      <div class="stat-card tile tile-full">
         <div class="stat-label">⚡ Quick Actions</div>
         <div class="dash-actions">
           <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
@@ -2843,7 +2827,7 @@ function renderDashboardTiles() {
         <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
       </div>
 
-      <div class="stat-card tile tile-wide">
+      <div class="stat-card tile tile-full">
         <div class="stat-label">🧾 Zuletzt geflogen</div>
         <div class="dash-recent">
           ${recent.map(f=>{
