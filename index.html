@@ -1477,7 +1477,7 @@ label span,
       <div>
         <label for="tripType">Privat / Gesch&auml;ft</label>
         <select id="tripType">
-          <option value="p">Privat (🏝)</option>
+          <option value="p">Privat (🌴)</option>
           <option value="g">Gesch&auml;ft (💼)</option>
         </select>
       </div>
@@ -2792,7 +2792,7 @@ function renderDashboardTiles() {
     const flights = tripFilter ? scoped.filter(f => f.tripType === tripFilter) : scoped;
 
     const scopeLabel = year ? `Jahr ${year}` : "Alle Jahre";
-    const typeLabel  = tripFilter ? (tripFilter === "g" ? "💼 Geschäft" : "🏝 Privat") : "";
+    const typeLabel  = tripFilter ? (tripFilter === "g" ? "💼 Geschäft" : "🌴 Privat") : "";
 
     // Empty State (wichtig: sonst wirkt’s "leer")
     if (!flights.length) {
@@ -2937,7 +2937,7 @@ console.log("Top airport (filtered):", topAirport);
       </div>
 
       <div class="stat-card tile">
-        <div class="stat-label">🛬 Top Airport</div>
+        <div class="stat-label">🛬 Top Airport (ohne Homebase (ZRH))</div>
         <div class="stat-value">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
         <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
 
@@ -2948,7 +2948,7 @@ console.log("Top airport (filtered):", topAirport);
         <div class="dash-actions">
           <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashThisYear">📅 ${yearNow}</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🏝 Privat</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🌴 Privat</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
         </div>
@@ -2960,7 +2960,7 @@ console.log("Top airport (filtered):", topAirport);
         <div class="dash-recent">
           ${recent.map(f=>{
             const logo = (typeof renderAirlineLogo==="function") ? renderAirlineLogo((f.airline||"").trim()) : "";
-            const typ = f.tripType==="g" ? "💼" : "🏝";
+            const typ = f.tripType==="g" ? "💼" : "🌴";
             return `
               <div class="recent-card">
                 <div class="recent-top">
@@ -3384,7 +3384,7 @@ wireRankTogglesAndSearch();
       const tripLabel = f.tripType === "g"
         ? "<span class=\"trip-badge trip-geschaeft\"><span class=\"icon\">💼</span>Gesch&auml;ft</span>"
         : f.tripType === "p"
-          ? "<span class=\"trip-badge trip-privat\"><span class=\"icon\">🏝</span>Privat</span>"
+          ? "<span class=\"trip-badge trip-privat\"><span class=\"icon\">🌴</span>Privat</span>"
           : "<span class=\"trip-badge\">–</span>";
       const tr = document.createElement("tr");
       tr.innerHTML =
