@@ -1567,6 +1567,50 @@ label span,
   transform: translateY(0);
 }
 
+/* === APP TOPBAR (minimal, basiert auf deinem <header>) === */
+header{
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+
+  /* Look bleibt wie bei dir – nur stabilisiert */
+  background: rgba(15,23,42,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148,163,184,0.18);
+
+  /* Höhe vereinheitlichen */
+  min-height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 10px;
+
+  /* dein Layout: links Titel, rechts controls */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Rechts (Dropdown+Button) sauber ausrichten */
+header > .flex-row{
+  align-items: center;
+  gap: .5rem;
+  min-height: 34px; /* hält die Zeile stabil */
+}
+
+/* Mobile: etwas kompakter */
+@media (max-width: 520px){
+  header{
+    min-height: 52px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+  }
+}
+
+/* Wenn auf einer Seite kein Jahr-Filter gebraucht wird:
+   unsichtbar, aber Platz bleibt -> Header bleibt gleich hoch */
+body.no-year header > .flex-row{
+  visibility: hidden;
+  pointer-events: none;
+}
+
   </style>
 </head>
 <body>
@@ -2809,15 +2853,6 @@ function wireDashBarTooltips(){
     document.body.appendChild(tip);
   }
 
-  function getTipText(bar){
-    return (
-      bar.getAttribute("data-tip") ||
-      bar.getAttribute("data-km") ||
-      bar.getAttribute("title") ||
-      ""
-    );
-  }
-
   function showAt(x, y, text){
     if (!text) return;
     tip.textContent = text;
@@ -3508,7 +3543,7 @@ function renderMonthBarsForStats(){
   if (noteEl){
     noteEl.textContent = year
       ? `Jahr ${year}`
-      : `Alle Jahre · Anzeige: ${barsYear}`;
+      : `Wenn "Alle Jahre" gewählt ist, wird das letzte Jahr angezeigt ➡️ ${barsYear}`;
   }
 
   // Buckets
