@@ -1388,11 +1388,20 @@ label span,
 }
 
 .dash-bar{
-  width: 100%;
-  min-height: 8px;
+  position: relative;   /* <-- hinzufügen */
+  flex:1;
+  min-width: 8px;
   border-radius: 10px 10px 6px 6px;
   background: rgba(56,189,248,0.35);
   border: 1px solid rgba(56,189,248,0.25);
+
+  /* NEU */
+  transition: height .28s ease, filter .15s ease, transform .18s ease;
+  transform-origin: bottom;
+}
+
+.dash-bars.animating .dash-bar{
+  transform: translateY(-1px);
 }
 
 .dash-bar:hover{ filter: brightness(1.15); }
@@ -1417,7 +1426,7 @@ label span,
 }
 
 .dash-bar::after{
-  content: attr(data-km);
+  content: attr(data-tip);
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -1447,8 +1456,8 @@ label span,
 
 .dash-bar:hover::after,
 .dash-bar:hover::before,
-.dash-bar.show-tooltip::after,
-.dash-bar.show-tooltip::before{
+.dash-bar.show-tip::after,
+.dash-bar.show-tip::before{
   opacity:1;
   transform: translateX(-50%) translateY(-4px);
 }
@@ -1535,6 +1544,27 @@ label span,
   max-width: 80px;
   object-fit: contain;
   vertical-align: middle;
+}
+
+.mb-tooltip{
+  position: fixed;
+  z-index: 9999;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.92);
+  border: 1px solid rgba(56,189,248,0.35);
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .12s ease, transform .12s ease;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+.mb-tooltip.show{
+  opacity: 1;
+  transform: translateY(0);
 }
 
   </style>
@@ -2771,17 +2801,64 @@ function wireDashBarTooltips(){
   if (document.body.dataset.dashbarTipsWired === "1") return;
   document.body.dataset.dashbarTipsWired = "1";
 
+  // Tooltip-Element einmal anlegen
+  let tip = document.querySelector(".mb-tooltip");
+  if (!tip){
+    tip = document.createElement("div");
+    tip.className = "mb-tooltip";
+    document.body.appendChild(tip);
+  }
+
+  function getTipText(bar){
+    return (
+      bar.getAttribute("data-tip") ||
+      bar.getAttribute("data-km") ||
+      bar.getAttribute("title") ||
+      ""
+    );
+  }
+
+  function showAt(x, y, text){
+    if (!text) return;
+    tip.textContent = text;
+    tip.classList.add("show");
+    tip.style.left = (x + 12) + "px";
+    tip.style.top  = (y + 14) + "px";
+  }
+
+  function hide(){
+    tip.classList.remove("show");
+  }
+
+  // Hover/Move (Desktop)
+  document.addEventListener("pointermove", (e) => {
+    const bar = e.target.closest(".dash-bar");
+    if (!bar) { hide(); return; }
+    showAt(e.clientX, e.clientY, getTipText(bar));
+  });
+
+  document.addEventListener("pointerleave", (e) => {
+    if (e.target.closest && e.target.closest(".dash-bar")) hide();
+  }, true);
+
+  // Tap/Click (Mobile / PWA)
   document.addEventListener("pointerup", (e) => {
     const bar = e.target.closest(".dash-bar");
-    if (!bar) return;
+    if (!bar) { hide(); return; }
 
-    // toggle class (CSS Tooltip)
+    // optional: visuelles togglen (falls du später CSS-Effekte willst)
     document.querySelectorAll(".dash-bar.show-tip").forEach(b => {
       if (b !== bar) b.classList.remove("show-tip");
     });
     bar.classList.toggle("show-tip");
+
+    showAt(e.clientX, e.clientY, getTipText(bar));
+
+    clearTimeout(document.body._mbHideTimer);
+    document.body._mbHideTimer = setTimeout(hide, 1800);
   });
 }
+
 
 function renderDashboardDetails(flights) {
   const totalKmEl        = document.getElementById("dashTotalKm");
@@ -3392,31 +3469,52 @@ function renderDashboardLogbook(flights) {
   logEl.innerHTML = html;
 }
 
-function renderMonthBarsForStats(flightsYear, year){
+function renderMonthBarsForStats(){
   const wrap = document.getElementById("statsMonthBars");
   const noteEl = document.getElementById("statsMonthBarsNote");
   if (!wrap) return;
 
-  const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+  const months = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
   // Modus: "km" | "flights" | "hours"
   let mode = localStorage.getItem("stats_monthbars_mode") || "km";
   if (!["km","flights","hours"].includes(mode)) mode = "km";
 
-  // Bei "Alle Jahre": wir zeigen das aktuelle Jahr (wie bisher)
-  const yearNow = new Date().getFullYear();
-  const barsYear = year ? year : yearNow;
+  // Aktuelles Jahr aus UI (immer frisch holen!)
+  const year = (typeof getSelectedYear === "function") ? getSelectedYear() : null;
 
+  // Flüge frisch laden
+  const flightsAll = loadFlights() || [];
+
+  // bestes Jahr bestimmen, falls "Alle Jahre"
+  function pickBestYear(flights){
+    const years = flights
+      .map(f => {
+        const d = new Date(f.date);
+        return isNaN(d) ? null : d.getFullYear();
+      })
+      .filter(y => y && Number.isFinite(y));
+
+    if (!years.length) return new Date().getFullYear();
+
+    const now = new Date().getFullYear();
+    if (years.includes(now)) return now;
+    return Math.max(...years); // letztes Jahr mit Flügen
+  }
+
+  const barsYear = year ? year : pickBestYear(flightsAll);
+
+  // Note / Titel
   if (noteEl){
     noteEl.textContent = year
       ? `Jahr ${year}`
-      : `${barsYear} (bei „Alle Jahre“ zeigen wir das aktuelle Jahr)`;
+      : `Alle Jahre · Anzeige: ${barsYear}`;
   }
 
   // Buckets
-  const buckets = Array.from({length:12}, ()=>0);
+  const buckets = Array.from({length:12}, () => 0);
 
-  (flightsYear || []).forEach(f=>{
+  flightsAll.forEach(f => {
     const d = new Date(f.date);
     if (isNaN(d) || d.getFullYear() !== barsYear) return;
 
@@ -3428,28 +3526,25 @@ function renderMonthBarsForStats(flightsYear, year){
 
   const max = Math.max(...buckets, 1);
 
-  // Format + Label pro Mode
   const fmt = (val) => {
     if (mode === "km") return `${Math.round(val).toLocaleString()} km`;
     if (mode === "hours") return `${formatHours(val)}`;
     return `${Math.round(val)} Flüge`;
   };
 
-  // Render Bars
+  // Render
   wrap.innerHTML = `
     <div class="dash-bars">
-      ${buckets.map((v,i)=>{
-        const h = Math.round((v/max)*100);
-        const px = Math.max(6, Math.round(h*0.72));
+      ${buckets.map((v,i) => {
+        const h = Math.round((v/max) * 100);
+        const px = Math.max(6, Math.round(h * 0.72));
         const tip = `${months[i]} · ${fmt(v)}`;
         return `
           <div style="flex:1;">
             <div class="dash-bar-wrap">
               <div class="dash-bar"
                    data-tip="${tip}"
-                   title="${tip}"
-                   style="height:${px}px;">
-              </div>
+                   style="height:${px}px;"></div>
             </div>
             <div class="dash-bar-label">${months[i]}</div>
           </div>
@@ -3458,38 +3553,35 @@ function renderMonthBarsForStats(flightsYear, year){
     </div>
   `;
 
-  // Buttons aktiv markieren + wiring
+  // Buttons aktiv markieren
   const bKm = document.getElementById("mbModeKm");
   const bFl = document.getElementById("mbModeFlights");
   const bHr = document.getElementById("mbModeHours");
 
-  function setActive(){
-    [bKm,bFl,bHr].forEach(b => b?.classList.remove("nav-active"));
-    if (mode === "km") bKm?.classList.add("nav-active");
-    else if (mode === "flights") bFl?.classList.add("nav-active");
-    else bHr?.classList.add("nav-active");
-  }
-  setActive();
+  [bKm,bFl,bHr].forEach(b => b?.classList.remove("nav-active"));
+  if (mode === "km") bKm?.classList.add("nav-active");
+  else if (mode === "flights") bFl?.classList.add("nav-active");
+  else bHr?.classList.add("nav-active");
 
-  // Nur einmal binden
+  // Nur einmal binden (und immer neu rendern)
   if (!wrap.dataset.modeWired){
     wrap.dataset.modeWired = "1";
 
     bKm?.addEventListener("click", () => {
       localStorage.setItem("stats_monthbars_mode","km");
-      renderMonthBarsForStats(flightsYear, year);
+      renderMonthBarsForStats();
     });
     bFl?.addEventListener("click", () => {
       localStorage.setItem("stats_monthbars_mode","flights");
-      renderMonthBarsForStats(flightsYear, year);
+      renderMonthBarsForStats();
     });
     bHr?.addEventListener("click", () => {
       localStorage.setItem("stats_monthbars_mode","hours");
-      renderMonthBarsForStats(flightsYear, year);
+      renderMonthBarsForStats();
     });
   }
 
-  // Mobile Tap-Tooltip
+  // Tooltip wiring (global 1x)
   wireDashBarTooltips?.();
 }
 
@@ -3625,8 +3717,9 @@ wireRankTogglesAndSearch();
   document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
   document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
 
-  renderMonthBarsForStats(flightsYear, year);
+  renderMonthBarsForStats();
   setTimeout(()=>renderMap(flightsYear),100);
+
 }
 
   // ----- Rendering Hauptseite -----
