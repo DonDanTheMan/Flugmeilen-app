@@ -1154,7 +1154,7 @@ label span,
   gap: .35rem;
 }
 
-.logo-tile img {
+#profilePage .logo-tile img {
   width: 100%;
   max-width: 110px;
   height: 44px;
@@ -1176,6 +1176,14 @@ label span,
 .logo-tile .airline-meta {
   font-size: .7rem;
   color: #9ca3af;
+}
+
+.airline-logo{
+  height: 30px;
+  max-width: 100px;
+  width: auto;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .logo-tile .logo-status {
@@ -1425,6 +1433,23 @@ label span,
   }
 }
 
+.card-collapsible .card-body {
+  margin-top: .5rem;
+}
+
+.card-collapsible.collapsed .card-body{
+  display:none;
+}
+
+.card-collapsible .collapse-btn .icon{
+  display:inline-block;
+  transition: transform .15s ease;
+}
+
+.card-collapsible.collapsed .collapse-btn .icon{
+  transform: rotate(-90deg);
+}
+
   </style>
 </head>
 <body>
@@ -1658,6 +1683,29 @@ label span,
     </div>
     <div id="flightsImportError" class="error"></div>
   </section>
+  
+    <section class="card">
+    <h2><span class="icon">💾</span> Backup</h2>
+    <div class="muted">Exportiert/Importiert deine Flüge & Airports (localStorage).</div>
+
+    <div class="flex-row" style="margin-top:.6rem;">
+      <button id="exportBtn" class="btn btn-secondary btn-sm" type="button">
+        <span class="icon">⬇️</span> Export JSON
+      </button>
+
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+        <span class="icon">⬆️</span> Import JSON
+        <input id="importFile" type="file" accept="application/json" style="display:none;">
+      </label>
+
+      <button id="resetDataBtn" class="btn btn-secondary btn-sm" type="button">
+        <span class="icon">🧨</span> Reset (alles)
+      </button>
+    </div>
+
+    <div id="backupMsg" class="muted" style="margin-top:.4rem;"></div>
+  </section>
+  
 </main>
 
 <main id="profilePage" style="display:none;">
@@ -1695,48 +1743,51 @@ label span,
     <div id="profileSavedNote" class="muted" style="margin-top:.4rem;"></div>
   </section>
 
-  <section class="card">
-    <div class="toolbar">
-      <div>
-        <h2 style="margin:0;"><span class="icon">🖼</span> Airline-Logos</h2>
-        <div class="muted">Aus deinen gespeicherten Flügen automatisch erkannt.</div>
-      </div>
-
-      <div class="flex-row">
-        <span id="profileLogoStats" class="badge">–</span>
-        <button id="toggleMissingBtn" class="btn btn-secondary btn-sm" type="button">
-          <span class="icon">🕵️</span> Nur fehlende
-        </button>
-      </div>
+  <section class="card card-collapsible" id="airlineLogoCard">
+  <div class="toolbar">
+    <div>
+      <h2 style="margin:0;"><span class="icon">✈️</span> Airline-Logos</h2>
+      <div class="muted">Aus deinen gespeicherten Flügen automatisch erkannt.</div>
     </div>
+
+    <div class="flex-row">
+      <span id="profileLogoStats" class="badge">–</span>
+
+      <!-- ➕ Neues Logo hinzufügen -->
+      <button id="addLogoBtn" class="btn btn-secondary btn-sm" type="button" title="Neues Logo hinzufügen">
+        <span class="icon">➕</span> Logo
+      </button>
+      <input id="addLogoFile" type="file" accept="image/*" style="display:none;">
+
+      <!-- Nur fehlende -->
+      <button id="toggleMissingBtn" class="btn btn-secondary btn-sm" type="button">
+        <span class="icon">🕵️</span> Nur fehlende
+      </button>
+
+      <!-- ⬇️ Card ein-/ausklappen -->
+      <button id="toggleLogoCardBtn" class="btn btn-secondary btn-sm collapse-btn" type="button" aria-label="Ein-/Ausklappen" title="Ein-/Ausklappen">
+        <span class="icon">▾</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alles was klappbar sein soll kommt in den Body -->
+  <div class="card-body" id="airlineLogoCardBody">
+    <div class="rank-search" style="margin-top:.5rem;">
+      <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
+    </div>
+
+    <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
+  </div>
+
+  <!-- Hidden Input für "Ersetzen" per Doppelklick -->
+  <input id="replaceLogoFile" type="file" accept="image/*" style="display:none;">
 
     <div class="rank-search" style="margin-top:.5rem;">
       <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
     </div>
 
     <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
-  </section>
-
-  <section class="card">
-    <h2><span class="icon">💾</span> Backup</h2>
-    <div class="muted">Exportiert/Importiert deine Flüge & Airports (localStorage).</div>
-
-    <div class="flex-row" style="margin-top:.6rem;">
-      <button id="exportBtn" class="btn btn-secondary btn-sm" type="button">
-        <span class="icon">⬇️</span> Export JSON
-      </button>
-
-      <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
-        <span class="icon">⬆️</span> Import JSON
-        <input id="importFile" type="file" accept="application/json" style="display:none;">
-      </label>
-
-      <button id="resetDataBtn" class="btn btn-secondary btn-sm" type="button">
-        <span class="icon">🧨</span> Reset (alles)
-      </button>
-    </div>
-
-    <div id="backupMsg" class="muted" style="margin-top:.4rem;"></div>
   </section>
 
 </main>
@@ -3356,25 +3407,6 @@ wireRankTogglesAndSearch();
 
   // ----- Rendering Hauptseite -----
 
-  // Airline-Logo oder Text anzeigen
-  function renderAirlineLogo(name) {
-    if (!name) return "–";
-    const raw = name.trim();
-    if (!raw) return "–";
-
-    const key = raw.toUpperCase();          // wir matchen gegen GROSSSCHRIFT
-    const url = AIRLINE_LOGOS[key];
-
-    // kein Logo hinterlegt? -> Text anzeigen
-    if (!url) {
-      return raw;
-    }
-
-    // Logo mit Tooltip
-    return `<img src="${url}" alt="${raw}" title="${raw}"
-                style="height:20px; max-width:70px; object-fit:contain; vertical-align:middle;">`;
-  }
-
   function renderFlightsTable(visibleFlights) {
     const tbody = document.getElementById("flightTableBody");
     tbody.innerHTML = "";
@@ -3404,9 +3436,9 @@ wireRankTogglesAndSearch();
 
       tbody.appendChild(tr);
     });
-    tbody.querySelectorAll("button[data-delete-id]").forEach(btn => {
+    tbody.querySelectorAll("button[data-id]").forEach(btn => {
       btn.addEventListener("click", () => {
-        deleteFlight(btn.getAttribute("data-delete-id"));
+        deleteFlight(btn.getAttribute("data-id"));
       });
     });
     tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
@@ -3477,7 +3509,7 @@ if (empty) {
     statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
     statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
     statPgEl.innerHTML = totalFlights
-      ? totalFlights+" (🏝 "+priv+" / 💼 "+gesch+")"
+      ? totalFlights+" (🌴 "+priv+" / 💼 "+gesch+")"
       : "–";
     statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
     statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
@@ -3532,7 +3564,7 @@ if (empty) {
     statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
     statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
     statPgEl.innerHTML = totalFlights
-      ? totalFlights+" (🏝 "+priv+" / 💼 "+gesch+")"
+      ? totalFlights+" (🌴 "+priv+" / 💼 "+gesch+")"
       : "–";
     statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
     statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
@@ -3561,23 +3593,22 @@ if (empty) {
   }
 
 function wireProfileLogoTooltips(){
-  const container =
-    document.getElementById("profileAirlineList") ||
-    document.getElementById("profileAirlineLogos");
-
+  const container = document.getElementById("profileAirlineList");
   if (!container) return;
 
   if (container.dataset.tooltipWired === "1") return;
   container.dataset.tooltipWired = "1";
 
+  // Tap/click toggelt tooltip (Mobile)
   container.addEventListener("pointerup", (e) => {
     const tile = e.target.closest(".logo-tile");
     if (!tile || !container.contains(tile)) return;
 
+    // nur toggeln, wenn NICHT gerade ein doubleclick-Replace kommt
+    // (dblclick wird separat behandelt)
     container.querySelectorAll(".logo-tile.show-tooltip").forEach(t => {
       if (t !== tile) t.classList.remove("show-tooltip");
     });
-
     tile.classList.toggle("show-tooltip");
   });
 }
@@ -3732,24 +3763,72 @@ function getAllAirlinesFromFlights(flights){
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
 
+const STORAGE_KEY_LOGO_OVERRIDES = "flugmeilen_airline_logo_overrides_v1";
+
+function loadLogoOverrides(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LOGO_OVERRIDES);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveLogoOverrides(obj){
+  localStorage.setItem(STORAGE_KEY_LOGO_OVERRIDES, JSON.stringify(obj || {}));
+}
+
+function setLogoOverride(airlineName, dataUrl){
+  const key = String(airlineName || "").trim().toUpperCase();
+  if (!key) return;
+  const o = loadLogoOverrides();
+  o[key] = dataUrl;
+  saveLogoOverrides(o);
+}
+
+function getLogoUrlForAirline(name){
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+
+  const key = raw.toUpperCase();
+
+  // 1) Overrides (Upload) gewinnt immer
+  const ov = loadLogoOverrides();
+  if (ov[key]) return ov[key];
+
+  // 2) Statische Datei-Mapping
+  if (typeof AIRLINE_LOGOS !== "undefined" && AIRLINE_LOGOS && AIRLINE_LOGOS[key]) {
+    return AIRLINE_LOGOS[key];
+  }
+
+  return "";
+}
+
 function hasLogoForAirline(name){
   if (!name) return false;
+  const raw = String(name).trim();
+  if (!raw) return false;
 
-  // wichtig: direkt AIRLINE_LOGOS verwenden, nicht window.AIRLINE_LOGOS
+  // Overrides zählen als "vorhanden"
+  const url = getLogoUrlForAirline(raw);
+  if (url) return true;
+
+  // fallback: normalisierte Suche im Mapping (falls du Keys gemischt hast)
   if (typeof AIRLINE_LOGOS === "undefined" || !AIRLINE_LOGOS) return false;
 
-  const key = name.trim();
-
-  // exakt / upper / lower
-  if (AIRLINE_LOGOS[key]) return true;
-  if (AIRLINE_LOGOS[key.toUpperCase()]) return true;
-  if (AIRLINE_LOGOS[key.toLowerCase()]) return true;
-
-  // normalisiert vergleichen (leerzeichen/sonderzeichen ignorieren)
-  const norm = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const norm = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
   return Object.keys(AIRLINE_LOGOS).some(k =>
     k.toLowerCase().replace(/[^a-z0-9]/g, "") === norm
   );
+}
+
+function renderAirlineLogo(name){
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+
+  const url = getLogoUrlForAirline(raw);
+  if (!url) return ""; // wichtig: KEIN Text, nur leer
+
+  const safeAlt = raw.replace(/"/g, "&quot;");
+  return `<img src="${url}" alt="${safeAlt}" title="${safeAlt}" class="airline-logo">`;
 }
 
 function renderProfile(){
@@ -3820,24 +3899,56 @@ const p = airlinePriv[a] || 0;
 const g = airlineBiz[a] || 0;
 
 return `
-  <div class="logo-tile ${ok ? "" : "missing"}" title="${a}">
+  <div class="logo-tile ${ok ? "" : "missing"}" title="${a}" data-airline="${a}">
     <div class="logo-status">${ok ? "✅" : "❌"}</div>
 
-    ${renderAirlineLogo(a) || `<div style="height:44px"></div>`}
+    ${renderAirlineLogo(a) || `<div class="airline-logo placeholder"></div>`}
 
     <div class="airline-name">${a}</div>
 
     <div class="logo-tooltip">
       <div><b>✈️ ${count}</b> Flüge</div>
-      <div class="muted">🏝 ${p} &nbsp;&nbsp; 💼 ${g}</div>
+      <div class="muted">🌴 ${p} &nbsp;&nbsp; 💼 ${g}</div>
     </div>
   </div>
 `;
+
 }).join("");
 
   }
 
   buildRows();
+
+// --- Replace per Doppelklick ---
+const replaceInput = document.getElementById("replaceLogoFile");
+let replaceTargetAirline = null;
+
+if (listEl && replaceInput){
+  listEl.ondblclick = (e) => {
+    const tile = e.target.closest(".logo-tile");
+    if (!tile) return;
+
+    replaceTargetAirline = tile.dataset.airline || "";
+    if (!replaceTargetAirline) return;
+
+    replaceInput.click();
+  };
+
+  replaceInput.onchange = () => {
+    const file = replaceInput.files && replaceInput.files[0];
+    if (!file || !replaceTargetAirline) { replaceInput.value = ""; return; }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      // als DataURL speichern (Override)
+      setLogoOverride(replaceTargetAirline, ev.target.result);
+      buildRows();               // sofort UI updaten
+      wireProfileLogoTooltips(); // Tooltip wiring bleibt
+    };
+    reader.readAsDataURL(file);
+    replaceInput.value = "";
+  };
+}
 
   const toggleBtn = document.getElementById("toggleMissingBtn");
   if (toggleBtn){
@@ -3934,6 +4045,47 @@ return `
     };
   }
    wireProfileLogoTooltips();
+  
+// --- Add new logo via toolbar button ---
+const addBtn = document.getElementById("addLogoBtn");
+const addFile = document.getElementById("addLogoFile");
+
+if (addBtn && addFile){
+  addBtn.onclick = () => addFile.click();
+
+  addFile.onchange = () => {
+    const file = addFile.files && addFile.files[0];
+    if (!file) return;
+
+    const airlineName = prompt("Für welche Airline ist dieses Logo?\n(z.B. SWISS, Lufthansa, Emirates)");
+    if (!airlineName) { addFile.value=""; return; }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setLogoOverride(airlineName, ev.target.result);
+      buildRows();
+      wireProfileLogoTooltips();
+    };
+    reader.readAsDataURL(file);
+
+    addFile.value = "";
+  };
+}
+
+const card = document.getElementById("airlineLogoCard");
+const toggleCardBtn = document.getElementById("toggleLogoCardBtn");
+
+if (card && toggleCardBtn){
+  // Zustand merken
+  const saved = localStorage.getItem("profile_logos_collapsed");
+  if (saved === "1") card.classList.add("collapsed");
+
+  toggleCardBtn.onclick = () => {
+    card.classList.toggle("collapsed");
+    localStorage.setItem("profile_logos_collapsed", card.classList.contains("collapsed") ? "1" : "0");
+  };
+}
+  
 }
 
 </script>
