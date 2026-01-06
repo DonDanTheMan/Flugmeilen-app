@@ -1086,8 +1086,56 @@ label span,
   border-color: rgba(56,189,248,0.55);
   box-shadow: 0 0 0 1px rgba(56,189,248,0.25);
 }
-#statsPage .airport-flag { font-size: 1rem; margin-right: 0.35rem; }
-#statsPage .airport-name { vertical-align: middle; }
+/* Einheitliche Typo für alle Rankings */
+#statsPage .rank-name{
+  color:#e5e7eb;
+  font-size:0.85rem;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+/* Rank Bars: EINHEITLICHE Typo */
+.rank-row .rank-name{
+  font-size: .9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #e5e7eb;
+}
+
+/* Alles, was du in rank-name reinrenderst, MUSS erben */
+.rank-row .rank-name *,
+.rank-row .rank-name .airport-name,
+.rank-row .rank-name .airline-name {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+}
+
+/* ALLES innerhalb rank-name erbt die Typo (verhindert unterschiedliche Größen) */
+#statsPage .rank-name,
+#statsPage .rank-name *{
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+}
+
+/* Falls du noch Emoji-Flags verwendest */
+#statsPage .airport-flag{
+  margin-right: 0.0rem; /* gap kommt von rank-name */
+}
+
+/* Falls du FlagCDN Images verwendest (empfohlen, weil du’s sonst auch so machst) */
+#statsPage .flag-img{
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 3px;
+  display: inline-block;
+  vertical-align: middle;
+}
 
 .flag-img {
   display: inline-block;
@@ -1433,6 +1481,32 @@ label span,
   }
 }
 
+.dash-bar-wrap{ position:relative; display:flex; align-items:flex-end; justify-content:center; }
+
+.dash-bar::after{
+  content: attr(data-tip);
+  position:absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(2,6,23,0.92);
+  border: 1px solid rgba(56,189,248,0.35);
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+.dash-bar:hover::after{ opacity: 1; transform: translateX(-50%) translateY(-2px); }
+.dash-bar.show-tip::after{ opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
+/* Für Mobile: via Klick togglen */
+.dash-bar.show-tip::after{ opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
 .card-collapsible .card-body {
   margin-top: .5rem;
 }
@@ -1450,13 +1524,25 @@ label span,
   transform: rotate(-90deg);
 }
 
+.rank-name-inline{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+}
+
+.rank-name-inline img.airline-logo{
+  height: 20px;      /* wie du willst */
+  max-width: 80px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
   </style>
 </head>
 <body>
 <header>
   <div>
-    <h1><span class="icon">🛰️</span>FLUGMEILEN</h1>
-    <small>Lokale Web-App &ndash; Daten bleiben auf dem Ger&auml;t</small>
+    <h1><span class="icon">✈️</span> DAN'S FLUGMEILEN</h1>
   </div>
   <div class="flex-row">
     <select id="yearSelect" class="badge"></select>
@@ -1574,6 +1660,23 @@ label span,
     <h2><span class="icon">📅</span>Statistik f&uuml;r gew&auml;hltes Jahr</h2>
     <div id="statsSelectedYear" class="stats-grid"></div>
   </section>
+
+  <section class="card">
+  <div class="toolbar">
+    <div>
+      <h2 style="margin:0;">📆 Pro Monat</h2>
+      <div class="muted" id="statsMonthBarsNote">–</div>
+    </div>
+
+    <div class="flex-row">
+      <button class="btn btn-secondary btn-sm" type="button" id="mbModeKm">📏 Km</button>
+      <button class="btn btn-secondary btn-sm" type="button" id="mbModeFlights">✈️ Flüge</button>
+      <button class="btn btn-secondary btn-sm" type="button" id="mbModeHours">⏰ Zeit</button>
+    </div>
+  </div>
+
+  <div id="statsMonthBars"></div>
+</section>
 
   <section class="card">
     <h2><span class="icon">🌍</span>Weltkarte aller Fl&uuml;ge (gew&auml;hltes Jahr / Filter)</h2>
@@ -2032,6 +2135,22 @@ function parseCsvAirports(text) {
   return result;
 }
 
+function iso2ToCountryName(code){
+  const c = String(code || "").trim().toUpperCase();
+  if (c.length !== 2) return c;
+
+  // bevorzugt: UI-Sprache (z.B. de-CH), fallback: Englisch
+  const locales = [navigator.language || "en", "en"];
+
+  try {
+    const dn = new Intl.DisplayNames(locales, { type: "region" });
+    return dn.of(c) || c;
+  } catch (e) {
+    // falls ein sehr alter Browser Intl.DisplayNames nicht kann
+    return c;
+  }
+}
+
 function renderFlagImg(iso2, size = 18) {
   if (!iso2 || iso2.length !== 2) return "";
   const code = iso2.toLowerCase();
@@ -2475,7 +2594,8 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const {
     withSearch = true,
     searchPlaceholder = "Suchen...",
-    renderNameHtml = (name) => name
+    renderNameHtml = (name) => name,
+    renderNameText = (name) => name   // 👈 NEU
   } = options;
 
   if (!entries || !entries.length) return "<span class='muted'>Keine Daten</span>";
@@ -2486,7 +2606,9 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const renderRows = (arr) => `
     <div class="rank-bars">
       ${arr.map(([name,count]) => `
-        <div class="rank-row" data-name="${String(name).toLowerCase()}">
+        <div class="rank-row"
+     data-name="${String(name).toLowerCase()}"
+     data-search="${String(renderNameText(name)).toLowerCase()}">
           <div>
             <div class="rank-name">${renderNameHtml(name)}</div>
             <div class="rank-bar"><div style="width:${Math.round(count/max*100)}%"></div></div>
@@ -2642,6 +2764,23 @@ function airportPopupHtml(iata, visitCounts){
       </div>
     </div>
   `;
+}
+
+function wireDashBarTooltips(){
+  // nur 1x global binden
+  if (document.body.dataset.dashbarTipsWired === "1") return;
+  document.body.dataset.dashbarTipsWired = "1";
+
+  document.addEventListener("pointerup", (e) => {
+    const bar = e.target.closest(".dash-bar");
+    if (!bar) return;
+
+    // toggle class (CSS Tooltip)
+    document.querySelectorAll(".dash-bar.show-tip").forEach(b => {
+      if (b !== bar) b.classList.remove("show-tip");
+    });
+    bar.classList.toggle("show-tip");
+  });
 }
 
 function renderDashboardDetails(flights) {
@@ -2830,7 +2969,7 @@ function renderDashboardTiles() {
 
   try {
     const flightsAll = loadFlights();
-    const year = (typeof getSelectedYear === "function") ? getSelectedYear() : null;
+    const year = null; // Dashboard immer über alle Jahre
 
     const scoped = year
       ? flightsAll.filter(f => {
@@ -2944,15 +3083,10 @@ console.log("Top airport (filtered):", topAirport);
 
     // ======= Render =======
     wrap.innerHTML = `
-      <div class="stat-card tile tile-full">
-        <div class="stat-label">🧭 Bereich</div>
-        <div class="stat-value">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
-        <div class="stat-note">Dashboard zeigt immer den aktuell gewählten Filter.</div>
-      </div>
 
       <div class="stat-card tile"><div class="stat-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
       <div class="stat-card tile"><div class="stat-label">📏 Km</div><div class="stat-value">${Math.round(totalKm).toLocaleString()}</div></div>
-      <div class="stat-card tile"><div class="stat-label">⏱ Zeit</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
+      <div class="stat-card tile"><div class="stat-label">⏰ Zeit</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
       <div class="stat-card tile"><div class="stat-label">🛬 Airports</div><div class="stat-value">${airportsSet.size}</div></div>
       <div class="stat-card tile"><div class="stat-label">🛫 Airlines</div><div class="stat-value">${airlinesSet.size}</div></div>
       <div class="stat-card tile"><div class="stat-label">🌍 Länder</div><div class="stat-value">${countriesSet.size}</div></div>
@@ -3024,29 +3158,6 @@ console.log("Top airport (filtered):", topAirport);
           }).join("")}
         </div>
       </div>
-
-      <div class="stat-card tile tile-full">
-        <div class="stat-label">📆 Km pro Monat</div>
-        <div class="stat-note">${year ? `${year}` : `${barsYear} (bei „Alle Jahre“ zeigen wir das aktuelle Jahr)`}</div>
-        <div class="dash-bars">
-          ${buckets.map((km,i)=>{
-            const h = Math.round((km/max)*100);
-            const px = Math.max(6, Math.round(h*0.72));
-            return `
-              <div style="flex:1;">
-                <div class="dash-bar-wrap">
-  <div class="dash-bar"
-       data-km="${Math.round(km)} km"
-       style="height:${px}px;">
-  </div>
-</div>
-
-                <div class="dash-bar-label">${String(i+1).padStart(2,"0")}</div>
-              </div>
-            `;
-          }).join("")}
-        </div>
-      </div>
     `;
 
     // ======= Actions wiring =======
@@ -3104,14 +3215,6 @@ function animateNumber(el, to, durationMs) {
   }
 
   requestAnimationFrame(frame);
-}
-
-function animateKpiNumbers() {
-  const els = document.querySelectorAll("#dashboardKpis .stat-value[data-animate]");
-  els.forEach(el => {
-    const target = el.getAttribute("data-animate");
-    animateNumber(el, target, 800); // ~0.8s Animation
-  });
 }
 
 function renderDashboardHighlights(flights) {
@@ -3289,6 +3392,107 @@ function renderDashboardLogbook(flights) {
   logEl.innerHTML = html;
 }
 
+function renderMonthBarsForStats(flightsYear, year){
+  const wrap = document.getElementById("statsMonthBars");
+  const noteEl = document.getElementById("statsMonthBarsNote");
+  if (!wrap) return;
+
+  const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+  // Modus: "km" | "flights" | "hours"
+  let mode = localStorage.getItem("stats_monthbars_mode") || "km";
+  if (!["km","flights","hours"].includes(mode)) mode = "km";
+
+  // Bei "Alle Jahre": wir zeigen das aktuelle Jahr (wie bisher)
+  const yearNow = new Date().getFullYear();
+  const barsYear = year ? year : yearNow;
+
+  if (noteEl){
+    noteEl.textContent = year
+      ? `Jahr ${year}`
+      : `${barsYear} (bei „Alle Jahre“ zeigen wir das aktuelle Jahr)`;
+  }
+
+  // Buckets
+  const buckets = Array.from({length:12}, ()=>0);
+
+  (flightsYear || []).forEach(f=>{
+    const d = new Date(f.date);
+    if (isNaN(d) || d.getFullYear() !== barsYear) return;
+
+    const m = d.getMonth();
+    if (mode === "km") buckets[m] += (f.distanceKm || 0);
+    else if (mode === "hours") buckets[m] += (f.durationHours || 0);
+    else buckets[m] += 1; // flights
+  });
+
+  const max = Math.max(...buckets, 1);
+
+  // Format + Label pro Mode
+  const fmt = (val) => {
+    if (mode === "km") return `${Math.round(val).toLocaleString()} km`;
+    if (mode === "hours") return `${formatHours(val)}`;
+    return `${Math.round(val)} Flüge`;
+  };
+
+  // Render Bars
+  wrap.innerHTML = `
+    <div class="dash-bars">
+      ${buckets.map((v,i)=>{
+        const h = Math.round((v/max)*100);
+        const px = Math.max(6, Math.round(h*0.72));
+        const tip = `${months[i]} · ${fmt(v)}`;
+        return `
+          <div style="flex:1;">
+            <div class="dash-bar-wrap">
+              <div class="dash-bar"
+                   data-tip="${tip}"
+                   title="${tip}"
+                   style="height:${px}px;">
+              </div>
+            </div>
+            <div class="dash-bar-label">${months[i]}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  // Buttons aktiv markieren + wiring
+  const bKm = document.getElementById("mbModeKm");
+  const bFl = document.getElementById("mbModeFlights");
+  const bHr = document.getElementById("mbModeHours");
+
+  function setActive(){
+    [bKm,bFl,bHr].forEach(b => b?.classList.remove("nav-active"));
+    if (mode === "km") bKm?.classList.add("nav-active");
+    else if (mode === "flights") bFl?.classList.add("nav-active");
+    else bHr?.classList.add("nav-active");
+  }
+  setActive();
+
+  // Nur einmal binden
+  if (!wrap.dataset.modeWired){
+    wrap.dataset.modeWired = "1";
+
+    bKm?.addEventListener("click", () => {
+      localStorage.setItem("stats_monthbars_mode","km");
+      renderMonthBarsForStats(flightsYear, year);
+    });
+    bFl?.addEventListener("click", () => {
+      localStorage.setItem("stats_monthbars_mode","flights");
+      renderMonthBarsForStats(flightsYear, year);
+    });
+    bHr?.addEventListener("click", () => {
+      localStorage.setItem("stats_monthbars_mode","hours");
+      renderMonthBarsForStats(flightsYear, year);
+    });
+  }
+
+  // Mobile Tap-Tooltip
+  wireDashBarTooltips?.();
+}
+
  function renderFullStatistics() {
   const flights = loadFlights();
   const year = getSelectedYear();
@@ -3318,7 +3522,7 @@ flights.forEach(f => {
   document.getElementById("statsAllYears").innerHTML =
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
 	"<div class='stat-card'>" +  "<div class='stat-label'>🌍 Länder</div>" +  "<div class='stat-value'>" + countrySet.size + "</div>" +"</div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
@@ -3332,7 +3536,7 @@ flights.forEach(f => {
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📅</span>Bereich</div><div class=\"stat-value\">"+(year ?? "Alle Jahre")+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
+    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
     "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
 
   // --- Flughäfen / Airlines / Aircrafts für den gewählten Bereich ---
@@ -3365,7 +3569,12 @@ flights.forEach(f => {
   buildRankBarsExpandable(sortedAirlines, 10, {
     withSearch: true,
     searchPlaceholder: "Airline suchen…",
-    renderNameHtml: (name) => `${renderAirlineLogo(name)} <span style="margin-left:8px">${name}</span>`
+    renderNameHtml: (name) => `
+  <span class="rank-name-inline">
+    ${renderAirlineLogo(name)}
+    <span>${name}</span>
+  </span>
+`
   });
 
   document.getElementById("statsAirports").innerHTML =
@@ -3389,10 +3598,25 @@ document.getElementById("statsCountries").innerHTML =
   buildRankBarsExpandable(sortedCountries, 10, {
     withSearch: true,
     searchPlaceholder: "Land suchen…",
-    renderNameHtml: (iso2) => `
-      ${renderFlagImg(iso2)}
-      <span class="country-code">${iso2}</span>
-    `
+
+    // HTML-Ausgabe
+    renderNameHtml: (iso2) => {
+      const code = String(iso2 || "").toLowerCase();
+      const label = iso2ToCountryName(iso2);
+      const flag = code
+        ? `<img class="flag-img" src="https://flagcdn.com/w20/${code}.png">`
+        : "";
+
+      return `
+        <span class="rank-name-inline">
+          ${flag}
+          <span>${label}</span>
+        </span>
+      `;
+    },
+
+    // 👉 DAS ist neu: Suchtext = ausgeschriebener Name
+    renderNameText: (iso2) => iso2ToCountryName(iso2)
   });
 
 wireRankTogglesAndSearch();
@@ -3401,7 +3625,7 @@ wireRankTogglesAndSearch();
   document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
   document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
 
-  // Karte für den Bereich
+  renderMonthBarsForStats(flightsYear, year);
   setTimeout(()=>renderMap(flightsYear),100);
 }
 
@@ -3523,7 +3747,7 @@ if (empty) {
     document.getElementById("miniStats").innerHTML =
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
 
   function renderAll() {
@@ -3578,7 +3802,7 @@ if (empty) {
     document.getElementById("miniStats").innerHTML =
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+miniKm.toLocaleString()+"</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏱</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
+      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
 
   function renderAll() {
@@ -3647,6 +3871,22 @@ function wireProfileLogoTooltips(){
       el.style.display = isActive ? "block" : "none";
       el.classList.toggle("page-active", isActive);
     });
+
+// Year-Filter nur auf Flüge + Statistik anzeigen
+const yearSelect = document.getElementById("yearSelect");
+const resetYearBtn = document.getElementById("resetYearBtn");
+
+// (optional) das Container-Element vom Header, falls vorhanden – sonst null
+const yearWrap = yearSelect?.parentElement; // funktioniert bei dir, weil Select+Button im gleichen flex-row sind
+
+const showYear = (targetId === "flightsPage" || targetId === "statsPage");
+
+if (yearSelect) yearSelect.style.display = showYear ? "" : "none";
+if (resetYearBtn) resetYearBtn.style.display = showYear ? "" : "none";
+
+// Wenn du willst: auf anderen Seiten auch den Platz entfernen
+if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
+
 
     // nav-active markieren
     document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
@@ -3718,7 +3958,10 @@ function wireRankTogglesAndSearch() {
 
       // Filter alle rank-rows innerhalb dieser Card
       card.querySelectorAll(".rank-row").forEach(row => {
-        const name = row.getAttribute("data-name") || "";
+        const name =
+  row.getAttribute("data-search") ||
+  row.getAttribute("data-name") ||
+  "";
         row.style.display = (!q || name.includes(q)) ? "" : "none";
       });
 
