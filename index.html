@@ -605,11 +605,11 @@
         0 26px 70px rgba(0,0,0,1);
     }
 
-    #map {
-      background: radial-gradient(circle at center, rgba(15,23,42,1), #020617);
-      box-shadow:
-        0 16px 40px rgba(0,0,0,0.9),
-        0 0 0 1px rgba(15,23,42,1);
+    #map{
+  height: 420px;         /* oder was dir passt */
+  min-height: 320px;
+  border-radius: 1rem;
+  overflow: hidden;
     }
 
     @media (max-width: 480px) {
@@ -1611,6 +1611,65 @@ body.no-year header > .flex-row{
   pointer-events: none;
 }
 
+/* Top 5 – nebeneinander */
+#top5Stack{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: .6rem;
+}
+
+/* Mobile: untereinander */
+@media (max-width: 900px){
+  #top5Stack{
+    grid-template-columns: 1fr;
+  }
+}
+
+.top5-block{
+  border: 1px solid rgba(148,163,184,0.18);
+  background: rgba(15,23,42,0.35);
+  border-radius: .9rem;
+  padding: .75rem .8rem;
+}
+
+.top5-title{
+  font-weight: 800;
+  color: #e5e7eb;
+  margin-bottom: .55rem;
+}
+
+.top5-table{
+  display:flex;
+  flex-direction:column;
+  gap: .35rem;
+}
+
+.top5-row{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap:.75rem;
+  align-items:center;
+  padding: .35rem .45rem;
+  border-radius: .65rem;
+  background: rgba(2,6,23,0.25);
+  border: 1px solid rgba(148,163,184,0.12);
+}
+
+.top5-name{
+  color:#e5e7eb;
+  font-size: .85rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.top5-val{
+  color:#9ca3af;
+  font-size: .82rem;
+  white-space:nowrap;
+}
+
   </style>
 </head>
 <body>
@@ -1725,75 +1784,69 @@ body.no-year header > .flex-row{
 
 <!-- Seite: Statistik -->
 <main id="statsPage" style="display:none;">
+
+  <!-- 1) PRO MONAT (Hero) -->
   <section class="card">
-    <h2><span class="icon">📊</span>Gesamtstatistik (alle Fl&uuml;ge)</h2>
-    <div id="statsAllYears" class="stats-grid"></div>
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0;"><span class="icon">📊</span> Pro Monat</h2>
+        <div id="statsMonthBarsNote" class="muted">–</div>
+      </div>
+
+      <div class="flex-row">
+        <button id="mbModeKm" class="btn btn-secondary btn-sm" type="button">📏 Km</button>
+        <button id="mbModeFlights" class="btn btn-secondary btn-sm" type="button">✈️ Flüge</button>
+        <button id="mbModeHours" class="btn btn-secondary btn-sm" type="button">⏱ Zeit</button>
+      </div>
+    </div>
+
+    <div id="statsMonthBars"></div>
   </section>
 
+  <!-- 2) KPI-Leiste (gewählter Bereich) -->
   <section class="card">
-    <h2><span class="icon">📅</span>Statistik f&uuml;r gew&auml;hltes Jahr</h2>
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0;"><span class="icon">📅</span> Bereich</h2>
+        <div class="muted">Werte beziehen sich auf den gewählten Filter (Jahr).</div>
+      </div>
+    </div>
     <div id="statsSelectedYear" class="stats-grid"></div>
   </section>
 
+  <!-- 3) WELTKARTE -->
   <section class="card">
-  <div class="toolbar">
-    <div>
-      <h2 style="margin:0;">📆 Pro Monat</h2>
-      <div class="muted" id="statsMonthBarsNote">–</div>
-    </div>
-
-    <div class="flex-row">
-      <button class="btn btn-secondary btn-sm" type="button" id="mbModeKm">📏 Km</button>
-      <button class="btn btn-secondary btn-sm" type="button" id="mbModeFlights">✈️ Flüge</button>
-      <button class="btn btn-secondary btn-sm" type="button" id="mbModeHours">⏰ Zeit</button>
-    </div>
-  </div>
-
-  <div id="statsMonthBars"></div>
-</section>
-
-  <section class="card">
-    <h2><span class="icon">🌍</span>Weltkarte aller Fl&uuml;ge (gew&auml;hltes Jahr / Filter)</h2>
-    <div id="map" style="height:350px; border-radius:12px;"></div>
+    <h2><span class="icon">🌍</span> Weltkarte aller Flüge (gewähltes Jahr / Filter)</h2>
+    <div id="map" class="map"></div>
   </section>
 
+  <!-- 4) RANKINGS -->
   <section class="card">
-    <h2><span class="icon">✈️</span>Flugh&auml;fen (Besuche)</h2>
+    <h2><span class="icon">🛬</span> Flughäfen (Besuche)</h2>
     <div id="statsAirports"></div>
   </section>
-  
+
   <section class="card">
-    <h2>🌍 Länder</h2>
+    <h2><span class="icon">🌍</span> Länder</h2>
     <div id="statsCountries"></div>
   </section>
 
   <section class="card">
-    <h2><span class="icon">🛫</span>Airlines</h2>
+    <h2><span class="icon">🛫</span> Airlines</h2>
     <div id="statsAirlines"></div>
   </section>
 
   <section class="card">
-    <h2><span class="icon">🛩</span>Flugzeugtypen</h2>
+    <h2><span class="icon">🛩</span> Flugzeugtypen</h2>
     <div id="statsAircrafts"></div>
   </section>
 
+  <!-- 5) TOP 5 (optional ganz unten) -->
   <section class="card">
-    <h2><span class="icon">🏆</span>Top 5</h2>
-    <div class="form-grid">
-      <div>
-        <h3>Flugh&auml;fen</h3>
-        <div id="topAirports"></div>
-      </div>
-      <div>
-        <h3>Airlines</h3>
-        <div id="topAirlines"></div>
-      </div>
-      <div>
-        <h3>Flugzeugtypen</h3>
-        <div id="topAircrafts"></div>
-      </div>
-    </div>
-  </section>
+  <h2><span class="icon">🏆</span> TOP 5</h2>
+  <div id="top5Stack"></div>
+</section>
+
 </main>
 
 <!-- Seite: Daten & Import -->
@@ -2844,17 +2897,15 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
     }
   );
 
-  const satelliteLayer = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-      maxZoom: 19,
-      attribution:
-        "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
-    }
-  );
+const satelliteLayer = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {
+    attribution: "© Esri, Maxar, Earthstar Geographics",
+    maxZoom: 18
+  }
+);
 
-  // Standardmäßig Street Layer anzeigen
-  streetLayer.addTo(leafletMap);
+satelliteLayer.addTo(leafletMap);
 
   // --- Overlay: Airports (Cluster) ---
   const airportCodes = new Set();
@@ -3724,141 +3775,177 @@ function renderMonthBarsForStats(){
   wireDashBarTooltips?.();
 }
 
- function renderFullStatistics() {
-  const flights = loadFlights();
+function renderFullStatistics() {
+  const flightsAll = loadFlights();
   const year = getSelectedYear();
-  const flightsYear = year
-    ? flights.filter(f => { const d = new Date(f.date); return !isNaN(d)&&d.getFullYear()===year; })
-    : flights;
 
-  // --- Gesamtstatistik (alle Jahre) ---
-  const totalKmAll = flights.reduce((s,f)=>s+(f.distanceKm||0),0);
-  const totalHoursAll = flights.reduce((s,f)=>s+(f.durationHours||0),0);
-  const allAirportsSet = new Set();
-  flights.forEach(f=>{
-    if (AIRPORTS[f.from]) allAirportsSet.add(f.from);
-    if (AIRPORTS[f.to])   allAirportsSet.add(f.to);
+  const flightsScope = year
+    ? flightsAll.filter(f => {
+        const d = new Date(f.date);
+        return !isNaN(d) && d.getFullYear() === year;
+      })
+    : flightsAll;
+
+  // --- 0) (ALT) Gesamtstatistik bewusst NICHT mehr rendern ---
+  // Falls es noch einen Container gibt, leeren wir ihn, damit nix "doppelt" wirkt.
+  const allYearsEl = document.getElementById("statsAllYears");
+  if (allYearsEl) allYearsEl.innerHTML = "";
+
+  // --- 1) KPI-Leiste für Bereich (klein & ruhig) ---
+  const totalKm = flightsScope.reduce((s,f)=>s+(f.distanceKm||0),0);
+  const totalHours = flightsScope.reduce((s,f)=>s+(f.durationHours||0),0);
+
+  // Länder zählen (aus Airports)
+  const airportsSet = new Set();
+  flightsScope.forEach(f=>{
+    if (AIRPORTS?.[f.from]) airportsSet.add(f.from);
+    if (AIRPORTS?.[f.to])   airportsSet.add(f.to);
   });
-  const allAirlinesSet = new Set(flights.map(f=> (f.airline||"").trim()).filter(Boolean));
-  const allAircraftSet = new Set(flights.map(f=> (f.aircraft||"").trim()).filter(Boolean));
-  
-  const countrySet = new Set();
-flights.forEach(f => {
-  const from = AIRPORTS[f.from];
-  const to   = AIRPORTS[f.to];
-  if (from?.country) countrySet.add(from.country.toUpperCase());
-  if (to?.country)   countrySet.add(to.country.toUpperCase());
-});
 
-  document.getElementById("statsAllYears").innerHTML =
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Total Km</div><div class=\"stat-value\">"+totalKmAll.toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Total Miles</div><div class=\"stat-value\">"+Math.round(totalKmAll*0.621371).toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Total Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursAll)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursAll)+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flights.length+"</div></div>"+
-	"<div class='stat-card'>" +  "<div class='stat-label'>🌍 Länder</div>" +  "<div class='stat-value'>" + countrySet.size + "</div>" +"</div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛬</span>Different Airports</div><div class=\"stat-value\">"+allAirportsSet.size+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛫</span>Different Airlines</div><div class=\"stat-value\">"+allAirlinesSet.size+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛩</span>Different Aircrafts</div><div class=\"stat-value\">"+allAircraftSet.size+"</div></div>";
+  const countriesSet = new Set();
+  airportsSet.forEach(code=>{
+    const c = (AIRPORTS?.[code]?.country || "").toUpperCase();
+    if (c && c.length === 2) countriesSet.add(c);
+  });
 
-  // --- Statistik für gewähltes Jahr bzw. alle ---
-  const totalKmYear = flightsYear.reduce((s,f)=>s+(f.distanceKm||0),0);
-  const totalHoursYear = flightsYear.reduce((s,f)=>s+(f.durationHours||0),0);
-  document.getElementById("statsSelectedYear").innerHTML =
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📅</span>Bereich</div><div class=\"stat-value\">"+(year ?? "Alle Jahre")+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">"+totalKmYear.toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Miles</div><div class=\"stat-value\">"+Math.round(totalKmYear*0.621371).toLocaleString()+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(totalHoursYear)+"</div><div class=\"stat-note\">"+hoursToText(totalHoursYear)+"</div></div>"+
-    "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">✈️</span>Fl&uuml;ge</div><div class=\"stat-value\">"+flightsYear.length+"</div></div>";
+  const statsSelectedYearEl = document.getElementById("statsSelectedYear");
+  if (statsSelectedYearEl) {
+    statsSelectedYearEl.innerHTML =
+      `<div class="stat-card">
+         <div class="stat-label"><span class="icon">📅</span>Bereich</div>
+         <div class="stat-value">${year ?? "Alle Jahre"}</div>
+       </div>` +
+      `<div class="stat-card">
+         <div class="stat-label"><span class="icon">✈️</span>Flüge</div>
+         <div class="stat-value">${flightsScope.length}</div>
+       </div>` +
+      `<div class="stat-card">
+         <div class="stat-label"><span class="icon">📏</span>Km</div>
+         <div class="stat-value">${Math.round(totalKm).toLocaleString()}</div>
+       </div>` +
+      `<div class="stat-card">
+         <div class="stat-label"><span class="icon">⏱</span>Zeit</div>
+         <div class="stat-value">${formatHours(totalHours)}</div>
+         <div class="stat-note">${hoursToText(totalHours)}</div>
+       </div>` +
+      `<div class="stat-card">
+         <div class="stat-label"><span class="icon">🌍</span>Länder</div>
+         <div class="stat-value">${countriesSet.size}</div>
+       </div>`;
+  }
 
-  // --- Flughäfen / Airlines / Aircrafts für den gewählten Bereich ---
-  const airportFrom = countOccurrences(flightsYear, f => {
+  // --- 2) Pro Monat (Hero) ---
+  // (Wichtig: Funktion soll selber frisch flights/year holen bzw. korrekt filtern)
+  renderMonthBarsForStats();
+
+  // --- 3) Rankings: Airports / Länder / Airlines / Aircrafts ---
+  // Airports (Besuche: hin+zurück = 1)
+  const airportFrom = countOccurrences(flightsScope, f => {
     const a = AIRPORTS[f.from];
     return a ? (a.city || f.from) + " (" + f.from + ")" : null;
   });
-  const airportTo = countOccurrences(flightsYear, f => {
+  const airportTo = countOccurrences(flightsScope, f => {
     const a = AIRPORTS[f.to];
     return a ? (a.city || f.to) + " (" + f.to + ")" : null;
   });
+
   const mergedAirports = {};
   for (const [k,v] of Object.entries(airportFrom)) mergedAirports[k] = (mergedAirports[k]||0)+v;
-  for (const [k,v] of Object.entries(airportTo)) mergedAirports[k] = (mergedAirports[k]||0)+v;
+  for (const [k,v] of Object.entries(airportTo))   mergedAirports[k] = (mergedAirports[k]||0)+v;
 
-  // Hin- und Rückflug als 1 Besuch
   const visitCounts = {};
-  for (const [k,v] of Object.entries(mergedAirports)) {
-    visitCounts[k] = Math.ceil(v / 2);
-  }
+  for (const [k,v] of Object.entries(mergedAirports)) visitCounts[k] = Math.ceil(v/2);
   const sortedAirports = sortedEntries(visitCounts);
 
-  const airlinesCounts = countOccurrences(flightsYear, f => (f.airline||"").trim() || null);
+  // Airlines
+  const airlinesCounts = countOccurrences(flightsScope, f => (f.airline||"").trim() || null);
   const sortedAirlines = sortedEntries(airlinesCounts);
 
-  const aircraftCounts = countOccurrences(flightsYear, f => (f.aircraft||"").trim() || null);
+  // Aircrafts
+  const aircraftCounts = countOccurrences(flightsScope, f => (f.aircraft||"").trim() || null);
   const sortedAircrafts = sortedEntries(aircraftCounts);
 
-  document.getElementById("statsAirlines").innerHTML =
-  buildRankBarsExpandable(sortedAirlines, 10, {
-    withSearch: true,
-    searchPlaceholder: "Airline suchen…",
-    renderNameHtml: (name) => `
-  <span class="rank-name-inline">
-    ${renderAirlineLogo(name)}
-    <span>${name}</span>
-  </span>
-`
-  });
+  // Länder (du hast computeCountryCounts schon)
+  const sortedCountries = computeCountryCounts(flightsScope);
 
-  document.getElementById("statsAirports").innerHTML =
-  buildRankBarsExpandable(sortedAirports, 10, {
-    withSearch: true,
-    searchPlaceholder: "Airport suchen…",
-    renderNameHtml: (name) => {
-      // name ist bei dir "Stadt (IATA)" → IATA herausziehen:
-      const m = /\(([A-Z]{3})\)\s*$/.exec(name);
-      const iata = m ? m[1] : name.trim();
-      return renderAirportWithFlag(iata);
+  // Render Rankings (in neuer Reihenfolge)
+  const airportsEl = document.getElementById("statsAirports");
+  if (airportsEl) {
+    airportsEl.innerHTML = buildRankBarsExpandable(sortedAirports, 10, {
+      withSearch: true,
+      searchPlaceholder: "Airport suchen…",
+      renderNameHtml: (name) => {
+        const m = /\(([A-Z]{3})\)\s*$/.exec(name);
+        const iata = m ? m[1] : name.trim();
+        return renderAirportWithFlag(iata);
+      }
+    });
+  }
 
-    }
-  });
+  const countriesEl = document.getElementById("statsCountries");
+  if (countriesEl) {
+    countriesEl.innerHTML = buildRankBarsExpandable(sortedCountries, 10, {
+      withSearch: true,
+      searchPlaceholder: "Land suchen…"
+    });
+  }
 
-  document.getElementById("statsAircrafts").innerHTML =
-  buildRankBarsExpandable(sortedAircrafts, 10, { searchPlaceholder: "Flugzeugtyp suchen…" });
+  const airlinesEl = document.getElementById("statsAirlines");
+  if (airlinesEl) {
+    airlinesEl.innerHTML = buildRankBarsExpandable(sortedAirlines, 10, {
+      withSearch: true,
+      searchPlaceholder: "Airline suchen…",
+      renderNameHtml: (name) =>
+        `${renderAirlineLogo(name)} <span style="margin-left:8px">${name}</span>`
+    });
+  }
 
-  const sortedCountries = computeCountryCounts(flightsYear);
-document.getElementById("statsCountries").innerHTML =
-  buildRankBarsExpandable(sortedCountries, 10, {
-    withSearch: true,
-    searchPlaceholder: "Land suchen…",
+  const aircraftEl = document.getElementById("statsAircrafts");
+  if (aircraftEl) {
+    aircraftEl.innerHTML = buildRankBarsExpandable(sortedAircrafts, 10, {
+      withSearch: true,
+      searchPlaceholder: "Flugzeugtyp suchen…"
+    });
+  }
 
-    // HTML-Ausgabe
-    renderNameHtml: (iso2) => {
-      const code = String(iso2 || "").toLowerCase();
-      const label = iso2ToCountryName(iso2);
-      const flag = code
-        ? `<img class="flag-img" src="https://flagcdn.com/w20/${code}.png">`
-        : "";
+  wireRankTogglesAndSearch();
 
-      return `
-        <span class="rank-name-inline">
-          ${flag}
-          <span>${label}</span>
-        </span>
-      `;
-    },
+  // --- 4) Top 5 ganz unten (optional) ---
+const top5El = document.getElementById("top5Stack");
+if (top5El){
+  top5El.innerHTML = buildTop5Stack(sortedAirports, sortedAirlines, sortedAircrafts);
+}
 
-    // 👉 DAS ist neu: Suchtext = ausgeschriebener Name
-    renderNameText: (iso2) => iso2ToCountryName(iso2)
-  });
+function buildTop5Stack(sortedAirports, sortedAirlines, sortedAircrafts){
+  function tableBlock(title, rows){
+    return `
+      <div class="top5-block">
+        <div class="top5-title">${title}</div>
+        <div class="top5-table">
+          ${rows.length ? rows.map(([name,val]) => `
+            <div class="top5-row">
+              <div class="top5-name">${name}</div>
+              <div class="top5-val">${val}</div>
+            </div>
+          `).join("") : `<div class="muted">Keine Daten</div>`}
+        </div>
+      </div>
+    `;
+  }
 
-wireRankTogglesAndSearch();
+  const a1 = sortedAirports.slice(0,5);
+  const a2 = sortedAirlines.slice(0,5);
+  const a3 = sortedAircrafts.slice(0,5);
 
-  document.getElementById("topAirports").innerHTML  = buildStatsTable(sortedAirports.slice(0,5));
-  document.getElementById("topAirlines").innerHTML  = buildStatsTable(sortedAirlines.slice(0,5));
-  document.getElementById("topAircrafts").innerHTML = buildStatsTable(sortedAircrafts.slice(0,5));
+  return `
+    ${tableBlock("Flughäfen", a1)}
+    ${tableBlock("Airlines", a2)}
+    ${tableBlock("Flugzeugtypen", a3)}
+  `;
+}
 
-  renderMonthBarsForStats();
-  setTimeout(()=>renderMap(flightsYear),100);
-
+  // --- 5) Karte nach allem kurz rendern (Leaflet braucht Layout fertig) ---
+  setTimeout(() => renderMap(flightsScope), 100);
 }
 
   // ----- Rendering Hauptseite -----
