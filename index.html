@@ -1616,7 +1616,7 @@ body.no-year header > .flex-row{
 <body>
 <header>
   <div>
-    <h1><span class="icon">✈️</span> DAN'S FLUGMEILEN</h1>
+    <h1><span class="icon">✈️</span> DAN'S FLUGTRACKER</h1>
   </div>
   <div class="flex-row">
     <select id="yearSelect" class="badge"></select>
@@ -2299,6 +2299,110 @@ function computeCountryCounts(flights) {
   }
 
   return sortedEntries(countryVisits);
+}
+
+function wireBackupImportExport(){
+  const backupMsg = document.getElementById("backupMsg");
+  const exportBtn = document.getElementById("exportBtn");
+  const importFile = document.getElementById("importFile");
+  const resetBtn  = document.getElementById("resetDataBtn");
+
+  if (!exportBtn || !importFile) return;
+
+  // ===== EXPORT =====
+exportBtn.onclick = async (e) => {
+  e.preventDefault();
+
+  try {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      flights: loadFlights(),
+      airports: (typeof loadAirportsFromStorage === "function")
+        ? loadAirportsFromStorage()
+        : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {})
+    };
+
+    const json = JSON.stringify(payload, null, 2);
+    const filename = "flugmeilen-backup.json";
+
+    // 1) "Speichern unter…" via File System Access API (Chrome/Edge)
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: "JSON Backup",
+          accept: { "application/json": [".json"] }
+        }]
+      });
+
+      const writable = await handle.createWritable();
+      await writable.write(json);
+      await writable.close();
+
+      if (backupMsg) backupMsg.textContent = "✅ Export gespeichert.";
+      return;
+    }
+
+    // 2) Fallback: normaler Download (landet im Downloads-Ordner)
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 300);
+
+    if (backupMsg) backupMsg.textContent = "⬇️ Export heruntergeladen (Downloads).";
+  } catch (err) {
+    console.error("Export error:", err);
+    if (backupMsg) backupMsg.textContent = "❌ Export fehlgeschlagen: " + err.message;
+  }
+};
+
+  // ===== IMPORT =====
+  importFile.onchange = async () => {
+    const file = importFile.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (Array.isArray(data.flights)) saveFlights(data.flights);
+
+      if (data.airports && typeof data.airports === "object") {
+        AIRPORTS = data.airports;
+        saveAirportsToStorage?.();
+      }
+
+      backupMsg.textContent = "✅ Import erledigt.";
+      renderAll?.();
+      renderDashboard?.();
+      renderFullStatistics?.();
+      renderProfile?.();
+    } catch (err) {
+      console.error(err);
+      backupMsg.textContent = "❌ Import fehlgeschlagen.";
+    } finally {
+      importFile.value = "";
+    }
+  };
+
+  // ===== RESET =====
+  resetBtn?.addEventListener("click", () => {
+    if (!confirm("Wirklich ALLES löschen?")) return;
+    localStorage.clear();
+    AIRPORTS = {};
+    backupMsg.textContent = "🧨 Reset durchgeführt.";
+    renderAll?.();
+    renderProfile?.();
+  });
 }
 
   function handleAirportCsvLoad() {
@@ -4022,11 +4126,25 @@ if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
     });
 
     // Render nach Umschalten
-    if (targetId === "dashboardPage") setTimeout(renderDashboardTiles, 0);
-    else if (targetId === "flightsPage") setTimeout(renderAll, 0);
-    else if (targetId === "statsPage") setTimeout(renderFullStatistics, 0);
-    else if (targetId === "dataPage") setTimeout(updateAirportCount, 0);
-    else if (targetId === "profilePage") setTimeout(renderProfile, 0);
+if (targetId === "dashboardPage") {
+  setTimeout(renderDashboardTiles, 0);
+
+} else if (targetId === "flightsPage") {
+  setTimeout(renderAll, 0);
+
+} else if (targetId === "statsPage") {
+  setTimeout(renderFullStatistics, 0);
+
+} else if (targetId === "dataPage") {
+  setTimeout(() => {
+    updateAirportCount?.();
+    wireBackupImportExport?.();   // ✅ Export/Import Listener binden
+  }, 0);
+
+} else if (targetId === "profilePage") {
+  setTimeout(renderProfile, 0);
+}
+
   }
 
   // Klick-Handler (NUR EINMAL!)
@@ -4354,53 +4472,102 @@ if (listEl && replaceInput){
     };
   }
 
-  // --- Backup / Restore ---
-  const backupMsg = document.getElementById("backupMsg");
+// --- Backup / Restore ---
+const backupMsg = document.getElementById("backupMsg");
 
-  const exportBtn = document.getElementById("exportBtn");
-  if (exportBtn){
-    exportBtn.onclick = () => {
+const exportBtn = document.getElementById("exportBtn");
+if (exportBtn){
+  exportBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
       const payload = {
         exportedAt: new Date().toISOString(),
         flights: loadFlights(),
-        airports: loadAirportsFromStorage ? loadAirportsFromStorage() : AIRPORTS
+        airports: (typeof loadAirportsFromStorage === "function")
+          ? loadAirportsFromStorage()
+          : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {})
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+
+      const json = JSON.stringify(payload, null, 2);
+      const filename = "flugmeilen-backup.json";
+
+      // PWA/iOS/Android: Share-Dialog, wenn verfügbar (am zuverlässigsten)
+      if (navigator.share) {
+        try {
+          const file = new File([json], filename, { type: "application/json" });
+          navigator.share({ files: [file], title: filename });
+          if (backupMsg) backupMsg.textContent = "⬆️ Export bereit (Teilen/Speichern).";
+          return;
+        } catch (_) {
+          // wenn share fehlschlägt -> fallback download
+        }
+      }
+
+      // Fallback: klassischer Download
+      const blob = new Blob([json], { type:"application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "flugmeilen-backup.json";
+      a.download = filename;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
-      if (backupMsg) backupMsg.textContent = "⬇️ Export erstellt.";
-    };
-  }
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
 
-  const importFile = document.getElementById("importFile");
-  if (importFile){
-    importFile.onchange = () => {
-      const file = importFile.files && importFile.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (Array.isArray(data.flights)) saveFlights(data.flights);
-          if (data.airports && typeof data.airports === "object") {
-            AIRPORTS = data.airports;
-            saveAirportsToStorage();
-          }
-          if (backupMsg) backupMsg.textContent = "✅ Import erledigt.";
-          renderAll?.();
-        } catch(err){
-          if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: " + err.message;
-        } finally {
-          importFile.value = "";
-        }
-      };
-      reader.readAsText(file);
-    };
-  }
+      if (backupMsg) backupMsg.textContent = "⬇️ Export erstellt.";
+    } catch (err) {
+      console.error("Export error:", err);
+      if (backupMsg) backupMsg.textContent = "❌ Export fehlgeschlagen: " + err.message;
+    }
+  };
+}
+
+const importFile = document.getElementById("importFile");
+if (importFile){
+
+  // wichtig: nicht nur onchange setzen, sondern addEventListener – stabiler bei Rebind
+  importFile.onchange = null;
+
+  importFile.addEventListener("change", async () => {
+    const file = importFile.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();     // zuverlässiger als FileReader in PWAs
+      const data = JSON.parse(text);
+
+      const didFlights = Array.isArray(data.flights);
+      const didAirports = (data.airports && typeof data.airports === "object");
+
+      if (!didFlights && !didAirports) {
+        throw new Error("Backup enthält weder 'flights' noch 'airports'.");
+      }
+
+      if (didFlights) saveFlights(data.flights);
+
+      if (didAirports) {
+        if (typeof AIRPORTS !== "undefined") AIRPORTS = data.airports;
+        if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
+      }
+
+      if (backupMsg) backupMsg.textContent = "✅ Import erledigt.";
+
+      // UI refresh (mehr als nur renderAll)
+      renderAll?.();
+      renderDashboard?.();
+      renderFullStatistics?.();
+      renderProfile?.();
+
+    } catch (err) {
+      console.error("Import error:", err);
+      if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: " + err.message;
+    } finally {
+      // wichtig: damit gleiche Datei nochmals importiert werden kann
+      importFile.value = "";
+    }
+  });
+}
 
   const resetBtn = document.getElementById("resetDataBtn");
   if (resetBtn){
