@@ -1711,12 +1711,14 @@ body.no-year header > .flex-row{
         <input type="text" id="toIata" maxlength="3" placeholder="CUN" />
       </div>
       <div>
-        <label for="airline">Airline</label>
-        <input type="text" id="airline" placeholder="Swiss" />
+       <label for="airline">Airline</label>
+       <input type="text" id="airline" placeholder="Swiss" list="airlineList" />
+       <datalist id="airlineList"></datalist>
       </div>
       <div>
-        <label for="aircraft">Flugzeugtyp</label>
-        <input type="text" id="aircraft" placeholder="Airbus A320" />
+       <label for="aircraft">Flugzeugtyp</label>
+       <input type="text" id="aircraft" placeholder="Airbus A320" list="aircraftList" />
+       <datalist id="aircraftList"></datalist>
       </div>
       <div>
         <label for="tripType">Privat / Gesch&auml;ft</label>
@@ -1733,7 +1735,7 @@ body.no-year header > .flex-row{
         <label>&nbsp;</label>
         <div class="flex-row">
           <button id="addFlightBtn" class="btn btn-primary" type="button">
-            <span class="icon">➕</span>Flug speichern
+            <span class="icon">💾</span>Flug speichern
           </button>
           <button id="cancelEditBtn" class="btn btn-secondary btn-sm" type="button" style="display:none;">
             <span class="icon">↩</span>Abbrechen
@@ -1796,7 +1798,7 @@ body.no-year header > .flex-row{
       <div class="flex-row">
         <button id="mbModeKm" class="btn btn-secondary btn-sm" type="button">📏 Km</button>
         <button id="mbModeFlights" class="btn btn-secondary btn-sm" type="button">✈️ Flüge</button>
-        <button id="mbModeHours" class="btn btn-secondary btn-sm" type="button">⏱ Zeit</button>
+        <button id="mbModeHours" class="btn btn-secondary btn-sm" type="button">⏰ Zeit</button>
       </div>
     </div>
 
@@ -2082,6 +2084,87 @@ const AIRLINE_LOGOS = {
   // hier kannst du beliebig erweitern
 };
 
+function parseFlightDateToTs(dateStr){
+  const s = String(dateStr || "").trim();
+  if (!s) return NaN;
+
+  // ISO: YYYY-MM-DD (oder YYYY-MM-DDTHH:mm...)
+  const iso = Date.parse(s);
+  if (!Number.isNaN(iso)) return iso;
+
+  // DE: DD.MM.YYYY
+  const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(s);
+  if (m){
+    const dd = Number(m[1]), mm = Number(m[2]), yy = Number(m[3]);
+    // UTC mittags -> keine TZ/DST Verrenkungen
+    return Date.UTC(yy, mm - 1, dd, 12, 0, 0);
+  }
+
+  return NaN;
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function uniqueSorted(values){
+  return Array.from(new Set(
+    (values || []).map(v => String(v || "").trim()).filter(Boolean)
+  )).sort((a,b) => a.localeCompare(b));
+}
+
+function fillDatalist(datalistId, items){
+  const dl = document.getElementById(datalistId);
+  if (!dl) return;
+  dl.innerHTML = items.map(v => `<option value="${escapeHtml(v)}"></option>`).join("");
+}
+
+function refreshFlightFormDatalists(){
+  const flights = loadFlights();
+  fillDatalist("airlineList",  uniqueSorted(flights.map(f => f.airline)));
+  fillDatalist("aircraftList", uniqueSorted(flights.map(f => f.aircraft)));
+}
+
+function rebuildYearSelect(){
+  const sel = document.getElementById("yearSelect");
+  if (!sel) return;
+
+  const flights = loadFlights();
+  const years = new Set();
+
+  flights.forEach(f => {
+    const d = new Date(f.date);
+    if (!isNaN(d)) years.add(d.getFullYear());
+  });
+
+  const sorted = Array.from(years).sort((a,b)=>b-a);
+
+  // aktuelle Auswahl merken
+  const current = sel.value || localStorage.getItem("selectedYear") || "";
+
+  sel.innerHTML = "";
+  // optional: leerer Eintrag oben
+  const optEmpty = document.createElement("option");
+  optEmpty.value = "";
+  optEmpty.textContent = "Alle Jahre";
+  sel.appendChild(optEmpty);
+
+  sorted.forEach(y => {
+    const o = document.createElement("option");
+    o.value = String(y);
+    o.textContent = String(y);
+    sel.appendChild(o);
+  });
+
+  // restore selection
+  sel.value = sorted.includes(Number(current)) ? String(current) : "";
+}
+
 function getHomeAirportIata(){
   try {
     const raw = localStorage.getItem("flugmeilen_profile_v1");
@@ -2139,9 +2222,17 @@ function logAllAirlinesFromData() {
       return [];
     }
   }
-  function saveFlights(flights) {
-    localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(flights));
-  }
+  
+  function saveFlights(flights){
+  const cleaned = (flights || []).map(f => {
+    const copy = { ...f };
+    const ts = parseFlightDateToTs(copy.date);
+    if (ts) copy.date = new Date(ts).toISOString().slice(0,10);
+    return copy;
+  });
+
+  localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(cleaned));
+}
 
   function deg2rad(deg) { return deg * Math.PI / 180; }
 
@@ -2317,6 +2408,30 @@ function flagImgHtml(iso2){
   const cc = (iso2 || "").toLowerCase();
   if (!cc || cc.length !== 2) return "";
   return `<img class="flag-img inline" src="https://flagcdn.com/w20/${cc}.png" alt="">`;
+}
+
+function countryFlagImg(iso2){
+  const c = String(iso2 || "").trim().toLowerCase();
+  if (!c || c.length !== 2) return "";
+  return `<img class="flag-img" src="https://flagcdn.com/w20/${c}.png" alt="${c}">`;
+}
+
+const countryNames = (function(){
+  try { return new Intl.DisplayNames([navigator.language || "en"], { type: "region" }); }
+  catch { return null; }
+})();
+
+function iso2ToCountryName(iso2){
+  const up = String(iso2 || "").trim().toUpperCase();
+  if (!up || up.length !== 2) return up;
+  return countryNames ? (countryNames.of(up) || up) : up;
+}
+
+function renderCountryWithFlag(iso2){
+  const up = String(iso2 || "").trim().toUpperCase();
+  const flag = countryFlagImg(up);
+  const name = iso2ToCountryName(up);
+  return `${flag ? `<span class="airport-flag">${flag}</span>` : ""}<span class="airport-name">${name}</span>`;
 }
 
 function airportCodeWithFlag(iata){
@@ -2505,7 +2620,7 @@ exportBtn.onclick = async (e) => {
       btn.classList.remove("btn-warning");
       btn.classList.add("btn-primary");
       cancel.style.display = "none";
-      btn.innerHTML = '<span class="icon">➕</span>Flug speichern';
+      btn.innerHTML = '<span class="icon">💾</span>Flug speichern';
     }
   }
 
@@ -2576,26 +2691,89 @@ exportBtn.onclick = async (e) => {
     editingFlightId = null;
     setEditMode(false);
     renderAll();
+	refreshFlightFormDatalists();
   }
+
+function refreshAirlineAircraftDatalists(){
+  const flights = loadFlights();
+
+  const airlines = Array.from(new Set(
+    flights.map(f => (f.airline || "").trim()).filter(Boolean)
+  )).sort((a,b)=>a.localeCompare(b));
+
+  const aircrafts = Array.from(new Set(
+    flights.map(f => (f.aircraft || "").trim()).filter(Boolean)
+  )).sort((a,b)=>a.localeCompare(b));
+
+  const dlAir = document.getElementById("airlineList");
+  const dlAc  = document.getElementById("aircraftList");
+
+  if (dlAir){
+    dlAir.innerHTML = airlines.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
+  }
+  if (dlAc){
+    dlAc.innerHTML = aircrafts.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
+  }
+}
+
+// falls du escapeHtml nicht hast:
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
 
   function startEditFlight(id) {
-    const flights = loadFlights();
-    const f = flights.find(fl => String(fl.id) === String(id));
-    if (!f) return;
-
-    editingFlightId = f.id;
-
-    document.getElementById("flightDate").value = f.date || "";
-    document.getElementById("fromIata").value = f.from || "";
-    document.getElementById("toIata").value = f.to || "";
-    document.getElementById("airline").value = f.airline || "";
-    document.getElementById("aircraft").value = f.aircraft || "";
-    document.getElementById("tripType").value = f.tripType || "p";
-    document.getElementById("speed").value = f.speedKmh || 600;
-    document.getElementById("flightError").textContent = "";
-
-    setEditMode(true);
+  // datalists auffüllen, aber niemals den Edit-Flow abbrechen lassen
+  try {
+    if (typeof refreshAirlineAircraftDatalists === "function") {
+      refreshAirlineAircraftDatalists();
+    }
+  } catch (e) {
+    console.warn("refreshAirlineAircraftDatalists() failed:", e);
   }
+
+  const flights = loadFlights();
+  const f = flights.find(fl => String(fl.id) === String(id));
+  if (!f) return;
+
+  editingFlightId = f.id;
+
+  const dateEl = document.getElementById("flightDate");
+  const fromEl = document.getElementById("fromIata");
+  const toEl   = document.getElementById("toIata");
+  const airEl  = document.getElementById("airline");
+  const acEl   = document.getElementById("aircraft");
+  const ttEl   = document.getElementById("tripType");
+  const spEl   = document.getElementById("speed");
+  const errEl  = document.getElementById("flightError");
+
+  // falls irgendein Element nicht existiert -> nicht crashen
+  if (!dateEl || !fromEl || !toEl || !airEl || !acEl || !ttEl || !spEl) {
+    console.error("Edit-Form Elemente fehlen – kann Flug nicht laden.");
+    return;
+  }
+
+  dateEl.value = f.date || "";
+  fromEl.value = f.from || "";
+  toEl.value   = f.to || "";
+  airEl.value  = f.airline || "";
+  acEl.value   = f.aircraft || "";
+  ttEl.value   = f.tripType || "p";
+  spEl.value   = f.speedKmh || 600;
+  if (errEl) errEl.textContent = "";
+
+  setEditMode(true);
+
+  // optional: nochmal datalists auffüllen (schadet nicht, aber sicher)
+  try {
+    if (typeof refreshAirlineAircraftDatalists === "function") {
+      refreshAirlineAircraftDatalists();
+    }
+  } catch (e) {
+    console.warn("refreshAirlineAircraftDatalists() failed (after):", e);
+  }
+}
 
   function cancelEdit() {
     editingFlightId = null;
@@ -3245,8 +3423,12 @@ function renderDashboardTiles() {
         })
       : flightsAll;
 
-    const tripFilter = localStorage.getItem("dash_tripType"); // "p" | "g" | null
-    const flights = tripFilter ? scoped.filter(f => f.tripType === tripFilter) : scoped;
+    const tripFilterRaw = localStorage.getItem("dash_tripType"); // "p" | "g" | null
+    const tripFilter = (tripFilterRaw || "").trim().toLowerCase();
+
+    const flights = tripFilter
+     ? scoped.filter(f => String(f.tripType || "").trim().toLowerCase() === tripFilter)
+     : scoped;
 
     const scopeLabel = year ? `Jahr ${year}` : "Alle Jahre";
     const typeLabel  = tripFilter ? (tripFilter === "g" ? "💼 Geschäft" : "🌴 Privat") : "";
@@ -3328,8 +3510,11 @@ console.log("Top airport (filtered):", topAirport);
     const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
 
     // --- Recent ---
-    const sortedByDate = [...flights].filter(f=>f.date).sort((a,b)=>new Date(b.date)-new Date(a.date));
-    const recent = sortedByDate.slice(0,5);
+    const sortedByDate = [...flights]
+    .filter(f => f.date)
+    .sort((a,b) => parseFlightDateToTs(b.date) - parseFlightDateToTs(a.date));
+
+    const recent = sortedByDate.slice(0, 5);
 
     // --- Month Bars ---
     const yearNow = new Date().getFullYear();
@@ -3809,30 +3994,34 @@ function renderFullStatistics() {
   });
 
   const statsSelectedYearEl = document.getElementById("statsSelectedYear");
-  if (statsSelectedYearEl) {
-    statsSelectedYearEl.innerHTML =
-      `<div class="stat-card">
-         <div class="stat-label"><span class="icon">📅</span>Bereich</div>
-         <div class="stat-value">${year ?? "Alle Jahre"}</div>
-       </div>` +
-      `<div class="stat-card">
-         <div class="stat-label"><span class="icon">✈️</span>Flüge</div>
-         <div class="stat-value">${flightsScope.length}</div>
-       </div>` +
-      `<div class="stat-card">
-         <div class="stat-label"><span class="icon">📏</span>Km</div>
-         <div class="stat-value">${Math.round(totalKm).toLocaleString()}</div>
-       </div>` +
-      `<div class="stat-card">
-         <div class="stat-label"><span class="icon">⏱</span>Zeit</div>
-         <div class="stat-value">${formatHours(totalHours)}</div>
-         <div class="stat-note">${hoursToText(totalHours)}</div>
-       </div>` +
-      `<div class="stat-card">
-         <div class="stat-label"><span class="icon">🌍</span>Länder</div>
-         <div class="stat-value">${countriesSet.size}</div>
-       </div>`;
-  }
+if (statsSelectedYearEl) {
+
+  const totalMiles = Math.round(totalKm * 0.621371);
+
+  statsSelectedYearEl.innerHTML =
+    `<div class="stat-card">
+       <div class="stat-label"><span class="icon">📅</span>Bereich</div>
+       <div class="stat-value">${year ?? "Alle Jahre"}</div>
+     </div>` +
+    `<div class="stat-card">
+       <div class="stat-label"><span class="icon">✈️</span>Flüge</div>
+       <div class="stat-value">${flightsScope.length}</div>
+     </div>` +
+    `<div class="stat-card">
+       <div class="stat-label"><span class="icon">📏</span>Flugdistanz</div>
+       <div class="stat-value">${Math.round(totalKm).toLocaleString()} km</div>
+       <div class="stat-note">${totalMiles.toLocaleString()} miles</div>
+     </div>` +
+    `<div class="stat-card">
+       <div class="stat-label"><span class="icon">⏰</span>Zeit</div>
+       <div class="stat-value">${formatHours(totalHours)}</div>
+       <div class="stat-note">${hoursToText(totalHours)}</div>
+     </div>` +
+    `<div class="stat-card">
+       <div class="stat-label"><span class="icon">🌍</span>Länder</div>
+       <div class="stat-value">${countriesSet.size}</div>
+     </div>`;
+}
 
   // --- 2) Pro Monat (Hero) ---
   // (Wichtig: Funktion soll selber frisch flights/year holen bzw. korrekt filtern)
@@ -3882,13 +4071,12 @@ function renderFullStatistics() {
     });
   }
 
-  const countriesEl = document.getElementById("statsCountries");
-  if (countriesEl) {
-    countriesEl.innerHTML = buildRankBarsExpandable(sortedCountries, 10, {
-      withSearch: true,
-      searchPlaceholder: "Land suchen…"
-    });
-  }
+  const countriesEl = document.getElementById("statsCountries").innerHTML =
+  buildRankBarsExpandable(sortedCountries, 10, {
+    withSearch: true,
+    searchPlaceholder: "Land suchen…",
+    renderNameHtml: (iso2) => renderCountryWithFlag(iso2)
+  });
 
   const airlinesEl = document.getElementById("statsAirlines");
   if (airlinesEl) {
@@ -3950,7 +4138,7 @@ function buildTop5Stack(sortedAirports, sortedAirlines, sortedAircrafts){
 
   // ----- Rendering Hauptseite -----
 
-  function renderFlightsTable(visibleFlights) {
+  function renderFlightsTable(visibleFlights, seqMap = {}) {
     const tbody = document.getElementById("flightTableBody");
     tbody.innerHTML = "";
     visibleFlights.forEach((f, idx) => {
@@ -3963,13 +4151,13 @@ function buildTop5Stack(sortedAirports, sortedAirlines, sortedAircrafts){
           : "<span class=\"trip-badge\">–</span>";
       const tr = document.createElement("tr");
       tr.innerHTML =
-        "<td>"+(idx+1)+"</td>"+
+        "<td>"+(seqMap[String(f.id)] ?? (idx+1))+"</td>"+
         "<td>"+formatDate(f.date)+"</td>"+
         "<td><div><span class=\"tag\"><span class=\"icon\">🛫</span>"+f.from+"</span></div><div class=\"muted\">"+(fromA.city || "")+"</div></td>"+
         "<td><div><span class=\"tag\"><span class=\"icon\">🛬</span>"+f.to+"</span></div><div class=\"muted\">"+(toA.city || "")+"</div></td>"+
         "<td>"+renderAirlineLogo(f.airline)+"</td>"+
         "<td>"+(f.aircraft || "–")+"</td>"+
-        "<td>"+formatKm(f.distanceKm)+"<br><span class=\"muted\">"+formatMiles(f.distanceKm)+"</span></td>"+
+        "<td>"+formatKm(f.distanceKm)+"<br>"+formatMiles(f.distanceKm)+"</td>"+
         "<td>"+formatHours(f.durationHours)+"</td>"+
         "<td>"+tripLabel+"</td>"+
         "<td class=\"row-actions\">" +
@@ -4069,16 +4257,37 @@ if (empty) {
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
 
-  function renderAll() {
-    updateAirportCount();
-    const flights = loadFlights();
-    buildYearOptions(flights);
-    const visible = applyFilters(flights);
-    renderFlightsTable(visible);
-    if (document.getElementById("statsPage").style.display !== "none") {
-      renderFullStatistics();
-    }
+function renderAll() {
+  updateAirportCount();
+
+  const flights = loadFlights();
+  buildYearOptions(flights);
+
+  let visible = applyFilters(flights);
+
+visible = [...visible].sort((a, b) => {
+  const ta = parseFlightDateToTs(a?.date);
+  const tb = parseFlightDateToTs(b?.date);
+
+  // gültige Daten nach oben
+  const aBad = Number.isNaN(ta);
+  const bBad = Number.isNaN(tb);
+  if (aBad && !bBad) return 1;
+  if (!aBad && bBad) return -1;
+
+  // Datum DESC
+  if (!aBad && !bBad && tb !== ta) return tb - ta;
+
+  // Tie-breaker: id DESC (stabil)
+  return String(b?.id ?? "").localeCompare(String(a?.id ?? ""));
+});
+
+  renderFlightsTable(visible);
+
+  if (document.getElementById("statsPage").style.display !== "none") {
+    renderFullStatistics();
   }
+}
 
   function renderSummary(flights, visibleFlights) {
     const year = getSelectedYear();
@@ -4124,17 +4333,6 @@ if (empty) {
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
 
-  function renderAll() {
-    updateAirportCount();
-    const flights = loadFlights();
-    buildYearOptions(flights);
-    const visible = applyFilters(flights);
-    renderFlightsTable(visible);
-    if (document.getElementById("statsPage").style.display !== "none") {
-      renderFullStatistics();
-    }
-  }
-
 function wireProfileLogoTooltips(){
   const container = document.getElementById("profileAirlineList");
   if (!container) return;
@@ -4164,13 +4362,19 @@ function wireProfileLogoTooltips(){
   document.getElementById("cancelEditBtn")?.addEventListener("click", cancelEdit);
   document.getElementById("clearAllFlightsBtn")?.addEventListener("click", clearAllFlights);
   document.getElementById("searchInput")?.addEventListener("input", renderAll);
-  document.getElementById("yearSelect")?.addEventListener("change", renderAll);
+  document.getElementById("resetYearBtn").addEventListener("click", () => {
+  const ys = document.getElementById("yearSelect");
+  if (ys) ys.value = "";
+  localStorage.setItem("selectedYear", "");
+  renderAll();
+});
 
-  document.getElementById("resetYearBtn")?.addEventListener("click", () => {
-    document.getElementById("yearSelect").value = "";
-    renderAll();
-    logAllAirlinesFromData();
-  });
+  document.getElementById("resetYearBtn").addEventListener("click", () => {
+  const ys = document.getElementById("yearSelect");
+  if (ys) ys.value = "";
+  localStorage.setItem("selectedYear", "");
+  renderAll();
+});
 
   // Pages
   const pages = {
@@ -4215,20 +4419,23 @@ if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
     // Render nach Umschalten
 if (targetId === "dashboardPage") {
   setTimeout(renderDashboardTiles, 0);
-
-} else if (targetId === "flightsPage") {
-  setTimeout(renderAll, 0);
-
-} else if (targetId === "statsPage") {
+} 
+else if (targetId === "flightsPage") {
+  setTimeout(() => {
+    renderAll?.();
+    refreshFlightFormDatalists();
+  }, 0);
+}
+else if (targetId === "statsPage") {
   setTimeout(renderFullStatistics, 0);
-
-} else if (targetId === "dataPage") {
+} 
+else if (targetId === "dataPage") {
   setTimeout(() => {
     updateAirportCount?.();
     wireBackupImportExport?.();   // ✅ Export/Import Listener binden
   }, 0);
-
-} else if (targetId === "profilePage") {
+}
+else if (targetId === "profilePage") {
   setTimeout(renderProfile, 0);
 }
 
@@ -4242,6 +4449,8 @@ if (targetId === "dashboardPage") {
   });
 
   window.showPage = showPage;
+  
+  rebuildYearSelect();
 
   // Start
 	showPage("dashboardPage");
