@@ -2320,7 +2320,7 @@ function logAllAirlinesFromData() {
 
   function calcDurationHours(distanceKm, speedKmh) {
     if (!distanceKm || !speedKmh) return null;
-    return distanceKm / speedKmh + 0.5;
+    return distanceKm / speedKmh;
   }
 
   function formatKm(km) {
