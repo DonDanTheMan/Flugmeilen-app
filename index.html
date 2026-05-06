@@ -2610,57 +2610,81 @@ function computeCountryCounts(flights) {
   return sortedEntries(countryVisits);
 }
 
-function wireBackupImportExport(){
+function wireBackupImportExport() {
   const backupMsg = document.getElementById("backupMsg");
   const exportBtn = document.getElementById("exportBtn");
   const importFile = document.getElementById("importFile");
-  const resetBtn  = document.getElementById("resetDataBtn");
+  const resetBtn = document.getElementById("resetDataBtn");
 
   if (!exportBtn || !importFile) return;
 
-  // ===== EXPORT =====
-exportBtn.onclick = async (e) => {
-  e.preventDefault();
+  // ===== EXPORT (mit Web Share & Fallback) =====
+  exportBtn.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    flights: loadFlights(),
-    airports: AIRPORTS,
-    profile: loadProfile()
+try {
+    const flightsToExport = loadFlights();
+    const airportsToExport = (typeof loadAirportsFromStorage === "function") 
+        ? loadAirportsFromStorage() 
+        : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
+    
+    const payload = {
+        exportedAt: new Date().toISOString(),
+        flights: flightsToExport,
+        airports: airportsToExport,
+        profile: (typeof loadProfile === "function") ? loadProfile() : {}
+    };
+
+    const json = JSON.stringify(payload, null, 2);
+    const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+    let shared = false;
+
+    // 1. VERSUCH: Web Share (nur wenn unterstützt und erlaubt)
+    if (navigator.share && navigator.canShare) {
+        const file = new File([json], filename, { type: "application/json" });
+        if (navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Flugtracker Backup',
+                    text: `Sicherung von ${flightsToExport.length} Flügen.`
+                });
+                shared = true;
+                if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
+            } catch (shareErr) {
+                // Falls der User abbricht oder Permission denied kommt:
+                console.warn("Web Share fehlgeschlagen oder verweigert, wechsle zu Download.", shareErr);
+            }
+        }
+    }
+
+    // 2. FALLBACK: Wenn nicht geteilt wurde (PC/Desktop oder Fehler oben)
+    if (!shared) {
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+            a.remove();
+        }, 300);
+
+        if (backupMsg) backupMsg.textContent = "⬇️ Datei als Download gespeichert.";
+    }
+
+} catch (err) {
+    console.error("Kritischer Export Fehler:", err);
+    if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
+}
   };
 
-  const json = JSON.stringify(payload, null, 2);
-  const filename = `flugtracker_backup_${new Date().toISOString().slice(0,10)}.json`;
-
-  // Prüfen, ob das Gerät Dateien teilen kann (Mobile PWA Modus)
-  if (navigator.canShare && navigator.canShare({ files: [new File([json], filename, { type: "application/json" })] })) {
-    try {
-      const file = new File([json], filename, { type: "application/json" });
-      await navigator.share({
-        files: [file],
-        title: 'Flugtracker Backup',
-        text: 'Hier ist mein aktuelles Flug-Backup.'
-      });
-      if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
-    } catch (err) {
-      // Falls der User abbricht oder ein Fehler auftritt
-      console.log("Teilen abgebrochen oder fehlgeschlagen", err);
-    }
-  } else {
-    // Fallback für Desktop (PC)
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
-    if (backupMsg) backupMsg.textContent = "⬇️ Backup als Datei gespeichert.";
-  }
-};
-
-  // ===== IMPORT =====
+  // ===== IMPORT (mit Smart Merge & UI Refresh) =====
   importFile.onchange = async () => {
     const file = importFile.files?.[0];
     if (!file) return;
@@ -2669,37 +2693,59 @@ exportBtn.onclick = async (e) => {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      if (Array.isArray(data.flights)) saveFlights(data.flights);
+      if (Array.isArray(data.flights)) {
+        const localFlights = loadFlights();
+        const merged = [...localFlights];
+        let newCount = 0;
+
+        data.flights.forEach(newF => {
+          const isDup = merged.some(localF => {
+            if (localF.id && newF.id) return String(localF.id) === String(newF.id);
+            return localF.date === newF.date && localF.from === newF.from && localF.to === newF.to;
+          });
+          if (!isDup) {
+            merged.push(newF);
+            newCount++;
+          }
+        });
+
+        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+        saveFlights(merged);
+        if (backupMsg) backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
+      }
 
       if (data.airports && typeof data.airports === "object") {
         AIRPORTS = data.airports;
-        saveAirportsToStorage?.();
+        if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
       }
 
-      backupMsg.textContent = "✅ Import erledigt.";
+      // Alles neu zeichnen (wichtig für die Mond-ETA-Prognose!)
       renderAll?.();
       renderDashboard?.();
       renderFullStatistics?.();
       renderProfile?.();
+
     } catch (err) {
-      console.error(err);
-      backupMsg.textContent = "❌ Import fehlgeschlagen.";
+      console.error("Import Fehler:", err);
+      if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen.";
     } finally {
       importFile.value = "";
     }
   };
 
   // ===== RESET =====
-  resetBtn?.addEventListener("click", () => {
-    if (!confirm("Wirklich ALLES löschen?")) return;
-    localStorage.clear();
-    AIRPORTS = {};
-    backupMsg.textContent = "🧨 Reset durchgeführt.";
-    renderAll?.();
-    renderProfile?.();
-  });
+if (resetBtn) {
+    resetBtn.onclick = () => {
+      if (!confirm("Wirklich ALLES löschen? Deine 386 Flüge gehen verloren!")) return;
+      localStorage.clear();
+      AIRPORTS = {};
+      if (backupMsg) backupMsg.textContent = "🧨 Reset durchgeführt.";
+      
+      // Seite neu laden, um alle Variablen sauber zu leeren
+      location.reload(); 
+    };
+  }
 }
-
   function handleAirportCsvLoad() {
     const fileInput = document.getElementById("airportFile");
     const errBox = document.getElementById("airportError");
@@ -4774,125 +4820,6 @@ if (listEl && replaceInput){
   }
 
 // --- Backup / Restore ---
-const backupMsg = document.getElementById("backupMsg");
-
-const exportBtn = document.getElementById("exportBtn");
-if (exportBtn){
-  exportBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    try {
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        flights: loadFlights(),
-        airports: (typeof loadAirportsFromStorage === "function")
-          ? loadAirportsFromStorage()
-          : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {})
-      };
-
-      const json = JSON.stringify(payload, null, 2);
-      const filename = "flugmeilen-backup.json";
-
-      // PWA/iOS/Android: Share-Dialog, wenn verfügbar (am zuverlässigsten)
-      if (navigator.share) {
-        try {
-          const file = new File([json], filename, { type: "application/json" });
-          navigator.share({ files: [file], title: filename });
-          if (backupMsg) backupMsg.textContent = "⬆️ Export bereit (Teilen/Speichern).";
-          return;
-        } catch (_) {
-          // wenn share fehlschlägt -> fallback download
-        }
-      }
-
-      // Fallback: klassischer Download
-      const blob = new Blob([json], { type:"application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
-
-      if (backupMsg) backupMsg.textContent = "⬇️ Export erstellt.";
-    } catch (err) {
-      console.error("Export error:", err);
-      if (backupMsg) backupMsg.textContent = "❌ Export fehlgeschlagen: " + err.message;
-    }
-  };
-}
-
-	const importFile = document.getElementById("importFile");
-	if (importFile){
-
-	  // wichtig: nicht nur onchange setzen, sondern addEventListener – stabiler bei Rebind
-	  importFile.onchange = null;
-
-	importFile.addEventListener("change", async () => {
-	  const file = importFile.files?.[0];
-	  if (!file) return;
-
-	  try {
-		const text = await file.text();
-		const data = JSON.parse(text);
-
-		if (Array.isArray(data.flights)) {
-		  const localFlights = loadFlights();
-		  const newFlights = data.flights;
-
-		  // --- MERGE LOGIK ---
-		  // Wir nehmen die lokalen Flüge als Basis
-		  const mergedFlights = [...localFlights];
-
-		  newFlights.forEach(newF => {
-			// Prüfen, ob der Flug bereits existiert
-			// Wir prüfen primär die ID. 
-			// Falls IDs fehlen (alter Export), prüfen wir Datum + Von + Nach als Fallback.
-			const isDuplicate = mergedFlights.some(localF => {
-			  if (localF.id && newF.id) return String(localF.id) === String(newF.id);
-			  return localF.date === newF.date && localF.from === newF.from && localF.to === newF.to;
-			});
-
-			if (!isDuplicate) {
-			  mergedFlights.push(newF);
-			}
-		  });
-
-		  // Nach dem Mergen sortieren wir alles wieder chronologisch (Neueste zuerst)
-		  mergedFlights.sort((a, b) => {
-			const dateA = new Date(a.date).getTime();
-			const dateB = new Date(b.date).getTime();
-			return dateB - dateA;
-		  });
-
-		  saveFlights(mergedFlights);
-		}
-
-		// Airports können wir einfach überschreiben, da diese meist statisch sind
-		if (data.airports && typeof data.airports === "object") {
-		  AIRPORTS = { ...AIRPORTS, ...data.airports };
-		  saveAirportsToStorage();
-		}
-
-		if (backupMsg) {
-		  backupMsg.innerHTML = `✅ Import abgeschlossen!<br><small>Flüge insgesamt: ${loadFlights().length}</small>`;
-		}
-
-		// UI Refresh
-		renderAll();
-		renderDashboard();
-		renderProfile();
-
-	  } catch (err) {
-		console.error("Import error:", err);
-		if (backupMsg) backupMsg.textContent = "❌ Fehler: " + err.message;
-	  } finally {
-		importFile.value = "";
-	  }
-	});
-}
 
   const resetBtn = document.getElementById("resetDataBtn");
   if (resetBtn){
