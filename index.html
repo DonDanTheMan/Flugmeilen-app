@@ -2620,61 +2620,68 @@ function wireBackupImportExport() {
 
   // ===== EXPORT (mit Web Share & Fallback) =====
 
-	exportBtn.onclick = async (e) => {
-		e.preventDefault();
-		e.stopPropagation();
+  exportBtn.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-		try {
-			const flightsToExport = loadFlights();
-			// ... (deine restlichen Variablen-Definitionen) ...
+    try {
+      // 1. Daten sammeln
+      const flightsToExport = loadFlights();
+      const airportsToExport = (typeof loadAirportsFromStorage === "function") 
+        ? loadAirportsFromStorage() 
+        : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
+      const profileToExport = (typeof loadProfile === "function") ? loadProfile() : {};
 
-			const json = JSON.stringify(payload, null, 2);
-			const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      // 2. Das Paket schnüren (Wichtig: Hier wird payload definiert!)
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        flights: flightsToExport,
+        airports: airportsToExport,
+        profile: profileToExport
+      };
 
-			// --- HIER IST DIE KORREKTUR: Wir definieren 'shared' ---
-			let shared = false; 
+      const json = JSON.stringify(payload, null, 2);
+      const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
 
-			// 1. VERSUCH: Web Share
-			if (navigator.share && navigator.canShare) {
-				const file = new File([json], filename, { type: "application/json" });
-				if (navigator.canShare({ files: [file] })) {
-					try {
-						await navigator.share({
-							files: [file],
-							title: 'Flugtracker Backup',
-							text: `Sicherung von ${flightsToExport.length} Flügen.`
-						});
-						shared = true; // Jetzt ist 'shared' bekannt!
-						if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
-					} catch (shareErr) {
-						console.warn("Web Share verweigert/abgebrochen, wechsle zu Download.", shareErr);
-					}
-				}
-			}
+      // 3. Status-Variable für den Fallback-Check
+      let shared = false; 
 
-			// 2. FALLBACK: Download
-			if (!shared) {
-				const blob = new Blob([json], { type: "application/json" });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = filename;
-				document.body.appendChild(a);
-				a.click();
-				
-				setTimeout(() => {
-					URL.revokeObjectURL(url);
-					a.remove();
-				}, 300);
+      // 4. Mobil-Versuch: Web Share API
+      if (navigator.share && navigator.canShare) {
+        const file = new File([json], filename, { type: "application/json" });
+        if (navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Flugtracker Backup',
+                    text: `Backup von ${flightsToExport.length} Flügen.`
+                });
+                shared = true;
+                if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
+            } catch (shareErr) {
+                console.warn("Share abgebrochen, wechsle zu Download.", shareErr);
+            }
+        }
+      }
 
-				if (backupMsg) backupMsg.textContent = "⬇️ Datei als Download gespeichert.";
-			}
+      // 5. Desktop-Versuch oder Fallback: Download
+      if (!shared) {
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
 
-		} catch (err) {
-			console.error("Kritischer Export Fehler:", err);
-			if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
-		}
-	};
+        if (backupMsg) backupMsg.textContent = "⬇️ Backup heruntergeladen.";
+      }
+    } catch (err) {
+      console.error("Export Fehler:", err);
+      if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
+    }
+  };
 
   // ===== IMPORT (mit Smart Merge & UI Refresh) =====
   importFile.onchange = async () => {
