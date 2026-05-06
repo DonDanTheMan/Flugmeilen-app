@@ -2636,29 +2636,24 @@ try {
         profile: (typeof loadProfile === "function") ? loadProfile() : {}
     };
 
-    const json = JSON.stringify(payload, null, 2);
-    const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+	const json = JSON.stringify(payload, null, 2);
+	const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
 
-    let shared = false;
+	// Erstelle das File-Objekt mit einem etwas "freundlicheren" MIME-Type
+	const file = new File([json], filename, { type: "application/json" });
 
-    // 1. VERSUCH: Web Share (nur wenn unterstützt und erlaubt)
-    if (navigator.share && navigator.canShare) {
-        const file = new File([json], filename, { type: "application/json" });
-        if (navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: 'Flugtracker Backup',
-                    text: `Sicherung von ${flightsToExport.length} Flügen.`
-                });
-                shared = true;
-                if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
-            } catch (shareErr) {
-                // Falls der User abbricht oder Permission denied kommt:
-                console.warn("Web Share fehlgeschlagen oder verweigert, wechsle zu Download.", shareErr);
-            }
-        }
-    }
+	if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+		try {
+			await navigator.share({
+				files: [file],
+				title: 'Flugtracker Backup',
+				text: `Backup von ${flightsToExport.length} Flügen`
+			});
+			shared = true;
+		} catch (err) {
+			console.log("Share verweigert oder abgebrochen:", err);
+		}
+	}
 
     // 2. FALLBACK: Wenn nicht geteilt wurde (PC/Desktop oder Fehler oben)
     if (!shared) {
@@ -2698,16 +2693,23 @@ try {
         const merged = [...localFlights];
         let newCount = 0;
 
-        data.flights.forEach(newF => {
-          const isDup = merged.some(localF => {
-            if (localF.id && newF.id) return String(localF.id) === String(newF.id);
-            return localF.date === newF.date && localF.from === newF.from && localF.to === newF.to;
-          });
-          if (!isDup) {
-            merged.push(newF);
-            newCount++;
-          }
-        });
+		// Innerhalb von wireBackupImportExport beim Import-Teil:
+		data.flights.forEach(newF => {
+			const isDup = merged.some(localF => {
+				// 1. Check über ID (falls vorhanden)
+				if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
+				
+				// 2. Check über Datum + Route (Sicherheitsnetz)
+				return localF.date === newF.date && 
+					   localF.from === newF.from && 
+					   localF.to === newF.to;
+			});
+
+			if (!isDup) {
+				merged.push(newF);
+				newCount++;
+			}
+		});
 
         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
         saveFlights(merged);
