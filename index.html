@@ -3559,8 +3559,8 @@ function renderDashboardTiles() {
       const parts = String(routeKey).split("→").map(s => s.trim());
       return { from: parts[0] || "", to: parts[1] || "" };
     }
-
-    wrap.innerHTML = `
+	wrap.innerHTML = getMilestoneHTML(totalKm);
+    wrap.innerHTML += `
       <div class="stat-card tile"><div class="stat-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
       <div class="stat-card tile"><div class="stat-label">📏 Km</div><div class="stat-value">${Math.round(totalKm).toLocaleString()}</div></div>
       <div class="stat-card tile"><div class="stat-label">⏰ Zeit</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
@@ -3660,6 +3660,7 @@ function renderDashboardTiles() {
       </div>
     `;
 
+	
     document.getElementById("dashGoAdd")?.addEventListener("click", () => {
       window.showPage?.("flightsPage");
       setTimeout(() => document.getElementById("flightFormCard")?.scrollIntoView({ behavior: "smooth" }), 120);
@@ -3686,8 +3687,6 @@ function renderDashboardTiles() {
     document.getElementById("dashClearFilters")?.addEventListener("click", () => {
       resetDashboardFilters();
     });
-
-	wrap.innerHTML += getMilestoneHTML(totalKm);
 
   } catch (err) {
     console.error("Dashboard render error:", err);
