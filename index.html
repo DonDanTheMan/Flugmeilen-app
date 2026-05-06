@@ -1718,6 +1718,12 @@ body.no-year header > .flex-row{
   }
 }
 
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+  100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+}
+
   </style>
 </head>
 <body>
@@ -4887,7 +4893,7 @@ function getMilestoneHTML(totalKm) {
     const earthCircumference = 40075;
     const flights = loadFlights();
     
-    // 1. Reisetempo berechnen (km pro Tag im letzten Jahr)
+    // 1. Reisetempo der letzten 365 Tage
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const kmLastYear = flights
@@ -4896,84 +4902,115 @@ function getMilestoneHTML(totalKm) {
     
     const kmPerDay = kmLastYear / 365;
 
-    // 2. Meilensteine mit spezifischen Farben
+    // Meilensteine
     const milestones = [
-        { name: "die ISS", dist: 400, icon: "🛰️", color: "#94a3b8" }, // Grau
-        { name: "den Erdradius", dist: 6371, icon: "📍", color: "#22c55e" }, // Grün
-        { name: "1/10 Monddistanz", dist: 38440, icon: "🌓", color: "#f1f5f9" }, // Weißlich
-        { name: "den Mond", dist: 384400, icon: "🌙", color: "#cbd5e1" }, // Mondgrau
-        { name: "den Umfang des Jupiters", dist: 439264, icon: "🪐", color: "#fb923c" }, // Orange
-        { name: "1% des Weges zum Mars", dist: 546000, icon: "🚀", color: "#38bdf8" }, // Blau
-        { name: "den Umfang der Sonne", dist: 4379000, icon: "🔥", color: "#f59e0b" }, // Gold/Sonne
-        { name: "den Mars", dist: 54600000, icon: "🔴", color: "#ef4444" } // Marsrot
+        { name: "die ISS", dist: 400, icon: "🛰️", color: "#94a3b8" },
+        { name: "den Erdradius", dist: 6371, icon: "📍", color: "#22c55e" },
+        { name: "den Mond", dist: 384400, icon: "🌙", color: "#cbd5e1" },
+        { name: "den Umfang des Jupiters", dist: 439264, icon: "🪐", color: "#fb923c" },
+        { name: "die 1. Million km", dist: 1000000, icon: "💎", color: "#e2e8f0" },
+        { name: "die 2. Million km", dist: 2000000, icon: "💠", color: "#94a3b8" },
+        { name: "den Umfang der Sonne", dist: 4379000, icon: "🔥", color: "#f59e0b" },
+        { name: "den Mars", dist: 54600000, icon: "🔴", color: "#ef4444" }
     ];
 
     const rounds = Math.floor(totalKm / earthCircumference);
     const kmToNextRound = earthCircumference - (totalKm % earthCircumference);
 
+    // 2. Spezial-Animationen für Sonne und Mars
+    const animations = `
+        <style>
+            @keyframes pulse-sun {
+                0% { box-shadow: 0 0 5px #f59e0b; }
+                50% { box-shadow: 0 0 20px #f59e0b, 0 0 30px #f59e0b44; }
+                100% { box-shadow: 0 0 5px #f59e0b; }
+            }
+            @keyframes pulse-mars {
+                0% { box-shadow: 0 0 2px #ef4444; opacity: 0.8; }
+                50% { box-shadow: 0 0 15px #ef4444; opacity: 1; }
+                100% { box-shadow: 0 0 2px #ef4444; opacity: 0.8; }
+            }
+            .sun-glow { animation: pulse-sun 3s infinite ease-in-out; border: 1px solid #f59e0b !important; }
+            .mars-glow { animation: pulse-mars 4s infinite ease-in-out; border: 1px solid #ef4444 !important; }
+            .milestone-container { transition: all 0.3s ease; }
+        </style>
+    `;
+
     let milestonesHTML = "";
     let currentTargetFound = false;
 
-    milestones.forEach(m => {
+    milestones.forEach((m, index) => {
         const isReached = totalKm >= m.dist;
+        const isSun = m.name.includes("Sonne");
+        const isMars = m.name.includes("Mars");
         
+        // Entscheiden, ob wir das Ziel detailliert anzeigen oder als "Vorschau"
+        // Wir zeigen das aktuelle Ziel detailliert an ODER Sonne/Mars immer als Vorschau
+        const isCurrent = !isReached && !currentTargetFound;
+        if (isCurrent) currentTargetFound = true;
+
         if (isReached) {
+            // Erreichte Ziele: Kompakt & ausgegraut
             milestonesHTML += `
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; opacity: 0.5;">
-                    <span style="color: #22c55e;">✅</span>
-                    <span style="font-size: 0.9rem; text-decoration: line-through; color: ${m.color};">${m.icon} ${m.name}</span>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; opacity: 0.4;">
+                    <span style="color: #22c55e; font-size: 0.8rem;">✅</span>
+                    <span style="font-size: 0.8rem; text-decoration: line-through; color: ${m.color};">${m.icon} ${m.name}</span>
                 </div>`;
-        } else if (!currentTargetFound) {
-            currentTargetFound = true;
-            const percent = ((totalKm / m.dist) * 100).toFixed(1);
+        } else if (isCurrent || isSun || isMars) {
+            // Aktuelles Ziel ODER Sonne/Mars (als Vergleich)
+            const percent = Math.min(((totalKm / m.dist) * 100), 100).toFixed(isMars ? 4 : 1);
             const remainingKm = m.dist - totalKm;
             
-            // Prognose berechnen
-            let etaText = "Reisetempo erhöhen für Prognose...";
-            if (kmPerDay > 0) {
+            let etaInfo = "";
+            if (isCurrent && kmPerDay > 0) {
                 const daysToGoal = remainingKm / kmPerDay;
                 const etaDate = new Date();
                 etaDate.setDate(etaDate.getDate() + daysToGoal);
-                etaText = `Voraussichtliche Ankunft: ${etaDate.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' })}`;
+                etaInfo = daysToGoal > 3650 ? `⏳ ca. ${Math.round(daysToGoal/365)} Jahre` : `✨ ${etaDate.getFullYear()}`;
             }
 
+            const glowClass = (isSun && isCurrent) ? "sun-glow" : (isMars && isCurrent) ? "mars-glow" : "";
+            const opacity = isCurrent ? "1" : "0.5"; // Vorschau-Ziele sind etwas blasser
+
             milestonesHTML += `
-                <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid ${m.color}44;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div class="stat-value" style="font-size: 1.1rem; color: ${m.color};">🚀 Kurs auf ${m.name}</div>
-                        <span style="font-size: 1.2rem;">${m.icon}</span>
+                <div class="milestone-container" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid ${m.color}22; opacity: ${opacity};">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px;">
+                        <span style="color: ${m.color}; font-weight: 600;">${isCurrent ? '🚀 Aktuell: ' : ''}${m.icon} ${m.name}</span>
+                        <span style="color: #6ee7b7; font-size: 0.75rem;">${etaInfo}</span>
                     </div>
-                    <div style="width: 100%; background: rgba(0,0,0,0.3); height: 10px; border-radius: 10px; margin-top: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-                        <div style="width: ${percent}%; background: ${m.color}; height: 100%; box-shadow: 0 0 15px ${m.color}66; transition: width 2s ease-out;"></div>
+                    <div style="width: 100%; background: rgba(0,0,0,0.4); height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div class="${glowClass}" style="width: ${percent}%; background: ${m.color}; height: 100%; transition: width 2s ease-out;"></div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #94a3b8;">
-                        <span>${percent}% geschafft</span>
-                        <span>Ziel: ${Math.round(m.dist).toLocaleString()} km</span>
-                    </div>
-                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); color: #6ee7b7; font-size: 0.8rem; font-weight: 600;">
-                        ✨ ${etaText}
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.65rem; color: #94a3b8;">
+                        <span>${percent}%</span>
+                        <span>Ziel: ${Math.round(m.dist/1000000 * 10) / 10} Mio. km</span>
                     </div>
                 </div>`;
         } else {
+            // Zukünftige Zwischenziele: Sehr dezent
             milestonesHTML += `
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; opacity: 0.2;">
-                    <span>🔒</span>
-                    <span style="font-size: 0.85rem; color: ${m.color};">${m.name}</span>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px; opacity: 0.15;">
+                    <span style="font-size: 0.75rem;">🔒 ${m.icon} ${m.name}</span>
                 </div>`;
         }
     });
 
     return `
-        <div class="stat-card tile-full" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(2,6,23,1)); border: 1px solid rgba(56,189,248,0.2); padding: 1.25rem; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; font-size: 5rem; opacity: 0.03; pointer-events: none;">🚀</div>
-            <div class="stat-label" style="margin-bottom: 15px; color: #38bdf8;">🏆 Reise-Meilensteine</div>
+        ${animations}
+        <div class="stat-card tile-full" style="grid-column: 1 / -1; background: linear-gradient(160deg, #0f172a 0%, #020617 100%); border: 1px solid rgba(56,189,248,0.15); padding: 1.25rem; border-radius: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div class="stat-label" style="color: #38bdf8; margin: 0;">🏆 Deep Space Progress</div>
+                <div style="font-size: 0.7rem; color: #475569; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 20px;">
+                    ${Math.round(kmPerDay).toLocaleString()} km/Tag
+                </div>
+            </div>
             
-            <div style="margin-bottom: 20px;">
-                <div class="stat-value" style="font-size: 1.5rem; letter-spacing: -0.02em;">🌍 ${rounds} Weltumrundungen</div>
-                <div class="stat-note" style="color: #22c55e;">Noch ${Math.round(kmToNextRound).toLocaleString()} km bis zum nächsten Badge</div>
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 1.4rem; font-weight: 700; color: #f8fafc;">🌍 ${rounds} Weltumrundungen</div>
+                <div style="font-size: 0.8rem; color: #22c55e;"> ${Math.round(totalKm).toLocaleString()} km Gesamtdistanz</div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; flex-direction: column;">
                 ${milestonesHTML}
             </div>
         </div>`;
