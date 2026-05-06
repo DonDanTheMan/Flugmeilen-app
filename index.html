@@ -2619,65 +2619,62 @@ function wireBackupImportExport() {
   if (!exportBtn || !importFile) return;
 
   // ===== EXPORT (mit Web Share & Fallback) =====
-  exportBtn.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
 
-try {
-    const flightsToExport = loadFlights();
-    const airportsToExport = (typeof loadAirportsFromStorage === "function") 
-        ? loadAirportsFromStorage() 
-        : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
-    
-    const payload = {
-        exportedAt: new Date().toISOString(),
-        flights: flightsToExport,
-        airports: airportsToExport,
-        profile: (typeof loadProfile === "function") ? loadProfile() : {}
-    };
+	exportBtn.onclick = async (e) => {
+		e.preventDefault();
+		e.stopPropagation();
 
-	const json = JSON.stringify(payload, null, 2);
-	const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
-
-	// Erstelle das File-Objekt mit einem etwas "freundlicheren" MIME-Type
-	const file = new File([json], filename, { type: "application/json" });
-
-	if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
 		try {
-			await navigator.share({
-				files: [file],
-				title: 'Flugtracker Backup',
-				text: `Backup von ${flightsToExport.length} Flügen`
-			});
-			shared = true;
+			const flightsToExport = loadFlights();
+			// ... (deine restlichen Variablen-Definitionen) ...
+
+			const json = JSON.stringify(payload, null, 2);
+			const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+			// --- HIER IST DIE KORREKTUR: Wir definieren 'shared' ---
+			let shared = false; 
+
+			// 1. VERSUCH: Web Share
+			if (navigator.share && navigator.canShare) {
+				const file = new File([json], filename, { type: "application/json" });
+				if (navigator.canShare({ files: [file] })) {
+					try {
+						await navigator.share({
+							files: [file],
+							title: 'Flugtracker Backup',
+							text: `Sicherung von ${flightsToExport.length} Flügen.`
+						});
+						shared = true; // Jetzt ist 'shared' bekannt!
+						if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
+					} catch (shareErr) {
+						console.warn("Web Share verweigert/abgebrochen, wechsle zu Download.", shareErr);
+					}
+				}
+			}
+
+			// 2. FALLBACK: Download
+			if (!shared) {
+				const blob = new Blob([json], { type: "application/json" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = filename;
+				document.body.appendChild(a);
+				a.click();
+				
+				setTimeout(() => {
+					URL.revokeObjectURL(url);
+					a.remove();
+				}, 300);
+
+				if (backupMsg) backupMsg.textContent = "⬇️ Datei als Download gespeichert.";
+			}
+
 		} catch (err) {
-			console.log("Share verweigert oder abgebrochen:", err);
+			console.error("Kritischer Export Fehler:", err);
+			if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
 		}
-	}
-
-    // 2. FALLBACK: Wenn nicht geteilt wurde (PC/Desktop oder Fehler oben)
-    if (!shared) {
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-            a.remove();
-        }, 300);
-
-        if (backupMsg) backupMsg.textContent = "⬇️ Datei als Download gespeichert.";
-    }
-
-} catch (err) {
-    console.error("Kritischer Export Fehler:", err);
-    if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
-}
-  };
+	};
 
   // ===== IMPORT (mit Smart Merge & UI Refresh) =====
   importFile.onchange = async () => {
