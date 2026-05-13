@@ -2097,23 +2097,6 @@ body.no-year header > .flex-row{
 <!-- Seite: Statistik -->
 <main id="statsPage" style="display:none;">
 
-  <!-- 1) PRO MONAT (Hero) -->
-  <section class="card">
-    <div class="toolbar">
-      <div>
-        <h2 style="margin:0;"><span class="icon">📊</span> Pro Monat</h2>
-        <div id="statsMonthBarsNote" class="muted">–</div>
-      </div>
-
-      <div class="flex-row">
-        <button id="mbModeKm" class="btn btn-secondary btn-sm" type="button">📏 Km</button>
-        <button id="mbModeFlights" class="btn btn-secondary btn-sm" type="button">✈️ Flüge</button>
-        <button id="mbModeHours" class="btn btn-secondary btn-sm" type="button">⏰ Zeit</button>
-      </div>
-    </div>
-
-    <div id="statsMonthBars"></div>
-  </section>
 
   <!-- 2) KPI-Leiste (gewählter Bereich) -->
   <section class="card">
@@ -3648,6 +3631,12 @@ function airportPopupHtml(iata, visitCounts){
   `;
 }
 
+function getTipText(bar) {
+  // Versucht zuerst data-tip (unser neuer Standard)
+  // Danach als Fallback das alte title-Attribut
+  return bar.getAttribute("data-tip") || bar.getAttribute("title") || "";
+}
+
 function wireDashBarTooltips(){
   // nur 1x global binden
   if (document.body.dataset.dashbarTipsWired === "1") return;
@@ -3702,6 +3691,13 @@ function wireDashBarTooltips(){
   });
 }
 
+	// Global verfügbar machen
+	window.setDashBarMode = function(mode) {
+		localStorage.setItem("stats_monthbars_mode", mode);
+		// Das gesamte Dashboard neu rendern, um die neuen Werte zu berechnen
+		renderDashboardTiles();
+		// Falls die Statistik-Seite auch offen ist/wäre, wird sie beim nächsten Besuch aktualisiert
+	};
 
 function renderDashboardTiles() {
   console.log("renderDashboardTiles() called");
@@ -3841,6 +3837,7 @@ function renderDashboardTiles() {
     const recent = sortedByDate.slice(0, 5);
 
     // --- Month Bars ---
+    let mbMode = localStorage.getItem("stats_monthbars_mode") || "km";
     const yearNow = new Date().getFullYear();
     const barsYear = year || yearNow;
     const buckets = Array.from({ length: 12 }, () => 0);
@@ -3848,10 +3845,36 @@ function renderDashboardTiles() {
     flights.forEach(f => {
       const d = parseFlightDateAny(f.date);
       if (!d || d.getFullYear() !== barsYear) return;
-      buckets[d.getMonth()] += Number(f.distanceKm || 0);
+      const m = d.getMonth();
+      
+      if (mbMode === "km") buckets[m] += Number(f.distanceKm || 0);
+      else if (mbMode === "hours") buckets[m] += Number(f.durationHours || 0);
+      else buckets[m] += 1; // flights
     });
 
     const max = Math.max(...buckets, 1);
+    const monthsShort = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+
+    // Hilfsfunktion für Tooltip-Label
+	const getBarLabel = (v) => {
+	  if (mbMode === "km") {
+		return `${Math.round(v).toLocaleString()} km`;
+	  }
+	  
+	  if (mbMode === "hours") {
+		// Stunden und Minuten berechnen
+		const totalMinutes = Math.round(v * 60);
+		const hh = Math.floor(totalMinutes / 60);
+		const mm = totalMinutes % 60;
+		
+		// Führende Null bei den Minuten erzwingen (z.B. 05 statt 5)
+		const mmPadded = String(mm).padStart(2, '0');
+		
+		return `${hh}:${mmPadded} h`;
+	  }
+	  
+	  return `${v} Flüge`;
+	};
 
     function parseRouteKey(routeKey) {
       const parts = String(routeKey).split("→").map(s => s.trim());
@@ -3907,22 +3930,32 @@ function renderDashboardTiles() {
         <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
       </div>
 
-      <div class="stat-card tile tile-full">
-        <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
-        <div class="dash-bars">
+       <div class="stat-card tile tile-full">
+        <div class="toolbar" style="margin-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.1); padding-bottom: 8px;">
+          <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
+          <div class="flex-row" style="gap: 5px;">
+            <button class="btn btn-secondary btn-xs ${mbMode === 'km' ? 'nav-active' : ''}" onclick="setDashBarMode('km')">Km</button>
+            <button class="btn btn-secondary btn-xs ${mbMode === 'flights' ? 'nav-active' : ''}" onclick="setDashBarMode('flights')">Flüge</button>
+            <button class="btn btn-secondary btn-xs ${mbMode === 'hours' ? 'nav-active' : ''}" onclick="setDashBarMode('hours')">Zeit</button>
+          </div>
+        </div>
+
+        <div class="dash-bars" style="height: 120px;">
           ${buckets.map((v, i) => {
             const h = Math.round((v / max) * 100);
-            const px = Math.max(6, Math.round(h * 0.72));
             return `
-              <div style="flex:1;">
-                <div class="dash-bar-wrap">
-                  <div class="dash-bar" title="${["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][i]} · ${Math.round(v).toLocaleString()} km" style="height:${px}px;"></div>
+              <div style="flex:1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                <div class="dash-bar-wrap" style="width: 70%; height: ${h}%;">
+                  <div class="dash-bar" 
+                       data-tip="${monthsShort[i]} · ${getBarLabel(v)}" 
+                       style="height: 100%; width: 100%;"></div>
                 </div>
-                <div class="dash-bar-label">${["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][i]}</div>
+                <div class="dash-bar-label" style="font-size: 0.65rem; margin-top: 4px;">${monthsShort[i]}</div>
               </div>
             `;
           }).join("")}
         </div>
+
         <div class="stat-note" style="margin-top:.35rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
 
@@ -3994,8 +4027,8 @@ function renderDashboardTiles() {
         <div class="stat-note">${String(err && err.message ? err.message : err)}</div>
       </div>
     `;
-
   }
+  
 }
 
 function renderDashboard(){
@@ -4280,37 +4313,7 @@ function renderMonthBarsForStats(){
       }).join("")}
     </div>
   `;
-
-  // Buttons aktiv markieren
-  const bKm = document.getElementById("mbModeKm");
-  const bFl = document.getElementById("mbModeFlights");
-  const bHr = document.getElementById("mbModeHours");
-
-  [bKm,bFl,bHr].forEach(b => b?.classList.remove("nav-active"));
-  if (mode === "km") bKm?.classList.add("nav-active");
-  else if (mode === "flights") bFl?.classList.add("nav-active");
-  else bHr?.classList.add("nav-active");
-
-  // Nur einmal binden (und immer neu rendern)
-  if (!wrap.dataset.modeWired){
-    wrap.dataset.modeWired = "1";
-
-    bKm?.addEventListener("click", () => {
-      localStorage.setItem("stats_monthbars_mode","km");
-      renderMonthBarsForStats();
-    });
-    bFl?.addEventListener("click", () => {
-      localStorage.setItem("stats_monthbars_mode","flights");
-      renderMonthBarsForStats();
-    });
-    bHr?.addEventListener("click", () => {
-      localStorage.setItem("stats_monthbars_mode","hours");
-      renderMonthBarsForStats();
-    });
-  }
-
-  // Tooltip wiring (global 1x)
-  wireDashBarTooltips?.();
+  
 }
 
 function renderFullStatistics() {
@@ -4375,10 +4378,6 @@ const totalMiles = Math.round(totalKm * 0.621371);
        <div class="stat-value">${countriesSet.size}</div>
     </div>`;
 }
-
-  // --- 2) Pro Monat (Hero) ---
-  // (Wichtig: Funktion soll selber frisch flights/year holen bzw. korrekt filtern)
-  renderMonthBarsForStats();
 
   // --- 3) Rankings: Airports / Länder / Airlines / Aircrafts ---
   // Airports (Besuche: hin+zurück = 1)
@@ -4838,6 +4837,7 @@ function showPage(targetId) {
 
   // Start
 	showPage("dashboardPage");
+	wireDashBarTooltips();
 });
 
 document.addEventListener("pointerup", (e) => {
@@ -5288,7 +5288,7 @@ function getMilestoneHTML(totalKm) {
                 const daysToGoal = remainingKm / kmPerDay;
                 const etaDate = new Date();
                 etaDate.setDate(etaDate.getDate() + daysToGoal);
-                etaInfo = daysToGoal > 3650 ? `⏳ ca. ${Math.round(daysToGoal/365)} Jahre` : `✨ ${etaDate.getFullYear()}`;
+                etaInfo = daysToGoal > 3650 ? `⏳ ca. ${Math.round(daysToGoal/365)} Jahre` : `✨ Ziel voraussichtlich erreicht: ${etaDate.getFullYear()}`;
             }
 
             const glowClass = (isSun && isCurrent) ? "sun-glow" : (isMars && isCurrent) ? "mars-glow" : "";
