@@ -2031,14 +2031,22 @@ body.no-year header > .flex-row{
        <datalist id="aircraftList"></datalist>
       </div>
       <div>
-        <label for="tripType">Privat / Gesch&auml;ft</label>
+        <label for="tripType">Privat / Geschäft</label>
         <select id="tripType">
           <option value="p">Privat (🌴)</option>
-          <option value="g">Gesch&auml;ft (💼)</option>
+          <option value="g">Geschäft (💼)</option>
         </select>
       </div>
+	  <div class="form-group">
+		  <label>Klasse</label>
+		  <select id="f_flightClass" class="form-input">
+			<option value="Economy" selected>🥫 Economy</option>
+			<option value="Business">🥂 Business</option>
+			<option value="First">👑 First Class</option>
+		  </select>
+		</div>
       <div>
-        <label for="speed">Ø Reisegeschwindigkeit [km/h]</label>
+        <label for="speed">Ø Speed [km/h]</label>
         <input type="number" id="speed" value="600" min="300" max="1100" step="10" />
       </div>
       <div>
@@ -2067,7 +2075,7 @@ body.no-year header > .flex-row{
       <div class="flex-row">
         <input type="search" id="searchInput" placeholder="Suche (IATA, Stadt, Airline)" />
         <button id="clearAllFlightsBtn" class="btn btn-secondary btn-sm" type="button">
-          <span class="icon">🗑</span>Alle l&ouml;schen
+          <span class="icon">🗑</span>Alle löschen
         </button>
       </div>
     </div>
@@ -2084,6 +2092,7 @@ body.no-year header > .flex-row{
           <th>Distanz</th>
           <th>Dauer</th>
           <th>Typ</th>
+		  <th>Klasse</th>
           <th></th>
         </tr>
         </thead>
@@ -2096,7 +2105,6 @@ body.no-year header > .flex-row{
 
 <!-- Seite: Statistik -->
 <main id="statsPage" style="display:none;">
-
 
   <!-- 2) KPI-Leiste (gewählter Bereich) -->
   <section class="card">
@@ -2136,6 +2144,7 @@ body.no-year header > .flex-row{
   <div id="top5Stack"></div>
 </section>
 
+
 </main>
 
 <main id="mapPage" style="display:none;">
@@ -2149,6 +2158,7 @@ body.no-year header > .flex-row{
         </div>
   </section>
 </main>
+
 
 <!-- Seite: Daten & Import -->
 <main id="dataPage" style="display:none;">
@@ -3084,76 +3094,82 @@ if (resetBtn) {
     }
   }
 
-  function addFlight() {
-    const date = document.getElementById("flightDate").value;
-    const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
-    const toIata = document.getElementById("toIata").value.trim().toUpperCase();
-    const airline = document.getElementById("airline").value.trim();
-    const aircraft = document.getElementById("aircraft").value.trim();
-    const tripType = document.getElementById("tripType").value;
-    const speed = Number(document.getElementById("speed").value);
-    const errBox = document.getElementById("flightError");
-    errBox.textContent = "";
+	function addFlight() {
+		// 1. Oben den Wert aus dem (neuen) Select-Feld auslesen
+		const date = document.getElementById("flightDate").value;
+		const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
+		const toIata = document.getElementById("toIata").value.trim().toUpperCase();
+		const airline = document.getElementById("airline").value.trim();
+		const aircraft = document.getElementById("aircraft").value.trim();
+		const tripType = document.getElementById("tripType").value;
+		const speed = Number(document.getElementById("speed").value);
+		
+		// NEU: Hier die Flugklasse auslesen
+		const flightClass = document.getElementById("f_flightClass") ? document.getElementById("f_flightClass").value : "Economy";
 
-    const errors = [];
-    if (!date) errors.push("Datum fehlt.");
-    if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
-    if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
-    if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
-    if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
-    if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+		const errBox = document.getElementById("flightError");
+		errBox.textContent = "";
 
-    if (errors.length) {
-      errBox.textContent = errors.join(" ");
-      return;
-    }
+		const errors = [];
+		if (!date) errors.push("Datum fehlt.");
+		if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
+		if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
+		if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
+		if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
+		if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
 
-    const distanceKm = calcDistanceKm(fromIata, toIata);
-    const durationHours = calcDurationHours(distanceKm, speed);
+		if (errors.length) {
+		  errBox.textContent = errors.join(" ");
+		  return;
+		}
 
-    const flights = loadFlights();
+		const distanceKm = calcDistanceKm(fromIata, toIata);
+		const durationHours = calcDurationHours(distanceKm, speed);
+		const flights = loadFlights();
 
-    if (editingFlightId === null) {
-      const newFlight = {
-        id: Date.now(),
-        date,
-        from: fromIata,
-        to: toIata,
-        airline,
-        aircraft,
-        tripType,
-        speedKmh: speed,
-        distanceKm,
-        durationHours
-      };
-      flights.push(newFlight);
-      document.getElementById("airline").value = "";
-      document.getElementById("aircraft").value = "";
-    } else {
-      const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
-      if (idx !== -1) {
-        flights[idx] = {
-          ...flights[idx],
-          date,
-          from: fromIata,
-          to: toIata,
-          airline,
-          aircraft,
-          tripType,
-          speedKmh: speed,
-          distanceKm,
-          durationHours
-        };
-      }
-    }
+		if (editingFlightId === null) {
+		  const newFlight = {
+			id: Date.now(),
+			date,
+			from: fromIata,
+			to: toIata,
+			airline,
+			aircraft,
+			tripType,
+			flightClass, // <--- HIER EINFÜGEN
+			speedKmh: speed,
+			distanceKm,
+			durationHours
+		  };
+		  flights.push(newFlight);
+		  document.getElementById("airline").value = "";
+		  document.getElementById("aircraft").value = "";
+		} else {
+		  const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
+		  if (idx !== -1) {
+			flights[idx] = {
+			  ...flights[idx],
+			  date,
+			  from: fromIata,
+			  to: toIata,
+			  airline,
+			  aircraft,
+			  tripType,
+			  flightClass, // <--- HIER AUCH EINFÜGEN (fürs Bearbeiten)
+			  speedKmh: speed,
+			  distanceKm,
+			  durationHours
+			};
+		  }
+		}
 
-	saveFlights(flights);
-	triggerSuccessFeedback();
-    editingFlightId = null;
-    setEditMode(false);
-    renderAll();
-	refreshFlightFormDatalists();
-  }
+		saveFlights(flights);
+		triggerSuccessFeedback();
+		editingFlightId = null;
+		setEditMode(false);
+		renderAll();
+		refreshFlightFormDatalists();
+	}
 
 function refreshAirlineAircraftDatalists(){
   const flights = loadFlights();
@@ -3880,29 +3896,32 @@ function renderDashboardTiles() {
       const parts = String(routeKey).split("→").map(s => s.trim());
       return { from: parts[0] || "", to: parts[1] || "" };
     }
+	
+	const totalMiles = Math.round(totalKm * 0.621371);
+	
 	wrap.innerHTML = getMilestoneHTML(totalKm);
     wrap.innerHTML += `
-      <div class="stat-card tile"><div class="stat-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
-      <div class="stat-card tile"><div class="stat-label">📏 Km</div><div class="stat-value">${Math.round(totalKm).toLocaleString()}</div></div>
-      <div class="stat-card tile"><div class="stat-label">⏰ Zeit</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
-      <div class="stat-card tile"><div class="stat-label">🛬 Airports</div><div class="stat-value">${airportsSet.size}</div></div>
-      <div class="stat-card tile"><div class="stat-label">🛫 Airlines</div><div class="stat-value">${airlinesSet.size}</div></div>
-      <div class="stat-card tile"><div class="stat-label">🌍 Länder</div><div class="stat-value">${countriesSet.size}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">📏 Flugdistanz</div><div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div><div class="stat-note">${totalMiles.toLocaleString()} miles</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">⏰ Zeit in der Luft</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛬 Airports</div><div class="stat-value">${airportsSet.size}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛫 Airlines</div><div class="stat-value">${airlinesSet.size}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🌍 Länder</div><div class="stat-value">${countriesSet.size}</div></div>
 
-      <div class="stat-card tile">
-        <div class="stat-label">🏔 Längster Flug</div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🏔 Längster Flug</div>
         <div class="stat-value">${longest ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
         <div class="stat-note">${longest ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
       </div>
 
-      <div class="stat-card tile">
-        <div class="stat-label">🧊 Kürzester Flug</div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🧊 Kürzester Flug</div>
         <div class="stat-value">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
         <div class="stat-note">${shortest ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
       </div>
 
-      <div class="stat-card tile">
-        <div class="stat-label">🔁 Häufigste Routen</div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🔁 Häufigste Routen</div>
         ${
           topRoutesAll.length
             ? topRoutesAll.map(([route, count], idx) => {
@@ -3918,19 +3937,19 @@ function renderDashboardTiles() {
         }
       </div>
 
-      <div class="stat-card tile">
-        <div class="stat-label">🏆 Top Airline</div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🏆 Top Airline</div>
         <div class="stat-value">${topAirline ? `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} <span style="margin-left:8px">${topAirline[0]}</span>` : "–"}</div>
         <div class="stat-note">${topAirline ? `${topAirline[1]}×` : ""}</div>
       </div>
 
-      <div class="stat-card tile">
-        <div class="stat-label">🛬 Top Airport (ohne Homebase${homeAirport ? ` (${homeAirport})` : ""})</div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🛬 Top Airport (w/o Homebase${homeAirport ? ` ${homeAirport}` : ""})</div>
         <div class="stat-value">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
         <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
       </div>
 
-       <div class="stat-card tile tile-full">
+       <div class="stat-card holo-card tile-full">
         <div class="toolbar" style="margin-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.1); padding-bottom: 8px;">
           <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
           <div class="flex-row" style="gap: 5px;">
@@ -3959,7 +3978,7 @@ function renderDashboardTiles() {
         <div class="stat-note" style="margin-top:.35rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
 
-      <div class="stat-card tile tile-full">
+      <div class="stat-card holo-card tile-full">
         <div class="stat-label">⚡ Quick Actions</div>
         <div class="dash-actions">
           <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
@@ -3971,14 +3990,14 @@ function renderDashboardTiles() {
         <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
       </div>
 
-      <div class="stat-card tile tile-full">
+      <div class="stat-card holo-card tile-full">
         <div class="stat-label">🧾 Zuletzt geflogen</div>
         <div class="dash-recent">
           ${recent.map(f => {
             const logo = (typeof renderAirlineLogo === "function") ? renderAirlineLogo(String(f.airline || "").trim()) : "";
             const typ = String(f.tripType || "").trim().toLowerCase() === "g" ? "💼" : "🌴";
             return `
-              <div class="recent-card">
+              <div class="stat-card holo-card">
                 <div class="recent-top">
                   <div class="recent-route">${f.from} → ${f.to}</div>
                   <div style="display:flex;align-items:center;gap:.35rem;">${logo}<span>${typ}</span></div>
@@ -4354,15 +4373,38 @@ if (statsSelectedYearEl) {
 
 const totalMiles = Math.round(totalKm * 0.621371);
 
-  statsSelectedYearEl.innerHTML = `
+let ecoCount = 0;
+let bizCount = 0;
+
+flightsScope.forEach(f => {
+    if (f.flightClass === "Business" || f.flightClass === "First") {
+        bizCount++;
+    } else {
+        ecoCount++;
+    }
+});
+
+// 🔥 Die HTML-Kachel für die Flüge vorab als Variable definieren:
+const fluegeTileHTML = `
+  <div class="stat-card holo-card">
+    <div class="stat-label terminal-label">✈️ FLÜGE</div>
+    <div class="stat-value">${flightsScope.length}</div>
+    <div class="stat-note" style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; justify-content: left;">
+      <span>🥫 ${ecoCount} Eco</span>
+      ${bizCount > 0 ? `<span style="color: #eab308;">🥂 ${bizCount} Biz</span>` : ""}
+    </div>
+  </div>
+`;
+
+// Jetzt das gesamte HTML in das Element injizieren:
+statsSelectedYearEl.innerHTML = `
     <div class="stat-card holo-card">
        <div class="stat-label terminal-label"><span class="icon">📅</span>Bereich</div>
        <div class="stat-value">${year ?? "Alle Jahre"}</div>
     </div>
-    <div class="stat-card holo-card">
-       <div class="stat-label terminal-label"><span class="icon">✈️</span>Flüge</div>
-       <div class="stat-value">${flightsScope.length}</div>
-    </div>
+    
+    ${fluegeTileHTML}
+    
     <div class="stat-card holo-card">
        <div class="stat-label terminal-label"><span class="icon">📏</span>Flugdistanz</div>
        <div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div>
@@ -4519,12 +4561,26 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
     tbody.innerHTML = "";
 
     const limitedFlights = visibleFlights.slice(0, displayLimit);
-
+    
+    // Die Definition von fClass und classMarkup muss IN die Schleife!
+    
     limitedFlights.forEach((f, idx) => {
         const fromA = AIRPORTS[f.from] || {};
         const toA = AIRPORTS[f.to] || {};
         
-        // Trip-Badge im Terminal-Stil
+        // --- NEU: Logik jetzt innerhalb der Schleife für jeden Flug (f) ---
+        const fClass = f.flightClass || "Economy"; 
+        let classMarkup = "";
+
+        if (fClass === "Business") {
+            classMarkup = '<span title="Business Class" style="cursor:help;">🥂</span>';
+        } else if (fClass === "First") {
+            classMarkup = '<span title="First Class" style="cursor:help;">👑</span>';
+        } else {
+            classMarkup = '<span title="Economy Class" style="cursor:help; opacity: 0.6;">🥫</span>';
+        }
+        // -----------------------------------------------------------------
+
         const tripLabel = f.tripType === "g"
             ? "<span class='trip-badge' style='background:#1e3a8a; color:#93c5fd; border:1px solid #3b82f6;'>💼 BIZ</span>"
             : f.tripType === "p"
@@ -4535,22 +4591,24 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
         tr.innerHTML = `
             <td style="color: #475569; font-family: monospace;">${seqMap[String(f.id)] ?? (idx + 1)}</td>
             <td style="font-weight:bold; color:#cbd5e1;">${formatDate(f.date)}</td>
-			<td>
-				<div><span class="tag-terminal">🛫 ${f.from}</span></div>
-				<div class="city-subtitle">${fromA.city || ""}</div>
-			</td>
-			<td>
-				<div><span class="tag-terminal" style="border-color:#a855f7; color:#d8b4fe;">🛬 ${f.to}</span></div>
-				<div class="city-subtitle">${toA.city || ""}</div>
-			</td>
+            <td>
+                <div><span class="tag-terminal">🛫 ${f.from}</span></div>
+                <div class="city-subtitle">${fromA.city || ""}</div>
+            </td>
+            <td>
+                <div><span class="tag-terminal" style="border-color:#a855f7; color:#d8b4fe;">🛬 ${f.to}</span></div>
+                <div class="city-subtitle">${toA.city || ""}</div>
+            </td>
             <td>${(typeof renderAirlineLogo === "function" ? renderAirlineLogo(f.airline) : f.airline)}</td>
             <td style="font-size:0.85rem; color:#94a3b8;">${f.aircraft || "–"}</td>
+            <!-- Die Klasse-Spalte passend zum Tabellenkopf (vor Distanz) -->
             <td>
                 <div class="dist-val">${formatKm(f.distanceKm)}</div>
                 <div style="font-size:0.7rem; color:#475569;">${formatMiles(f.distanceKm)}</div>
             </td>
             <td style="color:#f1f5f9;">${formatHours(f.durationHours)}</td>
             <td>${tripLabel}</td>
+			<td style="text-align:center; font-size: 1.1rem;">${classMarkup}</td>
             <td class="row-actions">
                 <button class="action-btn" title="Bearbeiten" data-edit-id="${f.id}">✏️</button>
                 <button class="action-btn danger" title="Löschen" data-id="${f.id}">🗑️</button>
@@ -4560,7 +4618,7 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
         tbody.appendChild(tr);
     });
 
-    // Event-Listener (unverändert)
+    // Event-Listener & Load-More Logik (unverändert)
     tbody.querySelectorAll("button[data-id]").forEach(btn => {
         btn.onclick = () => deleteFlight(btn.getAttribute("data-id"));
     });
@@ -4568,13 +4626,12 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
         btn.onclick = () => startEditFlight(btn.getAttribute("data-edit-id"));
     });
 
-    // "Mehr laden"-Button im Radar-Look
     if (visibleFlights.length > displayLimit) {
         const moreRow = document.createElement("tr");
         moreRow.innerHTML = `
-            <td colspan="10" style="text-align:center; padding: 2rem; background: rgba(2,6,23,0.8);">
+            <td colspan="11" style="text-align:center; padding: 2rem; background: rgba(2,6,23,0.8);">
                 <button id="loadMoreBtn" class="btn" style="background:transparent; border: 1px dashed #38bdf8; color:#38bdf8; padding:10px 20px; cursor:pointer;">
-                   📡 EMPFANGE WEITERE DATENSÄTZE... (${visibleFlights.length - displayLimit} verbleibend)
+                    📡 EMPFANGE WEITERE DATENSÄTZE... (${visibleFlights.length - displayLimit} verbleibend)
                 </button>
             </td>`;
         tbody.appendChild(moreRow);
@@ -4621,7 +4678,7 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
     statAirlinesEl.textContent = airlines.size ? (""+airlines.size) : "–";
     statAircraftsEl.textContent = aircrafts.size ? (""+aircrafts.size) : "–";
     flightCountLabel.innerHTML =
-      "<span class=\"icon\">🧮</span>"+totalFlights + (totalFlights === 1 ? " Flug" : " Fl&uuml;ge");
+      "<span class=\"icon\">🧮</span>"+totalFlights + (totalFlights === 1 ? " Flug" : " Flüge");
   }
 
   function renderMiniStats(visibleFlights) {
@@ -4632,6 +4689,7 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">"+Math.round(miniKm*0.621371).toLocaleString()+"</div></div>"+
       "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">"+formatHours(miniHours)+"</div></div>";
   }
+
 
 function renderAll() {
   updateAirportCount();
@@ -4802,9 +4860,12 @@ function showPage(targetId) {
       refreshFlightFormDatalists();
     }, 0);
   }
-  else if (targetId === "statsPage") {
-    setTimeout(renderFullStatistics, 0);
-  } 
+	else if (targetId === "statsPage") {
+	  setTimeout(() => {
+		renderFullStatistics(); // Deine bisherigen Statistiken
+		renderClassStats();     // 🔥 NEU: Berechnet und zeichnet das Comfort-Barometer
+	  }, 0);
+	}
   else if (targetId === "mapPage") {
     // --- NEU: Karten-Trigger ---
     setTimeout(() => {
@@ -4821,7 +4882,7 @@ function showPage(targetId) {
   }
   else if (targetId === "profilePage") {
     setTimeout(renderProfile, 0);
-  }
+  } 
 }
 
   // Klick-Handler (NUR EINMAL!)
