@@ -2988,19 +2988,24 @@ function wireBackupImportExport() {
         let newCount = 0;
 
 		// Innerhalb von wireBackupImportExport beim Import-Teil:
+		// INNERHALB DEINER IMPORT-SCHLEIFE ANPASSEN:
 		data.flights.forEach(newF => {
 			const isDup = merged.some(localF => {
-				// 1. Check über ID (falls vorhanden)
 				if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
-				
-				// 2. Check über Datum + Route (Sicherheitsnetz)
 				return localF.date === newF.date && 
 					   localF.from === newF.from && 
 					   localF.to === newF.to;
 			});
 
 			if (!isDup) {
-				merged.push(newF);
+				// 🔥 FIX: Wir stellen sicher, dass JEDER importierte Flug ein sauberes Feld hat.
+				// Wenn das Feld im Backup fehlt (alte Backups), setzen wir es auf "Economy".
+				const flightToPush = {
+					...newF,
+					flightClass: newF.flightClass || "Economy"
+				};
+
+				merged.push(flightToPush);
 				newCount++;
 			}
 		});
