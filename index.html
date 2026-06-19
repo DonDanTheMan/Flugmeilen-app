@@ -3083,7 +3083,7 @@ function wireBackupImportExport() {
     }
   };
 
-// ===== IMPORT (mit Smart Merge & UI Refresh) =====
+// ===== IMPORT (mit Smart Merge & UI Refresh & Duplikat-Detektor) =====
 importFile.onchange = async () => {
   const file = importFile.files?.[0];
   if (!file) return;
@@ -3093,25 +3093,29 @@ importFile.onchange = async () => {
     const data = JSON.parse(text);
 
     if (Array.isArray(data.flights)) {
-      // 🔥 FIX: Wir holen die lokalen Flüge als ABSOLUTE ROHDATEN direkt aus dem Speicher!
-      let localFlights = [];
-      try {
-        const key = typeof STORAGE_KEY_FLIGHTS !== "undefined" ? STORAGE_KEY_FLIGHTS : "flights";
-        const raw = localStorage.getItem(key);
-        localFlights = raw ? JSON.parse(raw) : [];
-      } catch (e) {
-        localFlights = typeof loadFlights === "function" ? loadFlights() : [];
-      }
-
+      // Wir starten bei einem komplett leeren Handy mit einer leeren Liste
+      const localFlights = typeof loadFlights === "function" ? loadFlights() : [];
       const merged = [...localFlights];
       let newCount = 0;
+      
+      // Listen für unseren Detektor
+      const foundDuplicates = [];
+      const seenInThisImport = new Set();
 
       data.flights.forEach(newF => {
+        // 🔥 DETEKTOR: Wir erstellen einen eindeutigen Schlüssel für jeden Flug im Backup
+        const flightKey = `${newF.date}_${newF.from}_${newF.to}_${newF.airline || ''}_${newF.flightNumber || ''}`;
+        
+        if (seenInThisImport.has(flightKey)) {
+          // Wenn wir diesen Schlüssel in DIESER Datei schon mal gesehen haben, ist es ein internes Duplikat!
+          foundDuplicates.push(`${newF.date}: ${newF.from} ➔ ${newF.to}`);
+        } else {
+          seenInThisImport.add(flightKey);
+        }
+
+        // Der normale Import-Abgleich gegen bereits existierende Flüge
         const isDup = merged.some(localF => {
-          // 1. Wenn IDs vorhanden und identisch sind -> Garantiert ein Duplikat
           if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
-          
-          // 2. Verschärfter Check über Route + Datum + Airline + Flugzeugtyp
           return localF.date === newF.date && 
                  localF.from === newF.from && 
                  localF.to === newF.to &&
@@ -3124,7 +3128,6 @@ importFile.onchange = async () => {
             ...newF,
             flightClass: newF.flightClass || "Economy"
           };
-
           merged.push(flightToPush);
           newCount++;
         }
@@ -3133,14 +3136,16 @@ importFile.onchange = async () => {
       merged.sort((a, b) => new Date(b.date) - new Date(a.date));
       saveFlights(merged);
       
-      // 🔥 FIX: Filter auf dem Handy nach dem Import zwangsweise auf "Alle Jahre" zurücksetzen
-      const ys = document.getElementById("yearSelect");
-      if (ys) ys.value = "";
-      localStorage.setItem("selectedYear", "");
-      const si = document.getElementById("searchInput");
-      if (si) si.value = "";
-
-      if (backupMsg) backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
+      // 🔥 AUSGABE: Wenn der Detektor anschlägt, zeigen wir es direkt an!
+      if (backupMsg) {
+        if (foundDuplicates.length > 0) {
+          backupMsg.innerHTML = `✅ Import fertig! (${newCount} Flüge).<br>
+            <span style="color: #f59e0b; font-weight: bold;">⚠️ Hinweis: In deiner PC-Datei wurden ${foundDuplicates.length} doppelte Flüge gefunden und bereinigt:</span><br>
+            <small style="opacity: 0.8;">${foundDuplicates.join("<br>")}</small>`;
+        } else {
+          backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
+        }
+      }
     }
 
     if (data.airports && typeof data.airports === "object") {
@@ -3148,7 +3153,6 @@ importFile.onchange = async () => {
       if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
     }
 
-    // Alles neu zeichnen
     renderAll?.();
     renderDashboard?.();
     renderFullStatistics?.();
