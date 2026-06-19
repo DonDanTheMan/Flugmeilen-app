@@ -1980,6 +1980,33 @@ body.no-year header > .flex-row{
     color: #38bdf8;
 }
 
+/* Styling für die automatischen Flughafen-Labels */
+.map-airport-label {
+    background: rgba(2, 6, 23, 0.9) !important;      /* Dunkles Nav-Blau */
+    border: 1px solid rgba(14, 165, 233, 0.4) !important; /* Cyber-Blau */
+    color: #cbd5e1 !important;                        /* Textfarbe */
+    font-family: monospace !important;
+    font-size: 0.75rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    
+    /* Wichtig: Startet unsichtbar, wird per JS ab Zoom 5 auf 1 gesetzt */
+    opacity: 0; 
+    pointer-events: none; /* Verhindert Störungen beim Bewegen der Karte */
+}
+
+/* Ändert das Aussehen der Flaggen-Bilder innerhalb der Labels */
+.map-airport-label .flag-img {
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Der kleine Dreiecks-Pfeil unter dem Label */
+.map-airport-label::before {
+    border-top-color: rgba(14, 165, 233, 0.4) !important;
+}
+
   </style>
 </head>
 <body>
@@ -3561,14 +3588,21 @@ function renderMap(flights) {
   
   streetLayer.addTo(leafletMap);
 
-  // --- 1. ROUTEN ZEICHNEN (Das neuronale Netzwerk) ---
+// --- 1. ROUTEN ZEICHNEN (Das neuronale Netzwerk) ---
   const routeGroup = L.layerGroup();
   
+  // 🔥 NEU: Exakte Zähl-Logik aus dem Stats-Tab für die Map adaptiert
+  const rawAirportCounts = {};
+
   flights.forEach(f => {
     const fromA = AIRPORTS[f.from];
     const toA = AIRPORTS[f.to];
 
     if (fromA && toA) {
+      // Rohe Vorkommen für Abflug und Ankunft sammeln
+      rawAirportCounts[f.from] = (rawAirportCounts[f.from] || 0) + 1;
+      rawAirportCounts[f.to] = (rawAirportCounts[f.to] || 0) + 1;
+
       const coords = [
         [fromA.lat, fromA.lon],
         [toA.lat, toA.lon]
@@ -3586,6 +3620,12 @@ function renderMap(flights) {
   });
   routeGroup.addTo(leafletMap);
 
+  // 🔥 NEU: Hin- + Rückflug durch 2 teilen und aufrunden (wie in den Stats!)
+  const visitCounts = {};
+  for (const [code, count] of Object.entries(rawAirportCounts)) {
+    visitCounts[code] = Math.ceil(count / 2);
+  }
+
   // --- 2. AIRPORTS ALS EINZELPUNKTE (Keine Cluster) ---
   const airportCodes = new Set();
   flights.forEach(f => {
@@ -3602,16 +3642,39 @@ function renderMap(flights) {
     const latlng = [a.lat, a.lon];
     bounds.push(latlng);
 
+    // Nutze deine bestehende HTML-Funktion für den Inhalt des Labels
+    const labelContent = airportPopupHtml(code, visitCounts);
+
     L.circleMarker(latlng, {
       radius: 4,
       className: "airport-dot",
       weight: 1,
       opacity: 0.8,
       fillOpacity: 1
-    }).bindPopup(`<strong>${a.city || code}</strong><br>Status: Terminal Active`)
-      .addTo(airportGroup);
+    })
+    // 🔥 Hier binden wir das permanente Tooltip statt des Klick-Popups
+    .bindTooltip(labelContent, {
+      permanent: true,       // Bleibt dauerhaft geöffnet
+      direction: 'top',      // Zeigt das Label über dem Punkt an
+      offset: [0, -5],       // Verschiebung leicht nach oben
+      className: 'map-airport-label' // Eigene CSS-Klasse für Styling & Zoom-Steuerung
+    })
+    .addTo(airportGroup);
   });
   airportGroup.addTo(leafletMap);
+
+  // --- 🔥 NEU: AUTOMATISCHES EIN-/AUSBLENDEN BEIM ZOOMEN ---
+  leafletMap.on('zoomend', () => {
+    const currentZoom = leafletMap.getZoom();
+    
+    // Ab Zoom-Level 5 blenden wir die Schilder ein. Du kannst den Wert (5) nach Wunsch anpassen!
+    const showLabels = currentZoom >= 5; 
+
+    document.querySelectorAll('.map-airport-label').forEach(el => {
+      el.style.opacity = showLabels ? '1' : '0';
+      el.style.transition = 'opacity 0.2s ease-in-out'; // Flüssiger Einblend-Effekt
+    });
+  });
 
   // --- 3. LAYER CONTROL ---
   const overlays = {
@@ -3624,7 +3687,13 @@ function renderMap(flights) {
     leafletMap.fitBounds(bounds, { padding: [50, 50] });
   }
 
-  setTimeout(() => leafletMap.invalidateSize(), 150);
+  // Ein kleiner Extra-Trigger nach dem fitBounds, falls die Karte direkt im passenden Zoom startet
+  setTimeout(() => {
+    if (leafletMap) {
+      leafletMap.invalidateSize();
+      leafletMap.fire('zoomend'); // Erzwingt den ersten Sichtbarkeits-Check
+    }
+  }, 150);
 }
 
 function airportPopupHtml(iata, visitCounts){
