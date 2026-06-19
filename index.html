@@ -3083,7 +3083,7 @@ function wireBackupImportExport() {
     }
   };
 
-  // ===== IMPORT (mit Smart Merge & UI Refresh) =====
+// ===== IMPORT (mit Smart Merge & UI Refresh) =====
 importFile.onchange = async () => {
   const file = importFile.files?.[0];
   if (!file) return;
@@ -3093,20 +3093,20 @@ importFile.onchange = async () => {
     const data = JSON.parse(text);
 
     if (Array.isArray(data.flights)) {
-      const localFlights = loadFlights();
+      // 🔥 FIX: Wir holen die lokalen Flüge als ABSOLUTE ROHDATEN direkt aus dem Speicher!
+      let localFlights = [];
+      try {
+        const key = typeof STORAGE_KEY_FLIGHTS !== "undefined" ? STORAGE_KEY_FLIGHTS : "flights";
+        const raw = localStorage.getItem(key);
+        localFlights = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        localFlights = typeof loadFlights === "function" ? loadFlights() : [];
+      }
+
       const merged = [...localFlights];
       let newCount = 0;
-      let invalidCount = 0; // 🔥 NEU: Zähler für fehlerhafte Flüge
 
       data.flights.forEach(newF => {
-        // 🔥 NEU: Hier prüfen wir als allererstes, ob das Datum überhaupt gültig ist!
-        const hasValidDate = newF.date && !isNaN(parseFlightDateToTs(newF.date));
-        if (!hasValidDate) {
-           console.warn("⚠️ Import verweigert einen Flug wegen ungültigem Datum:", newF);
-           invalidCount++;
-           return; // Springt sofort zum nächsten Flug, nimmt diesen also nicht mit!
-        }
-
         const isDup = merged.some(localF => {
           // 1. Wenn IDs vorhanden und identisch sind -> Garantiert ein Duplikat
           if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
@@ -3133,14 +3133,14 @@ importFile.onchange = async () => {
       merged.sort((a, b) => new Date(b.date) - new Date(a.date));
       saveFlights(merged);
       
-      // 🔥 NEU: Die Textmeldung passt sich an, falls Flüge fehlerhaft waren
-      if (backupMsg) {
-        if (invalidCount > 0) {
-          backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge). <br><span style="color: #f43f5e;">⚠️ ${invalidCount} Flüge wegen fehlerhafter Daten ignoriert (siehe F12 Konsole).</span>`;
-        } else {
-          backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
-        }
-      }
+      // 🔥 FIX: Filter auf dem Handy nach dem Import zwangsweise auf "Alle Jahre" zurücksetzen
+      const ys = document.getElementById("yearSelect");
+      if (ys) ys.value = "";
+      localStorage.setItem("selectedYear", "");
+      const si = document.getElementById("searchInput");
+      if (si) si.value = "";
+
+      if (backupMsg) backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
     }
 
     if (data.airports && typeof data.airports === "object") {
@@ -3148,6 +3148,7 @@ importFile.onchange = async () => {
       if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
     }
 
+    // Alles neu zeichnen
     renderAll?.();
     renderDashboard?.();
     renderFullStatistics?.();
