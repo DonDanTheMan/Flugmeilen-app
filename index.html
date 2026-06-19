@@ -3084,66 +3084,82 @@ function wireBackupImportExport() {
   };
 
   // ===== IMPORT (mit Smart Merge & UI Refresh) =====
-  importFile.onchange = async () => {
-    const file = importFile.files?.[0];
-    if (!file) return;
+importFile.onchange = async () => {
+  const file = importFile.files?.[0];
+  if (!file) return;
 
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
 
-      if (Array.isArray(data.flights)) {
-        const localFlights = loadFlights();
-        const merged = [...localFlights];
-        let newCount = 0;
+    if (Array.isArray(data.flights)) {
+      const localFlights = loadFlights();
+      const merged = [...localFlights];
+      let newCount = 0;
+      let invalidCount = 0; // 🔥 NEU: Zähler für fehlerhafte Flüge
 
-		data.flights.forEach(newF => {
-          const isDup = merged.some(localF => {
-            // 1. Wenn IDs vorhanden und identisch sind -> Garantiert ein Duplikat
-            if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
-            
-            // 2. Verschärfter Check über Route + Datum + Airline + Flugzeugtyp
-            // Dadurch werden Double-Legs am selben Tag nicht mehr fälschlicherweise gelöscht!
-            return localF.date === newF.date && 
-                   localF.from === newF.from && 
-                   localF.to === newF.to &&
-                   (localF.airline || "") === (newF.airline || "") &&
-                   (localF.aircraft || "") === (newF.aircraft || "");
-          });
+      data.flights.forEach(newF => {
+        // 🔥 NEU: Hier prüfen wir als allererstes, ob das Datum überhaupt gültig ist!
+        const hasValidDate = newF.date && !isNaN(parseFlightDateToTs(newF.date));
+        if (!hasValidDate) {
+           console.warn("⚠️ Import verweigert einen Flug wegen ungültigem Datum:", newF);
+           invalidCount++;
+           return; // Springt sofort zum nächsten Flug, nimmt diesen also nicht mit!
+        }
 
-          if (!isDup) {
-            const flightToPush = {
-              ...newF,
-              flightClass: newF.flightClass || "Economy"
-            };
-
-            merged.push(flightToPush);
-            newCount++;
-          }
+        const isDup = merged.some(localF => {
+          // 1. Wenn IDs vorhanden und identisch sind -> Garantiert ein Duplikat
+          if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
+          
+          // 2. Verschärfter Check über Route + Datum + Airline + Flugzeugtyp
+          return localF.date === newF.date && 
+                 localF.from === newF.from && 
+                 localF.to === newF.to &&
+                 (localF.airline || "") === (newF.airline || "") &&
+                 (localF.aircraft || "") === (newF.aircraft || "");
         });
-		
-        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-        saveFlights(merged);
-        if (backupMsg) backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
+
+        if (!isDup) {
+          const flightToPush = {
+            ...newF,
+            flightClass: newF.flightClass || "Economy"
+          };
+
+          merged.push(flightToPush);
+          newCount++;
+        }
+      });
+      
+      merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveFlights(merged);
+      
+      // 🔥 NEU: Die Textmeldung passt sich an, falls Flüge fehlerhaft waren
+      if (backupMsg) {
+        if (invalidCount > 0) {
+          backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge). <br><span style="color: #f43f5e;">⚠️ ${invalidCount} Flüge wegen fehlerhafter Daten ignoriert (siehe F12 Konsole).</span>`;
+        } else {
+          backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
+        }
       }
-
-      if (data.airports && typeof data.airports === "object") {
-        AIRPORTS = data.airports;
-        if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
-      }
-
-      renderAll?.();
-      renderDashboard?.();
-      renderFullStatistics?.();
-      renderProfile?.();
-
-    } catch (err) {
-      console.error("Import Fehler:", err);
-      if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen.";
-    } finally {
-      importFile.value = "";
     }
-  };
+
+    if (data.airports && typeof data.airports === "object") {
+      AIRPORTS = data.airports;
+      if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
+    }
+
+    renderAll?.();
+    renderDashboard?.();
+    renderFullStatistics?.();
+    renderProfile?.();
+
+  } catch (err) {
+    console.error("Import Fehler:", err);
+    if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen.";
+  } finally {
+    importFile.value = "";
+  }
+};
 
   // ===== RESET =====
   if (resetBtn) {
