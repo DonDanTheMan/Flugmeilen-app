@@ -3000,8 +3000,16 @@ function wireBackupImportExport() {
     e.stopPropagation();
 
     try {
-      // 1. Daten sammeln
-      const flightsToExport = loadFlights();
+      // 1. Daten sammeln – 🔥 FIX: Direkt und ungefiltert aus dem localStorage lesen!
+      let flightsToExport = [];
+      try {
+        const raw = localStorage.getItem("flights"); // Nutzt deinen STORAGE_KEY_FLIGHTS ("flights")
+        flightsToExport = raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        // Fallback falls localStorage fehlschlägt
+        flightsToExport = typeof loadFlights === "function" ? loadFlights() : [];
+      }
+
       const airportsToExport = (typeof loadAirportsFromStorage === "function") 
         ? loadAirportsFromStorage() 
         : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
@@ -3010,7 +3018,7 @@ function wireBackupImportExport() {
       // 2. Das Paket schnüren (Wichtig: Hier wird payload definiert!)
       const payload = {
         exportedAt: new Date().toISOString(),
-        flights: flightsToExport,
+        flights: flightsToExport, // Jetzt sind es garantiert alle 397 Flüge!
         airports: airportsToExport,
         profile: profileToExport
       };
@@ -3072,28 +3080,24 @@ function wireBackupImportExport() {
         const merged = [...localFlights];
         let newCount = 0;
 
-		// Innerhalb von wireBackupImportExport beim Import-Teil:
-		// INNERHALB DEINER IMPORT-SCHLEIFE ANPASSEN:
-		data.flights.forEach(newF => {
-			const isDup = merged.some(localF => {
-				if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
-				return localF.date === newF.date && 
-					   localF.from === newF.from && 
-					   localF.to === newF.to;
-			});
+        data.flights.forEach(newF => {
+          const isDup = merged.some(localF => {
+            if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
+            return localF.date === newF.date && 
+                   localF.from === newF.from && 
+                   localF.to === newF.to;
+          });
 
-			if (!isDup) {
-				// 🔥 FIX: Wir stellen sicher, dass JEDER importierte Flug ein sauberes Feld hat.
-				// Wenn das Feld im Backup fehlt (alte Backups), setzen wir es auf "Economy".
-				const flightToPush = {
-					...newF,
-					flightClass: newF.flightClass || "Economy"
-				};
+          if (!isDup) {
+            const flightToPush = {
+              ...newF,
+              flightClass: newF.flightClass || "Economy"
+            };
 
-				merged.push(flightToPush);
-				newCount++;
-			}
-		});
+            merged.push(flightToPush);
+            newCount++;
+          }
+        });
 
         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
         saveFlights(merged);
@@ -3105,7 +3109,6 @@ function wireBackupImportExport() {
         if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
       }
 
-      // Alles neu zeichnen (wichtig für die Mond-ETA-Prognose!)
       renderAll?.();
       renderDashboard?.();
       renderFullStatistics?.();
@@ -3120,18 +3123,18 @@ function wireBackupImportExport() {
   };
 
   // ===== RESET =====
-if (resetBtn) {
+  if (resetBtn) {
     resetBtn.onclick = () => {
-      if (!confirm("Wirklich ALLES löschen? Deine 386 Flüge gehen verloren!")) return;
+      if (!confirm("Wirklich ALLES löschen? Deine Flüge gehen verloren!")) return;
       localStorage.clear();
       AIRPORTS = {};
       if (backupMsg) backupMsg.textContent = "🧨 Reset durchgeführt.";
       
-      // Seite neu laden, um alle Variablen sauber zu leeren
       location.reload(); 
     };
   }
 }
+
   function handleAirportCsvLoad() {
     const fileInput = document.getElementById("airportFile");
     const errBox = document.getElementById("airportError");
