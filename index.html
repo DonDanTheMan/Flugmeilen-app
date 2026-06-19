@@ -2007,6 +2007,43 @@ body.no-year header > .flex-row{
     border-top-color: rgba(14, 165, 233, 0.4) !important;
 }
 
+/* Vollbild-Klasse, die per JS an den Body geheftet wird */
+body.map-in-fullscreen header,
+body.map-in-fullscreen .app-header,
+body.map-in-fullscreen .bottom-nav,
+body.map-in-fullscreen .toolbar {
+    display: none !important;
+}
+
+body.map-in-fullscreen main#mapPage {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.map-in-fullscreen .card {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 9999 !important;
+}
+
+body.map-in-fullscreen #map {
+    border-radius: 0 !important;
+    border: none !important;
+}
+
+/* Verschiebt den Schließen-Button im reinen CSS-Vollbild leicht nach oben */
+body.map-in-fullscreen #mapFullscreenBtn {
+    top: 15px !important;
+    right: 15px !important;
+}
+
   </style>
 </head>
 <body>
@@ -2174,14 +2211,35 @@ body.no-year header > .flex-row{
 </main>
 
 <main id="mapPage" style="display:none;">
-  <section class="card" style="height: 85vh; display: flex; flex-direction: column; padding: 15px;">
+  <section class="card" style="height: 85vh; display: flex; flex-direction: column; padding: 15px; position: relative;">
     <div class="toolbar" style="margin-bottom: 15px;">
       <h2 style="margin:0;"><span class="icon">🛰️</span> Global Network Tracker</h2>
       <div class="muted">Live Status: Connected</div>
     </div>
 
+    <button id="mapFullscreenBtn" title="Vollbild umschalten" type="button" style="
+      position: absolute; 
+      top: 75px; 
+      right: 25px; 
+      z-index: 1000; 
+      background: rgba(2, 6, 23, 0.85); 
+      border: 1px solid rgba(56, 189, 248, 0.4); 
+      color: #38bdf8; 
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 0.9rem;
+      font-family: monospace;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    ">
+      📱 <span>Vollbild</span>
+    </button>
+
     <div id="map" style="flex-grow: 1; width: 100%; border-radius: 12px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.2);">
-        </div>
+    </div>
   </section>
 </main>
 
@@ -5495,6 +5553,58 @@ document.querySelectorAll('.nav-item').forEach(btn => {
           window.map.invalidateSize();
         }
       }, 150); // 150ms Puffer
+    }
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const fsBtn = document.getElementById("mapFullscreenBtn");
+  
+  if (fsBtn) {
+    fsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Schaltet den Vollbild-Style für das gesamte Layout um
+      const isFull = document.body.classList.toggle("map-in-fullscreen");
+      const span = fsBtn.querySelector("span");
+      
+      if (isFull) {
+        if (span) span.textContent = "Schliessen";
+        fsBtn.innerHTML = "❌ <span>Schliessen</span>";
+        
+        // Echtes Browser-Vollbild für Smartphones triggern (blendet die Statusleiste aus)
+        const mapPage = document.getElementById("mapPage");
+        if (mapPage && mapPage.requestFullscreen) {
+          mapPage.requestFullscreen().catch(() => {});
+        }
+      } else {
+        fsBtn.innerHTML = "📱 <span>Vollbild</span>";
+        
+        // Echtes Vollbild beenden
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      // 🚨 Essentiell für Leaflet: Kartengröße neu kalkulieren
+      setTimeout(() => {
+        if (leafletMap) {
+          leafletMap.invalidateSize();
+        }
+      }, 150);
+    });
+  }
+
+  // Sicherheitsnetz für Android-Zurücktaste / Esc-Taste am PC
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+      document.body.classList.remove("map-in-fullscreen");
+      const fsBtn = document.getElementById("mapFullscreenBtn");
+      if (fsBtn) fsBtn.innerHTML = "📱 <span>Vollbild</span>";
+      if (leafletMap) {
+        setTimeout(() => leafletMap.invalidateSize(), 150);
+      }
     }
   });
 });
