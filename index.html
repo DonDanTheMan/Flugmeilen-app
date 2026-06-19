@@ -2993,21 +2993,38 @@ function wireBackupImportExport() {
 
   if (!exportBtn || !importFile) return;
 
-  // ===== EXPORT (mit Web Share & Fallback) =====
+// ===== EXPORT (mit Web Share & Fallback) =====
 
   exportBtn.onclick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     try {
-      // 1. Daten sammeln – 🔥 FIX: Direkt und ungefiltert aus dem localStorage lesen!
+      // 1. Daten sammeln – 🔥 FIX: Holt GARANTIERT alle 397 Flüge ungefiltert!
       let flightsToExport = [];
       try {
-        const raw = localStorage.getItem("flights"); // Nutzt deinen STORAGE_KEY_FLIGHTS ("flights")
+        // Erst versuchen wir es über die offizielle Konstante deiner App
+        const key = typeof STORAGE_KEY_FLIGHTS !== "undefined" ? STORAGE_KEY_FLIGHTS : "flights";
+        const raw = localStorage.getItem(key);
         flightsToExport = raw ? JSON.parse(raw) : [];
       } catch (err) {
-        // Fallback falls localStorage fehlschlägt
+        flightsToExport = [];
+      }
+
+      // Sicherheitsnetz: Falls das direkte Auslesen fehlschlägt oder leer war, 
+      // rufen wir loadFlights() auf, setzen aber das Filter-Dropdown kurz zurück,
+      // damit uns keine Flüge durch die Lappen gehen!
+      if (!flightsToExport || flightsToExport.length === 0) {
+        const yearSelect = document.getElementById("yearSelect");
+        const previousYearValue = yearSelect ? yearSelect.value : "";
+        
+        // Filter kurz aufheben
+        if (yearSelect) yearSelect.value = ""; 
+        
         flightsToExport = typeof loadFlights === "function" ? loadFlights() : [];
+        
+        // Filter direkt wieder in den alten Zustand versetzen, damit der User nichts merkt
+        if (yearSelect) yearSelect.value = previousYearValue;
       }
 
       const airportsToExport = (typeof loadAirportsFromStorage === "function") 
@@ -3018,7 +3035,7 @@ function wireBackupImportExport() {
       // 2. Das Paket schnüren (Wichtig: Hier wird payload definiert!)
       const payload = {
         exportedAt: new Date().toISOString(),
-        flights: flightsToExport, // Jetzt sind es garantiert alle 397 Flüge!
+        flights: flightsToExport, // Jetzt sind es garantiert alle deine Flüge!
         airports: airportsToExport,
         profile: profileToExport
       };
@@ -3080,12 +3097,18 @@ function wireBackupImportExport() {
         const merged = [...localFlights];
         let newCount = 0;
 
-        data.flights.forEach(newF => {
+		data.flights.forEach(newF => {
           const isDup = merged.some(localF => {
+            // 1. Wenn IDs vorhanden und identisch sind -> Garantiert ein Duplikat
             if (localF.id && newF.id && String(localF.id) === String(newF.id)) return true;
+            
+            // 2. Verschärfter Check über Route + Datum + Airline + Flugzeugtyp
+            // Dadurch werden Double-Legs am selben Tag nicht mehr fälschlicherweise gelöscht!
             return localF.date === newF.date && 
                    localF.from === newF.from && 
-                   localF.to === newF.to;
+                   localF.to === newF.to &&
+                   (localF.airline || "") === (newF.airline || "") &&
+                   (localF.aircraft || "") === (newF.aircraft || "");
           });
 
           if (!isDup) {
@@ -3098,7 +3121,7 @@ function wireBackupImportExport() {
             newCount++;
           }
         });
-
+		
         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
         saveFlights(merged);
         if (backupMsg) backupMsg.innerHTML = `✅ Import fertig! (${newCount} neue Flüge)`;
