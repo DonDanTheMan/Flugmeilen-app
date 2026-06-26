@@ -2362,51 +2362,50 @@ body.map-in-fullscreen #mapFullscreenBtn {
     <div id="profileSavedNote" class="muted" style="margin-top:.4rem;"></div>
   </section>
 
-  <section class="card card-collapsible" id="airlineLogoCard">
-  <div class="toolbar">
-    <div>
-      <h2 style="margin:0;"><span class="icon">✈️</span> Airline-Logos</h2>
-      <div class="muted">Aus deinen gespeicherten Flügen automatisch erkannt.</div>
+<section class="card card-collapsible" id="airlineLogoCard">
+	<div class="toolbar">
+		  <div>
+			<h2 style="margin:0;"><span class="icon">✈️</span> Airline-Logos & Stammdaten</h2>
+			<div class="muted">Verwalte Airlines, Flugzeugtypen und deine Logos.</div>
+		  </div>
+
+		  <div class="flex-row">
+			<span id="profileLogoStats" class="badge">–</span>
+
+			<button id="addCustomAirlineBtn" class="btn btn-secondary btn-sm" type="button" style="border-color: rgba(34,197,94,0.4);" title="Neue Airline zu den Dropdowns hinzufügen">
+			  <span class="icon">➕</span> Airline
+			</button>
+
+			<button id="addCustomAircraftBtn" class="btn btn-secondary btn-sm" type="button" style="border-color: rgba(56,189,248,0.4);" title="Neuen Flugzeugtyp zu den Dropdowns hinzufügen">
+			  <span class="icon">➕</span> Flugzeug
+			</button>
+
+			<button id="addLogoBtn" class="btn btn-secondary btn-sm" type="button" title="Neues Logo hochladen">
+			  <span class="icon">🖼️</span> Logo upload
+			</button>
+			<input id="addLogoFile" type="file" accept="image/*" style="display:none;">
+
+			<button id="toggleMissingBtn" class="btn btn-secondary btn-sm" type="button" style="opacity: 0.85;">
+			  <span class="icon">🕵️</span> Nur fehlende
+			</button>
+
+			<button id="toggleLogoCardBtn" class="btn btn-secondary btn-sm collapse-btn" type="button" aria-label="Ein-/Ausklappen" title="Ein-/Ausklappen">
+			  <span class="icon">▾</span>
+			</button>
+		  </div>
+		</div>
+
+    <!-- Klappbarer Body mit EINMALIGEM Suchfeld und Container -->
+    <div class="card-body" id="airlineLogoCardBody">
+      <div class="rank-search" style="margin-top:.5rem;">
+        <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
+      </div>
+
+      <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
     </div>
 
-    <div class="flex-row">
-      <span id="profileLogoStats" class="badge">–</span>
-
-      <!-- ➕ Neues Logo hinzufügen -->
-      <button id="addLogoBtn" class="btn btn-secondary btn-sm" type="button" title="Neues Logo hinzufügen">
-        <span class="icon">➕</span> Logo
-      </button>
-      <input id="addLogoFile" type="file" accept="image/*" style="display:none;">
-
-      <!-- Nur fehlende -->
-      <button id="toggleMissingBtn" class="btn btn-secondary btn-sm" type="button">
-        <span class="icon">🕵️</span> Nur fehlende
-      </button>
-
-      <!-- ⬇️ Card ein-/ausklappen -->
-      <button id="toggleLogoCardBtn" class="btn btn-secondary btn-sm collapse-btn" type="button" aria-label="Ein-/Ausklappen" title="Ein-/Ausklappen">
-        <span class="icon">▾</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Alles was klappbar sein soll kommt in den Body -->
-  <div class="card-body" id="airlineLogoCardBody">
-    <div class="rank-search" style="margin-top:.5rem;">
-      <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
-    </div>
-
-    <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
-  </div>
-
-  <!-- Hidden Input für "Ersetzen" per Doppelklick -->
-  <input id="replaceLogoFile" type="file" accept="image/*" style="display:none;">
-
-    <div class="rank-search" style="margin-top:.5rem;">
-      <input type="search" id="profileLogoSearch" placeholder="Airline suchen…" />
-    </div>
-
-    <div id="profileAirlineList" class="logo-admin-list" style="margin-top:.5rem;"></div>
+    <!-- Hidden Input für "Ersetzen" per Doppelklick -->
+    <input id="replaceLogoFile" type="file" accept="image/*" style="display:none;">
   </section>
 
 </main>
@@ -3232,103 +3231,101 @@ importFile.onchange = async () => {
     }
   }
 
-	function addFlight() {
-		// 1. Oben den Wert aus dem (neuen) Select-Feld auslesen
-		const date = document.getElementById("flightDate").value;
-		const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
-		const toIata = document.getElementById("toIata").value.trim().toUpperCase();
-		const airline = document.getElementById("airline").value.trim();
-		const aircraft = document.getElementById("aircraft").value.trim();
-		const tripType = document.getElementById("tripType").value;
-		const speed = Number(document.getElementById("speed").value);
-		
-		// NEU: Hier die Flugklasse auslesen
-		const flightClass = document.getElementById("f_flightClass") ? document.getElementById("f_flightClass").value : "Economy";
+function addFlight() {
+    // 1. Oben den Wert aus dem (neuen) Select-Feld auslesen
+    const date = document.getElementById("flightDate").value;
+    const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
+    const toIata = document.getElementById("toIata").value.trim().toUpperCase();
+    const airline = document.getElementById("airline").value.trim();
+    const aircraft = document.getElementById("aircraft").value.trim();
+    const tripType = document.getElementById("tripType").value;
+    const speed = Number(document.getElementById("speed").value);
+    
+    // NEU: Hier die Flugklasse auslesen
+    const flightClass = document.getElementById("f_flightClass") ? document.getElementById("f_flightClass").value : "Economy";
 
-		const errBox = document.getElementById("flightError");
-		errBox.textContent = "";
+    const errBox = document.getElementById("flightError");
+    if (errBox) errBox.textContent = "";
 
-		const errors = [];
-		if (!date) errors.push("Datum fehlt.");
-		if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
-		if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
-		if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
-		if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
-		if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+    const errors = [];
+    if (!date) errors.push("Datum fehlt.");
+    if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
+    if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
+    if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
+    if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
+    if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
 
-		if (errors.length) {
-		  errBox.textContent = errors.join(" ");
-		  return;
-		}
+    if (errors.length) {
+      if (errBox) errBox.textContent = errors.join(" ");
+      return;
+    }
 
-		const distanceKm = calcDistanceKm(fromIata, toIata);
-		const durationHours = calcDurationHours(distanceKm, speed);
-		const flights = loadFlights();
+    const distanceKm = calcDistanceKm(fromIata, toIata);
+    const durationHours = calcDurationHours(distanceKm, speed);
+    const flights = loadFlights();
 
-		if (editingFlightId === null) {
-		  const newFlight = {
-			id: Date.now(),
-			date,
-			from: fromIata,
-			to: toIata,
-			airline,
-			aircraft,
-			tripType,
-			flightClass, // <--- HIER EINFÜGEN
-			speedKmh: speed,
-			distanceKm,
-			durationHours
-		  };
-		  flights.push(newFlight);
-		  document.getElementById("airline").value = "";
-		  document.getElementById("aircraft").value = "";
-		} else {
-		  const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
-		  if (idx !== -1) {
-			flights[idx] = {
-			  ...flights[idx],
-			  date,
-			  from: fromIata,
-			  to: toIata,
-			  airline,
-			  aircraft,
-			  tripType,
-			  flightClass, // <--- HIER AUCH EINFÜGEN (fürs Bearbeiten)
-			  speedKmh: speed,
-			  distanceKm,
-			  durationHours
-			};
-		  }
-		}
+    if (editingFlightId === null) {
+      const newFlight = {
+        id: Date.now(),
+        date,
+        from: fromIata,
+        to: toIata,
+        airline,
+        aircraft,
+        tripType,
+        flightClass, 
+        speedKmh: speed,
+        distanceKm,
+        durationHours
+      };
+      flights.push(newFlight);
+      document.getElementById("airline").value = "";
+      document.getElementById("aircraft").value = "";
+    } else {
+      const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
+      if (idx !== -1) {
+        flights[idx] = {
+          ...flights[idx],
+          date,
+          from: fromIata,
+          to: toIata,
+          airline,
+          aircraft,
+          tripType,
+          flightClass, 
+          speedKmh: speed,
+          distanceKm,
+          durationHours
+        };
+      }
+    }
 
-		saveFlights(flights);
-		triggerSuccessFeedback();
-		editingFlightId = null;
-		setEditMode(false);
-		renderAll();
-		refreshFlightFormDatalists();
-	}
+    saveFlights(flights);
+    if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
+    editingFlightId = null;
+    setEditMode(false);
+    renderAll();
+    
+    // 🔥 FIX: Hier korrekter Funktionsname aufgerufen
+    refreshAirlineAircraftDatalists(); 
+}
 
 function refreshAirlineAircraftDatalists(){
-  const flights = loadFlights();
+    const flights = loadFlights();
 
-  const airlines = Array.from(new Set(
-    flights.map(f => (f.airline || "").trim()).filter(Boolean)
-  )).sort((a,b)=>a.localeCompare(b));
+    // 🔥 FIX: Nutzt jetzt die kombinierten Listen (Flüge + Manuelle Stammdaten)
+    const airlines = getAllAirlinesFromFlights(flights);
+    const aircrafts = getAllAircraftFromFlights(flights);
 
-  const aircrafts = Array.from(new Set(
-    flights.map(f => (f.aircraft || "").trim()).filter(Boolean)
-  )).sort((a,b)=>a.localeCompare(b));
+    const dlAir = document.getElementById("airlineList");
+    const dlAc  = document.getElementById("aircraftList");
 
-  const dlAir = document.getElementById("airlineList");
-  const dlAc  = document.getElementById("aircraftList");
-
-  if (dlAir){
-    dlAir.innerHTML = airlines.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
-  }
-  if (dlAc){
-    dlAc.innerHTML = aircrafts.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
-  }
+    if (dlAir){
+      dlAir.innerHTML = airlines.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
+    }
+    if (dlAc){
+      dlAc.innerHTML = aircrafts.map(a => `<option value="${escapeHtml(a)}"></option>`).join("");
+    }
 }
 
 // falls du escapeHtml nicht hast:
@@ -5034,12 +5031,17 @@ function showPage(targetId) {
   if (targetId === "dashboardPage") {
     setTimeout(renderDashboardTiles, 0);
   } 
-  else if (targetId === "flightsPage") {
-    setTimeout(() => {
-      renderAll?.();
-      refreshFlightFormDatalists();
-    }, 0);
-  }
+	else if (targetId === "flightsPage") {
+		setTimeout(() => {
+		  renderAll?.();
+		  
+		  // 🔥 FIX: Korrekter Name aufgerufen! 
+		  // Baut die Dropdowns bei jedem Betreten des Tabs mit den allerneuesten Stammdaten auf.
+		  if (typeof refreshAirlineAircraftDatalists === "function") {
+			refreshAirlineAircraftDatalists();
+		  }
+		}, 0);
+	  }
 	else if (targetId === "statsPage") {
 	  setTimeout(() => {
 		renderFullStatistics(); // Deine bisherigen Statistiken
@@ -5164,13 +5166,71 @@ function saveProfile(obj){
   localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(obj || {}));
 }
 
+// --- NEU: Helfer für manuelle Stammdaten (Airlines & Flugzeuge) ---
+function loadCustomAirlines() {
+  try {
+    const raw = localStorage.getItem("custom_airlines_v1");
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveCustomAirline(name) {
+  if (!name) return;
+  const list = loadCustomAirlines();
+  if (!list.includes(name)) {
+    list.push(name);
+    localStorage.setItem("custom_airlines_v1", JSON.stringify(list));
+  }
+}
+
+function loadCustomAircrafts() {
+  try {
+    const raw = localStorage.getItem("custom_aircrafts_v1");
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveCustomAircraft(name) {
+  if (!name) return;
+  const list = loadCustomAircrafts();
+  if (!list.includes(name)) {
+    list.push(name);
+    localStorage.setItem("custom_aircrafts_v1", JSON.stringify(list));
+  }
+}
+
+// --- AKTUALISIERT: Kombiniert Flüge + manuell hinzugefügte Airlines ---
 function getAllAirlinesFromFlights(flights){
   const set = new Set();
-  flights.forEach(f => {
-    const a = (f.airline || "").trim();
-    if (a) set.add(a);
-  });
-  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+  
+  // 1. Aus den Flügen lesen
+  if (Array.isArray(flights)) {
+    flights.forEach(f => {
+      const a = (f.airline || "").trim();
+      if (a) set.add(a);
+    });
+  }
+  
+  // 2. Die neuen, manuell erfassten dazupacken
+  loadCustomAirlines().forEach(a => set.add(a));
+  
+  return Array.from(set).sort((a,b) => a.localeCompare(b));
+}
+
+// --- NEU: Kombiniert Flüge + manuell hinzugefügte Flugzeugtypen ---
+function getAllAircraftFromFlights(flights) {
+  const set = new Set();
+  
+  // 1. Aus den Flügen lesen
+  if (Array.isArray(flights)) {
+    flights.forEach(f => {
+      const ac = (f.aircraft || "").trim();
+      if (ac) set.add(ac);
+    });
+  }
+  
+  // 2. Die neuen, manuell erfassten dazupacken
+  loadCustomAircrafts().forEach(ac => set.add(ac));
+  
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 const STORAGE_KEY_LOGO_OVERRIDES = "flugmeilen_airline_logo_overrides_v1";
@@ -5243,7 +5303,6 @@ function renderAirlineLogo(name){
 
 function renderProfile(){
   const flights = loadFlights();
-  const airlines = getAllAirlinesFromFlights(flights);
 
   // --- Profile form ---
   const p = loadProfile();
@@ -5268,29 +5327,32 @@ function renderProfile(){
 
   function buildRows(){
     if (!listEl) return;
-    const flights = loadFlights();
+    const currentFlights = loadFlights();
 
-const airlineCounts = {};
-const airlinePriv = {};
-const airlineBiz = {};
+    // 🔥 Holt die kombinierten Airlines (bestehende Flüge + manuell hinzugefügte Custom Airlines)
+    const currentAirlines = getAllAirlinesFromFlights(currentFlights);
 
-flights.forEach(f => {
-  const a = (f.airline || "").trim();
-  if (!a) return;
-  airlineCounts[a] = (airlineCounts[a] || 0) + 1;
+    const airlineCounts = {};
+    const airlinePriv = {};
+    const airlineBiz = {};
 
-  if (f.tripType === "p") airlinePriv[a] = (airlinePriv[a] || 0) + 1;
-  if (f.tripType === "g") airlineBiz[a]  = (airlineBiz[a]  || 0) + 1;
-});
+    currentFlights.forEach(f => {
+      const a = (f.airline || "").trim();
+      if (!a) return;
+      airlineCounts[a] = (airlineCounts[a] || 0) + 1;
 
-    const filtered = airlines.filter(a => a.toLowerCase().includes(query));
+      if (f.tripType === "p") airlinePriv[a] = (airlinePriv[a] || 0) + 1;
+      if (f.tripType === "g") airlineBiz[a]  = (airlineBiz[a]  || 0) + 1;
+    });
+
+    const filtered = currentAirlines.filter(a => a.toLowerCase().includes(query));
     const rows = filtered.filter(a => !onlyMissing || !hasLogoForAirline(a));
 
-    const missingCount = airlines.filter(a => !hasLogoForAirline(a)).length;
-    const okCount = airlines.length - missingCount;
+    const missingCount = currentAirlines.filter(a => !hasLogoForAirline(a)).length;
+    const okCount = currentAirlines.length - missingCount;
 
     if (statsEl) {
-      statsEl.textContent = `✅ ${okCount} / ❌ ${missingCount} / 🔢 ${airlines.length}`;
+      statsEl.textContent = `✅ ${okCount} / ❌ ${missingCount} / 🔢 ${currentAirlines.length}`;
     }
 
     if (!rows.length){
@@ -5299,66 +5361,115 @@ flights.forEach(f => {
     }
 
     listEl.innerHTML = rows.map(a => {
-  const ok = hasLogoForAirline(a);
-  const logoHtml = (typeof renderAirlineLogo === "function")
-    ? renderAirlineLogo(a)
-    : "";
+      const ok = hasLogoForAirline(a);
+      const cCount = airlineCounts[a] || 0;
+      const pCount = airlinePriv[a] || 0;
+      const gCount = airlineBiz[a] || 0;
 
-  const count = airlineCounts[a] || 0;
-const p = airlinePriv[a] || 0;
-const g = airlineBiz[a] || 0;
-
-return `
-  <div class="logo-tile ${ok ? "" : "missing"}" title="${a}" data-airline="${a}">
-    <div class="logo-status">${ok ? "✅" : "❌"}</div>
-
-    ${renderAirlineLogo(a) || `<div class="airline-logo placeholder"></div>`}
-
-    <div class="airline-name">${a}</div>
-
-    <div class="logo-tooltip">
-      <div><b>✈️ ${count}</b> Flüge</div>
-      <div class="muted">🌴 ${p} &nbsp;&nbsp; 💼 ${g}</div>
-    </div>
-  </div>
-`;
-
-}).join("");
-
+      return `
+        <div class="logo-tile ${ok ? "" : "missing"}" title="${a}" data-airline="${a}">
+          <div class="logo-status">${ok ? "✅" : "❌"}</div>
+          ${renderAirlineLogo(a) || `<div class="airline-logo placeholder" style="height:30px; width:60px; background:rgba(255,255,255,0.05); border-radius:4px; display:inline-block;"></div>`}
+          <div class="airline-name">${a}</div>
+          <div class="logo-tooltip">
+            <div><b>✈️ ${cCount}</b> Flüge</div>
+            <div class="muted">🌴 ${pCount} &nbsp;&nbsp; 💼 ${gCount}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
-  buildRows();
-
-// --- Replace per Doppelklick ---
-const replaceInput = document.getElementById("replaceLogoFile");
-let replaceTargetAirline = null;
-
-if (listEl && replaceInput){
-  listEl.ondblclick = (e) => {
-    const tile = e.target.closest(".logo-tile");
-    if (!tile) return;
-
-    replaceTargetAirline = tile.dataset.airline || "";
-    if (!replaceTargetAirline) return;
-
-    replaceInput.click();
-  };
-
-  replaceInput.onchange = () => {
-    const file = replaceInput.files && replaceInput.files[0];
-    if (!file || !replaceTargetAirline) { replaceInput.value = ""; return; }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      // als DataURL speichern (Override)
-      setLogoOverride(replaceTargetAirline, ev.target.result);
-      buildRows();               // sofort UI updaten
-      wireProfileLogoTooltips(); // Tooltip wiring bleibt
+  // --- Button: Neue Custom Airline registrieren ---
+  const addCustomAirlineBtn = document.getElementById("addCustomAirlineBtn");
+  if (addCustomAirlineBtn) {
+    addCustomAirlineBtn.onclick = () => {
+      const name = prompt("Name der neuen Airline eingeben:\n(Erscheint sofort in der Logo-Liste und im Dropdown)");
+      if (!name || !name.trim()) return;
+      
+      const cleanName = name.trim();
+      saveCustomAirline(cleanName);
+      
+      buildRows(); 
+      if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
+      alert(`✅ Airline "${cleanName}" registriert! Du kannst ihr jetzt direkt unten ein Logo zuweisen.`);
     };
-    reader.readAsDataURL(file);
-    replaceInput.value = "";
-  };
-}
+  }
+
+  // --- Button: Neuen Custom Flugzeugtyp registrieren ---
+  const addCustomAircraftBtn = document.getElementById("addCustomAircraftBtn");
+  if (addCustomAircraftBtn) {
+    addCustomAircraftBtn.onclick = () => {
+      const name = prompt("Neuen Flugzeugtyp eingeben:\n(z.B. Boeing 777X, Airbus A350-1000)");
+      if (!name || !name.trim()) return;
+      
+      const cleanName = name.trim();
+      saveCustomAircraft(cleanName);
+      
+      if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
+      alert(`✅ Flugzeugtyp "${cleanName}" registriert!`);
+    };
+  }
+
+  // --- Replace per Doppelklick ---
+  const replaceInput = document.getElementById("replaceLogoFile");
+  let replaceTargetAirline = null;
+
+  if (listEl && replaceInput){
+    listEl.ondblclick = (e) => {
+      const tile = e.target.closest(".logo-tile");
+      if (!tile) return;
+
+      replaceTargetAirline = tile.dataset.airline || "";
+      if (!replaceTargetAirline) return;
+
+      replaceInput.click();
+    };
+
+    replaceInput.onchange = () => {
+      const file = replaceInput.files && replaceInput.files[0];
+      if (!file || !replaceTargetAirline) { replaceInput.value = ""; return; }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setLogoOverride(replaceTargetAirline, ev.target.result);
+        buildRows();
+        wireProfileLogoTooltips();
+        if (typeof renderAll === "function") renderAll();
+      };
+      reader.readAsDataURL(file);
+      replaceInput.value = "";
+    };
+  }
+
+  // --- Add new logo via toolbar button ---
+  const addBtn = document.getElementById("addLogoBtn");
+  const addFile = document.getElementById("addLogoFile");
+
+  if (addBtn && addFile){
+    addBtn.onclick = () => addFile.click();
+
+    addFile.onchange = () => {
+      const file = addFile.files && addFile.files[0];
+      if (!file) return;
+
+      const airlineName = prompt("Für welche Airline ist dieses Logo?\n(z.B. SWISS, Lufthansa, Emirates)");
+      if (!airlineName) { addFile.value=""; return; }
+
+      const cleanName = airlineName.trim().toUpperCase();
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setLogoOverride(cleanName, ev.target.result);
+        buildRows();
+        wireProfileLogoTooltips();
+        if (typeof renderAll === "function") renderAll();
+      };
+      reader.readAsDataURL(file);
+
+      addFile.value = "";
+    };
+  }
 
   const toggleBtn = document.getElementById("toggleMissingBtn");
   if (toggleBtn){
@@ -5393,63 +5504,21 @@ if (listEl && replaceInput){
     };
   }
 
-// --- Backup / Restore ---
+  const card = document.getElementById("airlineLogoCard");
+  const toggleCardBtn = document.getElementById("toggleLogoCardBtn");
 
-  const resetBtn = document.getElementById("resetDataBtn");
-  if (resetBtn){
-    resetBtn.onclick = () => {
-      if (!confirm("Wirklich ALLES löschen? (Flüge + Airports + Profil)")) return;
-      localStorage.removeItem(STORAGE_KEY_FLIGHTS);
-      localStorage.removeItem(STORAGE_KEY_AIRPORTS);
-      localStorage.removeItem(STORAGE_KEY_PROFILE);
-      AIRPORTS = {};
-      if (backupMsg) backupMsg.textContent = "🧨 Reset durchgeführt.";
-      renderAll?.();
-      renderProfile();
+  if (card && toggleCardBtn){
+    const saved = localStorage.getItem("profile_logos_collapsed");
+    if (saved === "1") card.classList.add("collapsed");
+
+    toggleCardBtn.onclick = () => {
+      card.classList.toggle("collapsed");
+      localStorage.setItem("profile_logos_collapsed", card.classList.contains("collapsed") ? "1" : "0");
     };
   }
-   wireProfileLogoTooltips();
-  
-// --- Add new logo via toolbar button ---
-const addBtn = document.getElementById("addLogoBtn");
-const addFile = document.getElementById("addLogoFile");
 
-if (addBtn && addFile){
-  addBtn.onclick = () => addFile.click();
-
-  addFile.onchange = () => {
-    const file = addFile.files && addFile.files[0];
-    if (!file) return;
-
-    const airlineName = prompt("Für welche Airline ist dieses Logo?\n(z.B. SWISS, Lufthansa, Emirates)");
-    if (!airlineName) { addFile.value=""; return; }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setLogoOverride(airlineName, ev.target.result);
-      buildRows();
-      wireProfileLogoTooltips();
-    };
-    reader.readAsDataURL(file);
-
-    addFile.value = "";
-  };
-}
-
-const card = document.getElementById("airlineLogoCard");
-const toggleCardBtn = document.getElementById("toggleLogoCardBtn");
-
-if (card && toggleCardBtn){
-  // Zustand merken
-  const saved = localStorage.getItem("profile_logos_collapsed");
-  if (saved === "1") card.classList.add("collapsed");
-
-  toggleCardBtn.onclick = () => {
-    card.classList.toggle("collapsed");
-    localStorage.setItem("profile_logos_collapsed", card.classList.contains("collapsed") ? "1" : "0");
-  };
-}
-  
+  buildRows();
+  wireProfileLogoTooltips();
 }
 
 function getMilestoneHTML(totalKm) {
