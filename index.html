@@ -2208,6 +2208,19 @@ body.map-in-fullscreen #mapFullscreenBtn {
   <div id="top5Stack"></div>
 </section>
 
+<section class="card" style="margin-top: 1.5rem; margin-bottom: 5rem;">
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0;"><span class="icon">🏅</span> Aviatik-Meilensteine</h2>
+        <div class="muted">Herausforderungen basierend auf deinen Flugmustern und Destinationen.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="aviatikAchievementsContainer" class="achievements-grid">
+        <div class="muted">Berechne Flugdaten...</div>
+      </div>
+    </div>
+  </section>
 
 </main>
 
@@ -2541,6 +2554,125 @@ const AIRCRAFT_DATABASE = {
   "F100": { name: "Fokker 100", family: "Fokker", manufacturer: "Fokker", type: "Jet" },
   "B712": { name: "Boeing 717", family: "Boeing 717", manufacturer: "Boeing", type: "Jet" }
 };
+
+function renderAviatikAchievements() {
+  const container = document.getElementById("aviatikAchievementsContainer");
+  if (!container) return;
+
+  const flights = loadFlights() || [];
+  
+  let widebodyCount = 0;
+  let quadCount = 0;
+  let propCount = 0;
+  let airbusCount = 0;
+  let boeingCount = 0;
+  let embraerCount = 0;
+  let equatorCount = 0;
+
+  // Erweiterte Insel-Liste
+  const islandAirports = new Set(["IBZ", "MLE", "USM", "HNL", "LIH", "OGG", "ITO", "CUR", "PUJ", "PMI", "ACE", "TFS", "LPA", "FUE", "VLC", "RHO", "HER", "KGS", "CFU", "FNC", "LPA", "TFN"]);
+  const uniqueIslandsVisited = new Set();
+
+  const hubs = { "ZRH": 0, "FRA": 0, "LHR": 0, "CDG": 0, "AMS": 0 };
+
+  flights.forEach(f => {
+    if (!f) return;
+    const acName = String(f.aircraft || "").trim();
+    const fromIata = String(f.from || "").toUpperCase().trim();
+    const toIata = String(f.to || "").toUpperCase().trim();
+
+    const dbEntry = Object.values(AIRCRAFT_DATABASE || {}).find(db => db.name === acName);
+
+    // 🔥 FIX: Strikt exklusive Hersteller-Zuweisung über else-if Konstrukt
+    if (dbEntry) {
+      if (dbEntry.manufacturer === "Airbus") {
+        airbusCount++;
+      } else if (dbEntry.manufacturer === "Boeing") {
+        boeingCount++;
+      } else if (dbEntry.manufacturer === "Embraer") {
+        embraerCount++;
+      }
+      
+      if (["Airbus A330", "Airbus A340", "Airbus A350", "Airbus A380", "Boeing 747", "Boeing 767", "Boeing 777", "Boeing 787"].includes(dbEntry.family)) {
+        widebodyCount++;
+      }
+      if (["Airbus A340", "Airbus A380", "Boeing 747"].includes(dbEntry.family)) {
+        quadCount++;
+      }
+      if (dbEntry.type === "Turboprop") {
+        propCount++;
+      }
+    } else {
+      // Striktes Fallback-Scanning ohne Doppel-Zählungen!
+      const lowAc = acName.toLowerCase();
+      if (lowAc.includes("embraer")) {
+        embraerCount++;
+      } else if (lowAc.includes("airbus")) {
+        airbusCount++;
+      } else if (lowAc.includes("boeing")) {
+        boeingCount++;
+      }
+
+      if (lowAc.includes("330") || lowAc.includes("340") || lowAc.includes("350") || lowAc.includes("380") || lowAc.includes("747") || lowAc.includes("777") || lowAc.includes("787")) {
+        widebodyCount++;
+      }
+      if (lowAc.includes("340") || lowAc.includes("380") || lowAc.includes("747")) {
+        quadCount++;
+      }
+      if (lowAc.includes("atr") || lowAc.includes("dash") || lowAc.includes("dh8")) {
+        propCount++;
+      }
+    }
+
+    if (islandAirports.has(fromIata)) uniqueIslandsVisited.add(fromIata);
+    if (islandAirports.has(toIata)) uniqueIslandsVisited.add(toIata);
+
+    if (hubs.hasOwnProperty(fromIata)) hubs[fromIata]++;
+    if (hubs.hasOwnProperty(toIata)) hubs[toIata]++;
+
+    if (["JNB", "BLZ", "DAR", "SYD", "CNS", "ADL", "CUR"].includes(toIata)) equatorCount++;
+  });
+
+  const hubsThreshold = 5;
+  const hubsQualified = Object.values(hubs).filter(count => count >= hubsThreshold).length;
+
+  // 🛠️ Hier kannst du die Targets (Ziele) nach Belieben anpassen!
+  const achievements = [
+    { name: "✈️ Widebody-Wohnzimmer", desc: "Mindestens 50 Flüge in Großraumflugzeugen.", current: widebodyCount, target: 50 },
+    { name: "🦕 Vierstrahler-Nostalgie", desc: "Mindestens 10 Flüge auf A340, A380 oder B747.", current: quadCount, target: 10 },
+    { name: "💨 Propeller-Pendler", desc: "Mindestens 20 Flüge in Turboprops (ATR, Dash 8).", current: propCount, target: 20 },
+    { name: "🇪🇺 Duopol-König (Airbus)", desc: "Flüge in einer Maschine aus Toulouse.", current: airbusCount, target: 300 }, // Ziel erhöht
+    { name: "🇺🇸 Duopol-König (Boeing)", desc: "Flüge in einer Maschine aus Seattle.", current: boeingCount, target: 100 },
+    { name: "🇧🇷 Regional-Spezialist", desc: "Flüge mit Embraer-Jets (E-Jets/E2).", current: embraerCount, target: 80 }, // Ziel erhöht
+    
+    { name: "🏝️ Insel-Hopper", desc: "Lande auf verschiedenen Inselflughäfen.", current: uniqueIslandsVisited.size, target: 15, meta: `Besucht: ${Array.from(uniqueIslandsVisited).join(", ") || "Keine"}` }, // Ziel erhöht
+    { name: "🗺️ Drehkreuz-Dauergast", desc: "Besuche ZRH, FRA, LHR, CDG, AMS jeweils 5-mal.", current: hubsQualified, target: 5, meta: `Status: ZRH(${hubs.ZRH}) FRA(${hubs.FRA}) LHR(${hubs.LHR}) CDG(${hubs.CDG}) AMS(${hubs.AMS})` },
+    { name: "🌍 Äquator-Taufe", desc: "Mindestens 10 Flüge über den Äquator nach Süden.", current: equatorCount, target: 10 }
+  ];
+
+  container.innerHTML = achievements.map(a => {
+    const pct = Math.min(100, (a.current / a.target) * 100);
+    const isUnlocked = pct >= 100;
+
+    return `
+      <div class="badge-tile ${isUnlocked ? 'unlocked' : 'locked'}" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.2rem;">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+          <h4 style="margin:0; font-size:1.05rem;">${a.name}</h4>
+          <span style="font-size: 0.85rem; font-family: monospace; color: ${isUnlocked ? '#eab308' : '#64748b'}; font-weight: bold;">
+            ${isUnlocked ? "✅ ERREICHT" : `${a.current} / ${a.target}`}
+          </span>
+        </div>
+        <p style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.3;">${a.desc}</p>
+        
+        <div style="width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 4px; margin-top: 0.3rem; overflow: hidden; position: relative;">
+          <div style="width: ${pct}%; background: ${isUnlocked ? 'linear-gradient(90deg, #eab308, #ca8a04)' : '#3b82f6'}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
+        </div>
+        
+        ${a.meta ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-family: monospace;">${a.meta}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
 
 window.addEventListener('online',  updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
@@ -5174,12 +5306,17 @@ function showPage(targetId) {
 		  }
 		}, 0);
 	  }
-	else if (targetId === "statsPage") {
-	  setTimeout(() => {
-		renderFullStatistics(); // Deine bisherigen Statistiken
-		renderClassStats();     // 🔥 NEU: Berechnet und zeichnet das Comfort-Barometer
-	  }, 0);
-	}
+		else if (targetId === "statsPage") {
+			setTimeout(() => {
+			  if (typeof renderFullStatistics === "function") renderFullStatistics();
+			  if (typeof renderClassStats === "function") renderClassStats();
+			  
+			  // 🔥 HIER EINBAUEN: Rendert die neuen Meilensteine auf der Stats-Seite!
+			  if (typeof renderAviatikAchievements === "function") {
+				renderAviatikAchievements();
+			  }
+			}, 0);
+		  }
   else if (targetId === "mapPage") {
     // --- NEU: Karten-Trigger ---
     setTimeout(() => {
