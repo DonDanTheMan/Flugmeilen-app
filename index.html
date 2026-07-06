@@ -2475,6 +2475,73 @@ const AIRLINE_LOGOS = {
   // hier kannst du beliebig erweitern
 };
 
+// --- Globale Flugzeug-Datenbank für Autocomplete & Statistiken ---
+const AIRCRAFT_DATABASE = {
+  // Airbus Schmalrumpf (Single Aisle)
+  "A221": { name: "Airbus A220-100", family: "Airbus A220", manufacturer: "Airbus", type: "Jet" },
+  "A223": { name: "Airbus A220-300", family: "Airbus A220", manufacturer: "Airbus", type: "Jet" },
+  "A318": { name: "Airbus A318", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A319": { name: "Airbus A319ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A19N": { name: "Airbus A319neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A320": { name: "Airbus A320ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A20N": { name: "Airbus A320neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A321": { name: "Airbus A321ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A21N": { name: "Airbus A321neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A21X": { name: "Airbus A321XLR", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+
+  // Airbus Großraum (Widebody)
+  "A332": { name: "Airbus A330-200", family: "Airbus A330", manufacturer: "Airbus", type: "Jet" },
+  "A333": { name: "Airbus A330-300", family: "Airbus A330", manufacturer: "Airbus", type: "Jet" },
+  "A338": { name: "Airbus A330-800neo", family: "Airbus A330", manufacturer: "Airbus", type: "Jet" },
+  "A339": { name: "Airbus A330-900neo", family: "Airbus A330", manufacturer: "Airbus", type: "Jet" },
+  "A343": { name: "Airbus A340-300", family: "Airbus A340", manufacturer: "Airbus", type: "Jet" },
+  "A346": { name: "Airbus A340-600", family: "Airbus A340", manufacturer: "Airbus", type: "Jet" },
+  "A359": { name: "Airbus A350-900", family: "Airbus A350", manufacturer: "Airbus", type: "Jet" },
+  "A35K": { name: "Airbus A350-1000", family: "Airbus A350", manufacturer: "Airbus", type: "Jet" },
+  "A388": { name: "Airbus A380-800", family: "Airbus A380", manufacturer: "Airbus", type: "Jet" },
+
+  // Boeing Single Aisle
+  "B737": { name: "Boeing 737-700", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B738": { name: "Boeing 737-800", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B739": { name: "Boeing 737-900", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B37M": { name: "Boeing 737 MAX 7", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B38M": { name: "Boeing 737 MAX 8", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B39M": { name: "Boeing 737 MAX 9", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B3XM": { name: "Boeing 737 MAX 10", family: "Boeing 737", manufacturer: "Boeing", type: "Jet" },
+  "B752": { name: "Boeing 757-200", family: "Boeing 757", manufacturer: "Boeing", type: "Jet" },
+  "B753": { name: "Boeing 757-300", family: "Boeing 757", manufacturer: "Boeing", type: "Jet" },
+
+  // Boeing Widebody
+  "B763": { name: "Boeing 767-300", family: "Boeing 767", manufacturer: "Boeing", type: "Jet" },
+  "B764": { name: "Boeing 767-400", family: "Boeing 767", manufacturer: "Boeing", type: "Jet" },
+  "B772": { name: "Boeing 777-200", family: "Boeing 777", manufacturer: "Boeing", type: "Jet" },
+  "B77W": { name: "Boeing 777-300ER", family: "Boeing 777", manufacturer: "Boeing", type: "Jet" },
+  "B77X": { name: "Boeing 777X", family: "Boeing 777", manufacturer: "Boeing", type: "Jet" },
+  "B744": { name: "Boeing 747-400", family: "Boeing 747", manufacturer: "Boeing", type: "Jet" },
+  "B748": { name: "Boeing 747-8I", family: "Boeing 747", manufacturer: "Boeing", type: "Jet" },
+  "B788": { name: "Boeing 787-8 Dreamliner", family: "Boeing 787", manufacturer: "Boeing", type: "Jet" },
+  "B789": { name: "Boeing 787-9 Dreamliner", family: "Boeing 787", manufacturer: "Boeing", type: "Jet" },
+  "B78X": { name: "Boeing 787-10 Dreamliner", family: "Boeing 787", manufacturer: "Boeing", type: "Jet" },
+
+  // Embraer & Bombardier
+  "E170": { name: "Embraer 170", family: "Embraer E-Jets", manufacturer: "Embraer", type: "Jet" },
+  "E190": { name: "Embraer 190", family: "Embraer E-Jets", manufacturer: "Embraer", type: "Jet" },
+  "E195": { name: "Embraer 195", family: "Embraer E-Jets", manufacturer: "Embraer", type: "Jet" },
+  "E290": { name: "Embraer 190-E2", family: "Embraer E2-Jets", manufacturer: "Embraer", type: "Jet" },
+  "E295": { name: "Embraer 195-E2", family: "Embraer E2-Jets", manufacturer: "Embraer", type: "Jet" },
+  "CRJ7": { name: "Bombardier CRJ700", family: "CRJ Series", manufacturer: "Bombardier", type: "Jet" },
+  "CRJ9": { name: "Bombardier CRJ900", family: "CRJ Series", manufacturer: "Bombardier", type: "Jet" },
+  "CRJX": { name: "Bombardier CRJ1000", family: "CRJ Series", manufacturer: "Bombardier", type: "Jet" },
+
+  // Turboprops & Regionals
+  "AT72": { name: "ATR 72", family: "ATR", manufacturer: "ATR", type: "Turboprop" },
+  "AT42": { name: "ATR 42", family: "ATR", manufacturer: "ATR", type: "Turboprop" },
+  "DH8D": { name: "De Havilland Dash 8-Q400", family: "Dash 8", manufacturer: "De Havilland", type: "Turboprop" },
+  "RJ1H": { name: "Avro RJ100", family: "Avro RJ", manufacturer: "British Aerospace", type: "Jet" },
+  "F100": { name: "Fokker 100", family: "Fokker", manufacturer: "Fokker", type: "Jet" },
+  "B712": { name: "Boeing 717", family: "Boeing 717", manufacturer: "Boeing", type: "Jet" }
+};
+
 window.addEventListener('online',  updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
@@ -4973,6 +5040,71 @@ function wireProfileLogoTooltips(){
   document.getElementById("cancelEditBtn")?.addEventListener("click", cancelEdit);
   document.getElementById("clearAllFlightsBtn")?.addEventListener("click", clearAllFlights);
   document.getElementById("searchInput")?.addEventListener("input", renderAll);
+  
+  const fromIataInput = document.getElementById("fromIata");
+    const toIataInput = document.getElementById("toIata");
+
+if (fromIataInput && toIataInput) {
+    toIataInput.addEventListener("input", () => {
+      if (editingFlightId !== null) return; 
+
+      const fromVal = fromIataInput.value.trim().toUpperCase();
+      const toVal = toIataInput.value.trim().toUpperCase();
+
+      if (fromVal.length === 3 && toVal.length === 3) {
+        const flights = loadFlights() || [];
+        
+        // 1. Alle Flüge filtern, die exakt auf dieser Route liegen
+        const matchingFlights = flights.filter(f => 
+          f && String(f.from).toUpperCase() === fromVal && 
+          String(f.to).toUpperCase() === toVal
+        );
+
+        // Nur fortfahren, wenn wir diese Route überhaupt schon mal geflogen sind
+        if (matchingFlights.length > 0) {
+          console.log(`KI-Light: ${matchingFlights.length} Flüge für Route ${fromVal}➔${toVal} gefunden. Berechne Favoriten...`);
+          
+          // 2. Häufigkeiten zählen für Airline, Flugzeug und Geschwindigkeit
+          const airlineCounts = {};
+          const aircraftCounts = {};
+          const speedCounts = {};
+
+          matchingFlights.forEach(f => {
+            if (f.airline)  airlineCounts[f.airline]   = (airlineCounts[f.airline] || 0) + 1;
+            if (f.aircraft) aircraftCounts[f.aircraft] = (aircraftCounts[f.aircraft] || 0) + 1;
+            if (f.speedKmh)  speedCounts[f.speedKmh]   = (speedCounts[f.speedKmh] || 0) + 1;
+          });
+
+          // Helper-Funktion, um den Schlüssel mit dem höchsten Wert (den Favoriten) zu finden
+          const getFavorite = (countsObj) => {
+            return Object.keys(countsObj).reduce((a, b) => countsObj[a] > countsObj[b] ? a : b, null);
+          };
+
+          const favAirline  = getFavorite(airlineCounts);
+          const favAircraft = getFavorite(aircraftCounts);
+          const favSpeed    = getFavorite(speedCounts);
+
+          // 3. Felder im Formular sanft vorausfüllen
+          const airEl = document.getElementById("airline");
+          const acEl  = document.getElementById("aircraft");
+          const spEl  = document.getElementById("speed");
+
+          if (airEl && !airEl.value && favAirline)  airEl.value = favAirline;
+          if (acEl && !acEl.value && favAircraft) acEl.value = favAircraft;
+          if (spEl && (!spEl.value || spEl.value == "600") && favSpeed) spEl.value = favSpeed;
+          
+          // Visuelles Feedback (grünes Aufleuchten)
+          [airEl, acEl, spEl].forEach(el => {
+            if (el && el.value) {
+              el.style.transition = "background-color 0.3s";
+              el.style.backgroundColor = "rgba(34, 197, 94, 0.2)";
+              setTimeout(() => el.style.backgroundColor = "", 1000);
+            }
+          });
+        }
+      }
+    });
+  }
 
 document.getElementById("yearSelect")?.addEventListener("change", (e) => {
   const value = e.target.value || "";
@@ -5081,6 +5213,27 @@ function showPage(targetId) {
   // Start
 	showPage("dashboardPage");
 	wireDashBarTooltips();
+	
+	// --- Komfort-Feature: Text bei Fokus automatisch markieren ---
+  const formFields = [
+    "flightDate", 
+    "fromIata", 
+    "toIata", 
+    "airline", 
+    "aircraft", 
+    "speed"
+  ];
+
+  formFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      // Sobald das Feld angewählt wird (Klick oder Tabulator)
+      el.addEventListener("focus", () => {
+        // Kleiner Timeout, damit der Browser-Standardklick die Markierung nicht sofort wieder aufhebt
+        setTimeout(() => el.select(), 50);
+      });
+    }
+  });
 });
 
 document.addEventListener("pointerup", (e) => {
@@ -5215,22 +5368,64 @@ function getAllAirlinesFromFlights(flights){
   return Array.from(set).sort((a,b) => a.localeCompare(b));
 }
 
-// --- NEU: Kombiniert Flüge + manuell hinzugefügte Flugzeugtypen ---
 function getAllAircraftFromFlights(flights) {
   const set = new Set();
   
-  // 1. Aus den Flügen lesen
+  // 1. Alle hochoffiziellen Flugzeuge aus der neuen globalen Datenbank einspeisen
+  Object.values(AIRCRAFT_DATABASE).forEach(ac => set.add(ac.name));
+  
+  // 2. Deine manuellen Spezial-Flugzeuge aus dem Profil laden (falls vorhanden)
+  if (typeof loadCustomAircrafts === "function") {
+    loadCustomAircrafts().forEach(ac => set.add(ac));
+  }
+  
+  // 3. Aus deinen echten Flügen lesen – ABER NUR, wenn sie nicht schon 
+  // durch die globale Datenbank präziser abgedeckt sind!
   if (Array.isArray(flights)) {
     flights.forEach(f => {
       const ac = (f.aircraft || "").trim();
-      if (ac) set.add(ac);
+      if (!ac) return;
+      
+      // Prüfen, ob dieser Name (z.B. "Airbus A330") ein ungenauerer Oberbegriff 
+      // von etwas ist, das wir bereits in der feinen Datenbank haben
+      const lowercaseAc = ac.toLowerCase();
+      
+      // Wenn der Name exakt in der DB existiert, ist es okay.
+      // Wenn es aber ein ungenauer Eintrag ist (wie nur "Airbus A330" oder "Boeing 737"),
+      // und die DB hat bereits spezifischere Varianten davon, überspringen wir ihn!
+      const isTooVague = Object.values(AIRCRAFT_DATABASE).some(db => 
+        db.name.toLowerCase() !== lowercaseAc && 
+        db.name.toLowerCase().startsWith(lowercaseAc)
+      );
+      
+      if (!isTooVague) {
+        set.add(ac);
+      }
     });
   }
   
-  // 2. Die neuen, manuell erfassten dazupacken
-  loadCustomAircrafts().forEach(ac => set.add(ac));
-  
+  // Alphabetisch sortiert ausgeben
   return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+// Gibt dir z.B. für "Airbus A330-300" -> "Airbus A330" zurück
+// Gibt dir für "Boeing 737 MAX 8" -> "Boeing" als Hersteller zurück
+function getAircraftMeta(aircraftName) {
+  const clean = String(aircraftName || "").trim().toLowerCase();
+  
+  // Durchsuche die DB nach einem Match
+  const found = Object.values(AIRCRAFT_DATABASE).find(db => db.name.toLowerCase() === clean);
+  
+  if (found) {
+    return { family: found.family, manufacturer: found.manufacturer, type: found.type };
+  }
+  
+  // Fallback, falls ein Text nicht in der DB war (versucht grobe Zuordnung via Text-Scanning)
+  if (clean.includes("airbus")) return { family: aircraftName, manufacturer: "Airbus", type: "Jet" };
+  if (clean.includes("boeing")) return { family: aircraftName, manufacturer: "Boeing", type: "Jet" };
+  if (clean.includes("embraer")) return { family: aircraftName, manufacturer: "Embraer", type: "Jet" };
+  
+  return { family: aircraftName, manufacturer: "Unbekannt", type: "Unbekannt" };
 }
 
 const STORAGE_KEY_LOGO_OVERRIDES = "flugmeilen_airline_logo_overrides_v1";
@@ -5488,6 +5683,8 @@ function renderProfile(){
       buildRows();
     };
   }
+
+
 
   // --- Save profile ---
   const saveBtn = document.getElementById("saveProfileBtn");
