@@ -4296,17 +4296,12 @@ function renderDashboardTiles() {
 
     const homeAirport = getHomeAirportIata();
 
-    console.log("Home airport:", homeAirport);
-    console.log("Top 5 visits (raw):", Object.entries(visits).sort((a, b) => b[1] - a[1]).slice(0, 5));
-
     const topAirport = Object.entries(visits)
       .filter(([iata]) => {
         const code = String(iata || "").trim().toUpperCase();
         return code && code !== homeAirport;
       })
       .sort((a, b) => b[1] - a[1])[0] || null;
-
-    console.log("Top airport (filtered):", topAirport);
 
     const airportCity = (code) => AIRPORTS?.[code]?.city || "";
     const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
@@ -4338,34 +4333,35 @@ function renderDashboardTiles() {
     const monthsShort = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
     // Hilfsfunktion für Tooltip-Label
-	const getBarLabel = (v) => {
-	  if (mbMode === "km") {
-		return `${Math.round(v).toLocaleString()} km`;
-	  }
-	  
-	  if (mbMode === "hours") {
-		// Stunden und Minuten berechnen
-		const totalMinutes = Math.round(v * 60);
-		const hh = Math.floor(totalMinutes / 60);
-		const mm = totalMinutes % 60;
-		
-		// Führende Null bei den Minuten erzwingen (z.B. 05 statt 5)
-		const mmPadded = String(mm).padStart(2, '0');
-		
-		return `${hh}:${mmPadded} h`;
-	  }
-	  
-	  return `${v} Flüge`;
-	};
+    const getBarLabel = (v) => {
+      if (mbMode === "km") {
+        return `${Math.round(v).toLocaleString()} km`;
+      }
+      
+      if (mbMode === "hours") {
+        const totalMinutes = Math.round(v * 60);
+        const hh = Math.floor(totalMinutes / 60);
+        const mm = totalMinutes % 60;
+        const mmPadded = String(mm).padStart(2, '0');
+        return `${hh}:${mmPadded} h`;
+      }
+      
+      return `${v} Flüge`;
+    };
+
+    // 🔥 NEU: Generierung der Beschriftungswerte für die Y-Achse
+    const unitLabel = mbMode === "km" ? "km" : (mbMode === "hours" ? "h" : "Flg");
+    const yTop    = Math.round(max);
+    const yMid    = Math.round(max * 0.5);
 
     function parseRouteKey(routeKey) {
       const parts = String(routeKey).split("→").map(s => s.trim());
       return { from: parts[0] || "", to: parts[1] || "" };
     }
-	
-	const totalMiles = Math.round(totalKm * 0.621371);
-	
-	wrap.innerHTML = getMilestoneHTML(totalKm);
+    
+    const totalMiles = Math.round(totalKm * 0.621371);
+    
+    wrap.innerHTML = getMilestoneHTML(totalKm);
     wrap.innerHTML += `
       <div class="stat-card holo-card"><div class="stat-label terminal-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
       <div class="stat-card holo-card"><div class="stat-label terminal-label">📏 Flugdistanz</div><div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div><div class="stat-note">${totalMiles.toLocaleString()} miles</div></div>
@@ -4425,23 +4421,35 @@ function renderDashboardTiles() {
           </div>
         </div>
 
-        <div class="dash-bars" style="height: 120px;">
-          ${buckets.map((v, i) => {
-            const h = Math.round((v / max) * 100);
-            return `
-              <div style="flex:1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
-                <div class="dash-bar-wrap" style="width: 70%; height: ${h}%;">
-                  <div class="dash-bar" 
-                       data-tip="${monthsShort[i]} · ${getBarLabel(v)}" 
-                       style="height: 100%; width: 100%;"></div>
+        <!-- 🔥 NEU: Umschließendes Flexbox-Layout für Y-Achse + Balken-Chart -->
+        <div style="display: flex; gap: 0.8rem; align-items: stretch; height: 120px;">
+          
+          <!-- Dynamic Y-Axis Labels -->
+          <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; color: #64748b; font-family: monospace; font-size: 0.72rem; width: 55px; padding-bottom: 18px; border-right: 1px solid rgba(56, 189, 248, 0.1); padding-right: 6px; user-select: none;">
+            <div>${yTop.toLocaleString()}<span style="font-size:0.6rem; margin-left:1px;">${unitLabel}</span></div>
+            <div>${yMid.toLocaleString()}</div>
+            <div>0</div>
+          </div>
+
+          <!-- Balken-Diagramm -->
+          <div class="dash-bars" style="flex: 1; height: 100%; display: flex;">
+            ${buckets.map((v, i) => {
+              const h = Math.round((v / max) * 100);
+              return `
+                <div style="flex:1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                  <div class="dash-bar-wrap" style="width: 70%; height: ${h}%;">
+                    <div class="dash-bar" 
+                         data-tip="${monthsShort[i]} · ${getBarLabel(v)}" 
+                         style="height: 100%; width: 100%;"></div>
+                  </div>
+                  <div class="dash-bar-label" style="font-size: 0.65rem; margin-top: 4px;">${monthsShort[i]}</div>
                 </div>
-                <div class="dash-bar-label" style="font-size: 0.65rem; margin-top: 4px;">${monthsShort[i]}</div>
-              </div>
-            `;
-          }).join("")}
+              `;
+            }).join("")}
+          </div>
         </div>
 
-        <div class="stat-note" style="margin-top:.35rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
+        <div class="stat-note" style="margin-top:.7rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
 
       <div class="stat-card holo-card tile-full">
@@ -4476,7 +4484,6 @@ function renderDashboardTiles() {
       </div>
     `;
 
-	
     document.getElementById("dashGoAdd")?.addEventListener("click", () => {
       window.showPage?.("flightsPage");
       setTimeout(() => document.getElementById("flightFormCard")?.scrollIntoView({ behavior: "smooth" }), 120);
@@ -4513,7 +4520,6 @@ function renderDashboardTiles() {
       </div>
     `;
   }
-  
 }
 
 function renderDashboard(){
