@@ -2181,6 +2181,20 @@ body.map-in-fullscreen #mapFullscreenBtn {
     <div id="statsSelectedYear" class="stats-grid"></div>
   </section>
 
+<section class="card" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0;"><span class="icon">🏅</span> Aviatik-Meilensteine</h2>
+        <div class="muted">Herausforderungen basierend auf deinen Flugmustern und Destinationen.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="aviatikAchievementsContainer" class="achievements-grid">
+        <div class="muted">Berechne Flugdaten...</div>
+      </div>
+    </div>
+  </section>
+
   <!-- 4) RANKINGS -->
   <section class="card">
     <h2><span class="icon">🛬</span> Flughäfen (Besuche)</h2>
@@ -2207,20 +2221,6 @@ body.map-in-fullscreen #mapFullscreenBtn {
   <h2><span class="icon">🏆</span> TOP 5</h2>
   <div id="top5Stack"></div>
 </section>
-
-<section class="card" style="margin-top: 1.5rem; margin-bottom: 5rem;">
-    <div class="toolbar">
-      <div>
-        <h2 style="margin:0;"><span class="icon">🏅</span> Aviatik-Meilensteine</h2>
-        <div class="muted">Herausforderungen basierend auf deinen Flugmustern und Destinationen.</div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div id="aviatikAchievementsContainer" class="achievements-grid">
-        <div class="muted">Berechne Flugdaten...</div>
-      </div>
-    </div>
-  </section>
 
 </main>
 
@@ -2555,6 +2555,68 @@ const AIRCRAFT_DATABASE = {
   "B712": { name: "Boeing 717", family: "Boeing 717", manufacturer: "Boeing", type: "Jet" }
 };
 
+// --- Globale Datenbank für das Insel-Hopper-Achievement ---
+const GLOBAL_ISLAND_AIRPORTS = new Set([
+  // --- EUROPA (Mittelmeer, Atlantik, Nord-/Ostsee) ---
+  "PMI", "IBZ", "MAH", // Balearen (Mallorca, Ibiza, Menorca)
+  "HER", "CHQ", "RHO", "CFU", "KGS", "JTR", "JMK", "SMI", "ZTH", "KVA", "EFL", "LPA", // Griechische Inseln (Kreta, Rhodos, Korfu, Santorin, Mykonos, etc.)
+  "LCA", "PFO", // Zypern
+  "MLA", // Malta
+  "CAG", "OLB", "AHO", // Sardinien
+  "CTA", "PMO", // Sizilien
+  "BIA", "AJA", "CLY", "FSC", // Korsika
+  "FNC", "PXO", // Madeira & Porto Santo
+  "PDL", "HOR", "FLW", "SMA", "TER", // Azoren (Ponta Delgada, Horta, etc.)
+  "ACE", "FUE", "TFN", "TFS", "LPA", "SPC", "VDE", "GMZ", // Kanaren (Lanzarote, Fuerteventura, Teneriffa, Gran Canaria, etc.)
+  "GCI", "JER", // Kanalinseln (Guernsey, Jersey)
+  "GWT", // Sylt (Nordsee)
+  "RNN", // Bornholm (Ostsee)
+
+  // --- KARIBIK & ATLANTIK (Westindische Inseln) ---
+  "PUJ", "SDQ", "STI", "POP", "LRM", // Dominikanische Republik (Hispaniola)
+  "PAP", "CAP", // Haiti (Hispaniola)
+  "CUR", "AUA", "BON", // ABC-Inseln (Curaçao, Aruba, Bonaire)
+  "SXM", "SFG", // Sint Maarten / Saint Martin
+  "HAV", "VRA", "CYO", "HOG", // Kuba
+  "KIN", "MBJ", // Jamaika
+  "NAS", "FPO", // Bahamas
+  "SJU", "BQN", // Puerto Rico
+  "PTP", // Guadeloupe
+  "FDF", // Martinique
+  "UVF", "SLU", // St. Lucia
+  "TAB", "POS", // Trinidad & Tobago
+  "BGI", // Barbados
+  "GND", // Grenada
+  "ANU", // Antigua
+  "SVD", // St. Vincent
+  "SKB", // St. Kitts
+  "EIS", // Jungferninseln
+  "AXA", // Anguilla
+  "SBH", // St. Barth
+  "GCM", // Kaimaninseln
+  "BDA", // Bermuda
+
+  // --- SÜDOSTASIEN & INDISCHER OZEAN ---
+  "DPS", "LOP", // Bali & Lombok
+  "HKT", "USM", "KBV", // Thailand (Phuket, Koh Samui, Krabi/Koh Lanta)
+  "PQC", // Phu Quoc (Vietnam)
+  "MLE", "GAN", // Malediven
+  "MRU", // Mauritius
+  "SEZ", // Seychellen (Mahé)
+  "RUN", // Réunion
+  "MNL", "CEB", "MPH", "PPS", // Philippinen (Luzon, Cebu, Boracay, Palawan)
+  "SIN", // Singapur
+  "CMB", // Sri Lanka
+
+  // --- SÜDSEE & PAZIFIK ---
+  "HNL", "OGG", "KOA", "LIH", "ITO", // Hawaii (Oahu, Maui, Big Island, Kauai)
+  "PPT", "BOB", // Französisch-Polynesien (Tahiti, Bora Bora)
+  "NAN", "SUV", // Fidschi
+  "RAR", // Cookinseln
+  "GUM", // Guam
+  "SPN"  // Saipan
+]);
+
 function renderAviatikAchievements() {
   const container = document.getElementById("aviatikAchievementsContainer");
   if (!container) return;
@@ -2569,12 +2631,10 @@ function renderAviatikAchievements() {
   let embraerCount = 0;
   let equatorCount = 0;
 
-  // Erweiterte Insel-Liste
-  const islandAirports = new Set(["IBZ", "MLE", "USM", "HNL", "LIH", "OGG", "ITO", "CUR", "PUJ", "PMI", "ACE", "TFS", "LPA", "FUE", "VLC", "RHO", "HER", "KGS", "CFU", "FNC", "LPA", "TFN"]);
   const uniqueIslandsVisited = new Set();
-
   const hubs = { "ZRH": 0, "FRA": 0, "LHR": 0, "CDG": 0, "AMS": 0 };
 
+  // --- DATENANALYSE ---
   flights.forEach(f => {
     if (!f) return;
     const acName = String(f.aircraft || "").trim();
@@ -2583,49 +2643,29 @@ function renderAviatikAchievements() {
 
     const dbEntry = Object.values(AIRCRAFT_DATABASE || {}).find(db => db.name === acName);
 
-    // 🔥 FIX: Strikt exklusive Hersteller-Zuweisung über else-if Konstrukt
     if (dbEntry) {
-      if (dbEntry.manufacturer === "Airbus") {
-        airbusCount++;
-      } else if (dbEntry.manufacturer === "Boeing") {
-        boeingCount++;
-      } else if (dbEntry.manufacturer === "Embraer") {
-        embraerCount++;
-      }
+      if (dbEntry.manufacturer === "Airbus") airbusCount++;
+      else if (dbEntry.manufacturer === "Boeing") boeingCount++;
+      else if (dbEntry.manufacturer === "Embraer") embraerCount++;
       
-      if (["Airbus A330", "Airbus A340", "Airbus A350", "Airbus A380", "Boeing 747", "Boeing 767", "Boeing 777", "Boeing 787"].includes(dbEntry.family)) {
-        widebodyCount++;
-      }
-      if (["Airbus A340", "Airbus A380", "Boeing 747"].includes(dbEntry.family)) {
-        quadCount++;
-      }
-      if (dbEntry.type === "Turboprop") {
-        propCount++;
-      }
+      if (["Airbus A330", "Airbus A340", "Airbus A350", "Airbus A380", "Boeing 747", "Boeing 767", "Boeing 777", "Boeing 787"].includes(dbEntry.family)) widebodyCount++;
+      if (["Airbus A340", "Airbus A380", "Boeing 747"].includes(dbEntry.family)) quadCount++;
+      if (dbEntry.type === "Turboprop") propCount++;
     } else {
-      // Striktes Fallback-Scanning ohne Doppel-Zählungen!
       const lowAc = acName.toLowerCase();
-      if (lowAc.includes("embraer")) {
-        embraerCount++;
-      } else if (lowAc.includes("airbus")) {
-        airbusCount++;
-      } else if (lowAc.includes("boeing")) {
-        boeingCount++;
-      }
+      if (lowAc.includes("embraer")) embraerCount++;
+      else if (lowAc.includes("airbus")) airbusCount++;
+      else if (lowAc.includes("boeing")) boeingCount++;
 
-      if (lowAc.includes("330") || lowAc.includes("340") || lowAc.includes("350") || lowAc.includes("380") || lowAc.includes("747") || lowAc.includes("777") || lowAc.includes("787")) {
-        widebodyCount++;
-      }
-      if (lowAc.includes("340") || lowAc.includes("380") || lowAc.includes("747")) {
-        quadCount++;
-      }
-      if (lowAc.includes("atr") || lowAc.includes("dash") || lowAc.includes("dh8")) {
-        propCount++;
-      }
+      if (lowAc.includes("330") || lowAc.includes("340") || lowAc.includes("350") || lowAc.includes("380") || lowAc.includes("747") || lowAc.includes("777") || lowAc.includes("787")) widebodyCount++;
+      if (lowAc.includes("340") || lowAc.includes("380") || lowAc.includes("747")) quadCount++;
+      if (lowAc.includes("atr") || lowAc.includes("dash") || lowAc.includes("dh8")) propCount++;
     }
 
-    if (islandAirports.has(fromIata)) uniqueIslandsVisited.add(fromIata);
-    if (islandAirports.has(toIata)) uniqueIslandsVisited.add(toIata);
+    if (typeof GLOBAL_ISLAND_AIRPORTS !== "undefined" && (GLOBAL_ISLAND_AIRPORTS.has(fromIata) || GLOBAL_ISLAND_AIRPORTS.has(toIata))) {
+      if (GLOBAL_ISLAND_AIRPORTS.has(fromIata)) uniqueIslandsVisited.add(fromIata);
+      if (GLOBAL_ISLAND_AIRPORTS.has(toIata)) uniqueIslandsVisited.add(toIata);
+    }
 
     if (hubs.hasOwnProperty(fromIata)) hubs[fromIata]++;
     if (hubs.hasOwnProperty(toIata)) hubs[toIata]++;
@@ -2633,42 +2673,89 @@ function renderAviatikAchievements() {
     if (["JNB", "BLZ", "DAR", "SYD", "CNS", "ADL", "CUR"].includes(toIata)) equatorCount++;
   });
 
-  const hubsThreshold = 5;
-  const hubsQualified = Object.values(hubs).filter(count => count >= hubsThreshold).length;
-
-  // 🛠️ Hier kannst du die Targets (Ziele) nach Belieben anpassen!
-  const achievements = [
-    { name: "✈️ Widebody-Wohnzimmer", desc: "Mindestens 50 Flüge in Großraumflugzeugen.", current: widebodyCount, target: 50 },
-    { name: "🦕 Vierstrahler-Nostalgie", desc: "Mindestens 10 Flüge auf A340, A380 oder B747.", current: quadCount, target: 10 },
-    { name: "💨 Propeller-Pendler", desc: "Mindestens 20 Flüge in Turboprops (ATR, Dash 8).", current: propCount, target: 20 },
-    { name: "🇪🇺 Duopol-König (Airbus)", desc: "Flüge in einer Maschine aus Toulouse.", current: airbusCount, target: 300 }, // Ziel erhöht
-    { name: "🇺🇸 Duopol-König (Boeing)", desc: "Flüge in einer Maschine aus Seattle.", current: boeingCount, target: 100 },
-    { name: "🇧🇷 Regional-Spezialist", desc: "Flüge mit Embraer-Jets (E-Jets/E2).", current: embraerCount, target: 80 }, // Ziel erhöht
+  // --- BRONZE, SILBER, GOLD DEFINITIONEN (MIT ISO-CODES FÜR FLAGCDN) ---
+  const rawAchievements = [
+    { name: "Widebody-Wohnzimmer", emoji: "✈️", desc: "Flüge in Großraumflugzeugen (A330, A350, B777, etc.).", current: widebodyCount, tiers: [20, 50, 100] },
+    { name: "Vierstrahler-Nostalgie", emoji: "🦕", desc: "Flüge auf den Riesen A340, A380 oder B747.", current: quadCount, tiers: [5, 20, 50] },
+    { name: "Propeller-Pendler", emoji: "💨", desc: "Flüge in Turboprops (ATR, Dash 8).", current: propCount, tiers: [3, 10, 20] },
     
-    { name: "🏝️ Insel-Hopper", desc: "Lande auf verschiedenen Inselflughäfen.", current: uniqueIslandsVisited.size, target: 15, meta: `Besucht: ${Array.from(uniqueIslandsVisited).join(", ") || "Keine"}` }, // Ziel erhöht
-    { name: "🗺️ Drehkreuz-Dauergast", desc: "Besuche ZRH, FRA, LHR, CDG, AMS jeweils 5-mal.", current: hubsQualified, target: 5, meta: `Status: ZRH(${hubs.ZRH}) FRA(${hubs.FRA}) LHR(${hubs.LHR}) CDG(${hubs.CDG}) AMS(${hubs.AMS})` },
-    { name: "🌍 Äquator-Taufe", desc: "Mindestens 10 Flüge über den Äquator nach Süden.", current: equatorCount, target: 10 }
+    // 🔥 Hier übergeben wir den ISO-Code für FlagCDN!
+    { name: "Airbus-König", iso: "eu", desc: "Flüge in einer Maschine aus Toulouse.", current: airbusCount, tiers: [100, 250, 450] },
+    { name: "Boeing-König", iso: "us", desc: "Flüge in einer Maschine aus Seattle.", current: boeingCount, tiers: [20, 50, 120] },
+    { name: "Regional-Spezialist", iso: "br", desc: "Flüge mit Embraer-Jets.", current: embraerCount, tiers: [25, 60, 120] },
+    
+    { name: "Insel-Hopper", emoji: "🏝️", desc: "Lande auf verschiedenen Urlaubs- und Inselflughäfen.", current: uniqueIslandsVisited.size, tiers: [5, 12, 22], meta: `Besucht: ${Array.from(uniqueIslandsVisited).sort().join(", ") || "Keine"}` },
+    { name: "Drehkreuz-Dauergast", emoji: "🗺️", desc: "Besuche die Hubs ZRH, FRA, LHR, CDG, AMS jeweils X-mal.", current: hubs, tiers: [3, 6, 12], isHub: true },
+    { name: "Äquator-Taufe", emoji: "🌍", desc: "Flüge über den Äquator nach Süden.", current: equatorCount, tiers: [2, 6, 12] }
   ];
 
-  container.innerHTML = achievements.map(a => {
-    const pct = Math.min(100, (a.current / a.target) * 100);
-    const isUnlocked = pct >= 100;
+  // --- HTML RENDERING ---
+  container.innerHTML = rawAchievements.map(a => {
+    let currentVal = a.current;
+    let tierIndex = 0; 
+
+    if (a.isHub) {
+      const getQualifiedCount = (threshold) => Object.values(a.current).filter(c => c >= threshold).length;
+      if (getQualifiedCount(a.tiers[2]) === 5) { tierIndex = 3; currentVal = getQualifiedCount(a.tiers[2]); }
+      else if (getQualifiedCount(a.tiers[1]) === 5) { tierIndex = 2; currentVal = getQualifiedCount(a.tiers[1]); }
+      else if (getQualifiedCount(a.tiers[0]) === 5) { tierIndex = 1; currentVal = getQualifiedCount(a.tiers[0]); }
+      else { tierIndex = 0; currentVal = getQualifiedCount(a.tiers[0]); }
+    } else {
+      if (currentVal >= a.tiers[2]) tierIndex = 3;      
+      else if (currentVal >= a.tiers[1]) tierIndex = 2; 
+      else if (currentVal >= a.tiers[0]) tierIndex = 1; 
+    }
+
+    const targetVal = tierIndex === 3 ? a.tiers[2] : a.tiers[tierIndex]; 
+    const pct = Math.min(100, (currentVal / targetVal) * 100);
+
+    let badgeLabel = "🚫 Kein Rang";
+    let progressColor = "#3b82f6"; 
+    let borderGradient = "rgba(15, 23, 42, 0.6)";
+
+    if (tierIndex === 1) {
+      badgeLabel = "🥉 BRONZE";
+      progressColor = "#cd7f32"; 
+      borderGradient = "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(205, 127, 50, 0.04))";
+    } else if (tierIndex === 2) {
+      badgeLabel = "🥈 SILBER";
+      progressColor = "#cbd5e1"; 
+      borderGradient = "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(203, 213, 225, 0.04))";
+    } else if (tierIndex === 3) {
+      badgeLabel = "👑 GOLD 🥇";
+      progressColor = "linear-gradient(90deg, #eab308, #ca8a04)"; 
+      borderGradient = "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(234, 179, 8, 0.06))";
+    }
+
+    // Dynamic Icon Generation (Prüfen, ob Flagge oder Emoji)
+    let iconHTML = "";
+    if (a.iso && typeof renderFlagImg === "function") {
+      iconHTML = renderFlagImg(a.iso, 20); // Nutzt deine FlagCDN-Funktion!
+    } else if (a.emoji) {
+      iconHTML = `<span style="font-size: 1.2rem; display: inline-block; vertical-align: middle;">${a.emoji}</span>`;
+    }
+
+    const metaText = a.isHub 
+      ? `Status: ZRH(${hubs.ZRH}) FRA(${hubs.FRA}) LHR(${hubs.LHR}) CDG(${hubs.CDG}) AMS(${hubs.AMS}) [Benötigt für nächsten Rang: jeweils ${tierIndex === 3 ? a.tiers[2] : a.tiers[tierIndex]} Besuche]`
+      : a.meta;
 
     return `
-      <div class="badge-tile ${isUnlocked ? 'unlocked' : 'locked'}" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.2rem;">
+      <div class="badge-tile unlocked" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.2rem; background: ${borderGradient}; border-color: ${tierIndex > 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)'}">
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-          <h4 style="margin:0; font-size:1.05rem;">${a.name}</h4>
-          <span style="font-size: 0.85rem; font-family: monospace; color: ${isUnlocked ? '#eab308' : '#64748b'}; font-weight: bold;">
-            ${isUnlocked ? "✅ ERREICHT" : `${a.current} / ${a.target}`}
+          <h4 style="margin:0; font-size:1.05rem; color: ${tierIndex === 3 ? '#eab308' : '#f8fafc'}; display: flex; align-items: center; gap: 0.5rem;">
+            ${iconHTML} ${a.name}
+          </h4>
+          <span style="font-size: 0.85rem; font-family: monospace; color: ${tierIndex > 0 ? '#ffffff' : '#64748b'}; font-weight: bold; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 4px;">
+            ${badgeLabel} (${a.isHub && tierIndex === 3 ? '5/5 Hubs' : `${currentVal} / ${targetVal}`})
           </span>
         </div>
         <p style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.3;">${a.desc}</p>
         
         <div style="width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 4px; margin-top: 0.3rem; overflow: hidden; position: relative;">
-          <div style="width: ${pct}%; background: ${isUnlocked ? 'linear-gradient(90deg, #eab308, #ca8a04)' : '#3b82f6'}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
+          <div style="width: ${pct}%; background: ${progressColor}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
         </div>
         
-        ${a.meta ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-family: monospace;">${a.meta}</div>` : ""}
+        ${metaText ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-family: monospace; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${metaText}</div>` : ""}
       </div>
     `;
   }).join("");
