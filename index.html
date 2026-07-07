@@ -2758,8 +2758,8 @@ function renderAviatikAchievements() {
 			  <div style="width: ${pct}%; background: ${progressColor}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
 			</div>
 			
-			${metaText ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; font-family: monospace; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${metaText}</div>` : ""}
-		  </div>
+			${metaText ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem; font-family: monospace; width: 100%; word-break: break-word; line-height: 1.4;">${metaText}</div>` : ""}
+      </div>
 		`;
   }).join("");
 }
