@@ -2739,25 +2739,28 @@ function renderAviatikAchievements() {
       ? `Status: ZRH(${hubs.ZRH}) FRA(${hubs.FRA}) LHR(${hubs.LHR}) CDG(${hubs.CDG}) AMS(${hubs.AMS}) [Benötigt für nächsten Rang: jeweils ${tierIndex === 3 ? a.tiers[2] : a.tiers[tierIndex]} Besuche]`
       : a.meta;
 
-    return `
-      <div class="badge-tile unlocked" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.2rem; background: ${borderGradient}; border-color: ${tierIndex > 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)'}">
-        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-          <h4 style="margin:0; font-size:1.05rem; color: ${tierIndex === 3 ? '#eab308' : '#f8fafc'}; display: flex; align-items: center; gap: 0.5rem;">
-            ${iconHTML} ${a.name}
-          </h4>
-          <span style="font-size: 0.85rem; font-family: monospace; color: ${tierIndex > 0 ? '#ffffff' : '#64748b'}; font-weight: bold; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 4px;">
-            ${badgeLabel} (${a.isHub && tierIndex === 3 ? '5/5 Hubs' : `${currentVal} / ${targetVal}`})
-          </span>
-        </div>
-        <p style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.3;">${a.desc}</p>
-        
-        <div style="width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 4px; margin-top: 0.3rem; overflow: hidden; position: relative;">
-          <div style="width: ${pct}%; background: ${progressColor}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
-        </div>
-        
-        ${metaText ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-family: monospace; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${metaText}</div>` : ""}
-      </div>
-    `;
+	return `
+		  <div class="badge-tile unlocked" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.2rem; background: ${borderGradient}; border-color: ${tierIndex > 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)'}">
+			
+			<!-- 🔥 HEADER: flex-wrap sorgt für automatischen Umbruch auf Mobile ohne Quetschen -->
+			<div style="display: flex; justify-content: space-between; width: 100%; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+			  <h4 style="margin:0; font-size:1.05rem; color: ${tierIndex === 3 ? '#eab308' : '#f8fafc'}; display: flex; align-items: center; gap: 0.5rem; min-width: 160px;">
+				${iconHTML} ${a.name}
+			  </h4>
+			  <span style="font-size: 0.85rem; font-family: monospace; color: ${tierIndex > 0 ? '#ffffff' : '#64748b'}; font-weight: bold; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; white-space: nowrap; margin-left: auto;">
+				${badgeLabel} (${a.isHub && tierIndex === 3 ? '5/5 Hubs' : `${currentVal} / ${targetVal}`})
+			  </span>
+			</div>
+			
+			<p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.3;">${a.desc}</p>
+			
+			<div style="width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 4px; margin-top: 0.4rem; overflow: hidden; position: relative;">
+			  <div style="width: ${pct}%; background: ${progressColor}; height: 100%; border-radius: 4px; transition: width 0.5s ease;"></div>
+			</div>
+			
+			${metaText ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; font-family: monospace; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${metaText}</div>` : ""}
+		  </div>
+		`;
   }).join("");
 }
 
