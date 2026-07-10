@@ -2045,6 +2045,11 @@ body.map-in-fullscreen #mapFullscreenBtn {
 	right: auto !important;
 }
 
+/* Macht alle großen KPI-Zahlen einheitlich mintgrün */
+#dashboardTiles .stat-value {
+  color: #f8fafc !important;
+}
+
   </style>
 </head>
 <body>
@@ -2437,7 +2442,7 @@ const AIRLINE_LOGOS = {
   "LUFTHANSA": "img/airlines/Lufthansa.png",
   "EUROWINGS": "img/airlines/Eurowings.png",
   "EDELWEISS": "img/airlines/Edelweiss.png",
-  "RYANAIR": "img/airlines/Ryanair.png",
+  "RYANAIR": "img/airlines/Ryanair.jpg",
   "EASYJET": "img/airlines/Easyjet.png",
   "AIR FRANCE": "img/airlines/Air France.png",
   "AIR BALTIC": "img/airlines/Air Baltic.png",
@@ -4240,6 +4245,8 @@ function renderDashboardTiles() {
 
     // --- KPIs ---
     const totalKm = flights.reduce((s, f) => s + Number(f.distanceKm || 0), 0);
+	const totalCo2Tons = (totalKm * 0.115) / 1000; // Umrechnung in Tonnen
+	const treesToOffset = Math.round(totalCo2Tons * 80); // 1 Tonne CO2 = ca. 80 Bäume im Jahr
     const totalHours = flights.reduce((s, f) => s + Number(f.durationHours || 0), 0);
 
     const airportsSet = new Set();
@@ -4361,57 +4368,80 @@ function renderDashboardTiles() {
     
     const totalMiles = Math.round(totalKm * 0.621371);
     
-    wrap.innerHTML = getMilestoneHTML(totalKm);
+wrap.innerHTML = getMilestoneHTML(totalKm);
     wrap.innerHTML += `
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">✈️ Flüge</div><div class="stat-value">${flights.length}</div></div>
+      <!-- PAAR 1: Flüge & Flugdistanz -->
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">✈️ Flüge</div><div class="stat-value" style="color: #6ee7b7;">${flights.length}</div></div>
       <div class="stat-card holo-card"><div class="stat-label terminal-label">📏 Flugdistanz</div><div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div><div class="stat-note">${totalMiles.toLocaleString()} miles</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">⏰ Zeit in der Luft</div><div class="stat-value">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛬 Airports</div><div class="stat-value">${airportsSet.size}</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛫 Airlines</div><div class="stat-value">${airlinesSet.size}</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🌍 Länder</div><div class="stat-value">${countriesSet.size}</div></div>
-
+      
+      <!-- PAAR 2: Zeit in der Luft & Eco-Bilanz -->
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">⏰ Zeit in der Luft</div><div class="stat-value" style="color: #6ee7b7;">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
       <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🏔 Längster Flug</div>
-        <div class="stat-value">${longest ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
-        <div class="stat-note">${longest ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
+        <div class="stat-label terminal-label">🌱 Eco-Bilanz</div>
+        <div class="stat-value" style="color: #6ee7b7;">${totalCo2Tons.toFixed(2)} t</div>
+        <div class="stat-note">CO₂-Emissionen (berechnet)</div>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.3rem; font-family: monospace;">
+          🌳 Kompensation: ca. ${treesToOffset.toLocaleString()} Bäume/Jahr nötig
+        </div>
       </div>
 
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🧊 Kürzester Flug</div>
-        <div class="stat-value">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
-        <div class="stat-note">${shortest ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
-      </div>
-
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🔁 Häufigste Routen</div>
-        ${
-          topRoutesAll.length
-            ? topRoutesAll.map(([route, count], idx) => {
-                const { from, to } = parseRouteKey(route);
-                return `
-                  <div class="stat-value" style="font-size:${idx === 0 ? '1rem' : '.92rem'}; margin-top:${idx === 0 ? '.2rem' : '.35rem'};">
-                    ${airportCodeWithFlag(from)} → ${airportCodeWithFlag(to)}
-                  </div>
-                  <div class="stat-note">${airportCityLabel(from)} → ${airportCityLabel(to)} · ${count}×</div>
-                `;
-              }).join("")
-            : `<div class="stat-value">–</div><div class="stat-note">Keine Routendaten</div>`
-        }
-      </div>
-
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🏆 Top Airline</div>
-        <div class="stat-value">${topAirline ? `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} <span style="margin-left:8px">${topAirline[0]}</span>` : "–"}</div>
-        <div class="stat-note">${topAirline ? `${topAirline[1]}×` : ""}</div>
-      </div>
-
+      <!-- PAAR 3: Airports & Airlines -->
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛬 Airports</div><div class="stat-value" style="color: #6ee7b7;">${airportsSet.size}</div></div>
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛫 Airlines</div><div class="stat-value" style="color: #6ee7b7;">${airlinesSet.size}</div></div>
+      
+      <!-- PAAR 4: Länder & Top Airport -->
+      <div class="stat-card holo-card"><div class="stat-label terminal-label">🌍 Länder</div><div class="stat-value" style="color: #6ee7b7;">${countriesSet.size}</div></div>
       <div class="stat-card holo-card">
         <div class="stat-label terminal-label">🛬 Top Airport (w/o Homebase${homeAirport ? ` ${homeAirport}` : ""})</div>
-        <div class="stat-value">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
+        <div class="stat-value" style="color: #6ee7b7;">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
         <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
       </div>
 
-       <div class="stat-card holo-card tile-full">
+      <!-- PAAR 5: Längster Flug & Kürzester Flug (Symmetrischer Höhen-Match!) -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🏔 Längster Flug</div>
+        <div class="stat-value" style="color: #6ee7b7;">${longest ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
+        <div class="stat-note">${longest ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
+      </div>
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🧊 Kürzester Flug</div>
+        <div class="stat-value" style="color: #6ee7b7;">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
+        <div class="stat-note">${shortest ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
+      </div>
+
+      <!-- PAAR 6: Top Airline (Links) & Ein leerer Platzhalter-Kompensationstrick (Rechts)? 
+           Besser: Wir machen die Top Airline ab hier jetzt zu einer vollwertigen, eleganten Zeile, um den Übergang zu den großen Kacheln zu schaffen. -->
+      <div class="stat-card holo-card tile-full">
+        <div class="stat-label terminal-label">🏆 Top Airline</div>
+        <div class="stat-value" style="color: #6ee7b7; display: flex; align-items: center; gap: 8px;">
+          ${topAirline ? `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} <span>${topAirline[0]}</span>` : "–"}
+        </div>
+        <div class="stat-note">${topAirline ? `${topAirline[1]}× geflogen` : ""}</div>
+      </div>
+
+      <!-- AB HIER: Die großen Listen- und Chart-Kacheln im Full-Tile-Format -->
+      <div class="stat-card holo-card tile-full">
+        <div class="stat-label terminal-label">🔁 Häufigste Routen</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.6rem;">
+          ${
+            topRoutesAll.length
+              ? topRoutesAll.map(([route, count], idx) => {
+                  const { from, to } = parseRouteKey(route);
+                  return `
+                    <div>
+                      <div class="stat-value" style="font-size: 1.1rem; color: #6ee7b7;">
+                        ${airportCodeWithFlag(from)} → ${airportCodeWithFlag(to)}
+                      </div>
+                      <div class="stat-note">${airportCityLabel(from)} → ${airportCityLabel(to)} · ${count}×</div>
+                    </div>
+                  `;
+                }).join("")
+              : `<div class="stat-value" style="color: #6ee7b7;">–</div><div class="stat-note">Keine Routendaten</div>`
+          }
+        </div>
+      </div>
+
+      <div class="stat-card holo-card tile-full">
         <div class="toolbar" style="margin-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.1); padding-bottom: 8px;">
           <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
           <div class="flex-row" style="gap: 5px;">
@@ -4421,9 +4451,7 @@ function renderDashboardTiles() {
           </div>
         </div>
 
-        <!-- 🔥 NEU: Umschließendes Flexbox-Layout für Y-Achse + Balken-Chart -->
         <div style="display: flex; gap: 0.8rem; align-items: stretch; height: 120px;">
-          
           <!-- Dynamic Y-Axis Labels -->
           <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; color: #64748b; font-family: monospace; font-size: 0.72rem; width: 55px; padding-bottom: 18px; border-right: 1px solid rgba(56, 189, 248, 0.1); padding-right: 6px; user-select: none;">
             <div>${yTop.toLocaleString()}<span style="font-size:0.6rem; margin-left:1px;">${unitLabel}</span></div>
@@ -5959,7 +5987,7 @@ function getMilestoneHTML(totalKm) {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const kmLastYear = flights
-        .filter(f => new Date(f.date) >= oneYearAgo)
+        .filter(f => f.date && new Date(f.date) >= oneYearAgo)
         .reduce((s, f) => s + Number(f.distanceKm || 0), 0);
     
     const kmPerDay = kmLastYear / 365;
@@ -6007,16 +6035,23 @@ function getMilestoneHTML(totalKm) {
         const isMars = m.name.includes("Mars");
         
         // Entscheiden, ob wir das Ziel detailliert anzeigen oder als "Vorschau"
-        // Wir zeigen das aktuelle Ziel detailliert an ODER Sonne/Mars immer als Vorschau
         const isCurrent = !isReached && !currentTargetFound;
         if (isCurrent) currentTargetFound = true;
 
         if (isReached) {
-            // Erreichte Ziele: Kompakt & ausgegraut
+            // Hilfs-Formatierung für das Distanz-Label hinten dran
+            const distLabel = m.dist >= 1000000 
+                ? `${Math.round(m.dist / 1000000 * 10) / 10} Mio. km` 
+                : `${m.dist.toLocaleString()} km`;
+
+            // 🔥 FIX: display: flex auf justify-content: space-between umgestellt und Distanz-Badge hinzugefügt
             milestonesHTML += `
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; opacity: 0.4;">
-                    <span style="color: #22c55e; font-size: 0.8rem;">✅</span>
-                    <span style="font-size: 0.8rem; text-decoration: line-through; color: ${m.color};">${m.icon} ${m.name}</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; opacity: 0.4; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #22c55e; font-size: 0.8rem;">✅</span>
+                        <span style="font-size: 0.8rem; text-decoration: line-through; color: ${m.color};">${m.icon} ${m.name}</span>
+                    </div>
+                    <span style="font-family: monospace; font-size: 0.75rem; color: #475569; padding-right: 4px;">(${distLabel})</span>
                 </div>`;
         } else if (isCurrent || isSun || isMars) {
             // Aktuelles Ziel ODER Sonne/Mars (als Vergleich)
@@ -6032,7 +6067,7 @@ function getMilestoneHTML(totalKm) {
             }
 
             const glowClass = (isSun && isCurrent) ? "sun-glow" : (isMars && isCurrent) ? "mars-glow" : "";
-            const opacity = isCurrent ? "1" : "0.5"; // Vorschau-Ziele sind etwas blasser
+            const opacity = isCurrent ? "1" : "0.5";
 
             milestonesHTML += `
                 <div class="milestone-container" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid ${m.color}22; opacity: ${opacity};">
