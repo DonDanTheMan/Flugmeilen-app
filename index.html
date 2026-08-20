@@ -2050,6 +2050,21 @@ body.map-in-fullscreen #mapFullscreenBtn {
   color: #f8fafc !important;
 }
 
+.stats-grid {
+  display: grid;
+  /* Erzwingt genau 2 Spalten auf Bildschirmen ab Tablet-Größe */
+  grid-template-columns: repeat(2, 1fr); 
+  gap: 1.25rem;
+  width: 100%;
+}
+
+/* Auf schmalen Smartphones automatisch wieder 1-spaltig untereinander */
+@media (max-width: 700px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -2201,6 +2216,7 @@ body.map-in-fullscreen #mapFullscreenBtn {
   </section>
 
   <!-- 4) RANKINGS -->
+  <div class="stats-grid">
   <section class="card">
     <h2><span class="icon">🛬</span> Flughäfen (Besuche)</h2>
     <div id="statsAirports"></div>
@@ -2220,12 +2236,7 @@ body.map-in-fullscreen #mapFullscreenBtn {
     <h2><span class="icon">🛩</span> Flugzeugtypen</h2>
     <div id="statsAircrafts"></div>
   </section>
-
-  <!-- 5) TOP 5 (optional ganz unten) -->
-  <section class="card">
-  <h2><span class="icon">🏆</span> TOP 5</h2>
-  <div id="top5Stack"></div>
-</section>
+</div>
 
 </main>
 
@@ -3913,7 +3924,7 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
     withSearch = true,
     searchPlaceholder = "Suchen...",
     renderNameHtml = (name) => name,
-    renderNameText = (name) => name   // 👈 NEU
+    renderNameText = (name) => name
   } = options;
 
   if (!entries || !entries.length) return "<span class='muted'>Keine Daten</span>";
@@ -3921,10 +3932,13 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const uid = "rk_" + Math.random().toString(36).slice(2);
   const max = entries[0][1] || 1;
 
-const renderRows = (arr) => `
+  const renderRows = (arr) => `
     <div class="rank-bars">
-      ${arr.map(([name,count]) => {
-        const percent = Math.round(count/max * 100);
+      ${arr.map(([name, count]) => {
+        // 🔥 LOGARITHMISCHE BERECHNUNG statt linear
+        // Platz 1 hat 100 %, kleinere Werte schrumpfen nicht mehr zu unsichtbaren Strichen
+        const percent = Math.max(10, Math.round((Math.log(count + 1) / Math.log(max + 1)) * 100));
+
         return `
         <div class="rank-row"
              data-name="${String(name).toLowerCase()}"
@@ -4186,11 +4200,10 @@ function wireDashBarTooltips(){
 		// Falls die Statistik-Seite auch offen ist/wäre, wird sie beim nächsten Besuch aktualisiert
 	};
 
-function renderDashboardTiles() {
+function renderDashboardTiles(targetId = "dashboardTiles") {
   console.log("renderDashboardTiles() called");
 
   const wrap = document.getElementById("dashboardTiles");
-  console.log("dashboardTiles:", wrap);
   if (!wrap) return;
 
   wrap.innerHTML = `<div class="muted">Dashboard lädt…</div>`;
@@ -4201,7 +4214,7 @@ function renderDashboardTiles() {
     // Jahr aus UI
     const year = (typeof getSelectedYear === "function") ? getSelectedYear() : null;
 
-    // 1) Jahr scopen (robustes Date-Parsing)
+    // 1) Jahr scopen
     const scoped = year
       ? flightsAll.filter(f => {
           const d = parseFlightDateAny(f.date);
@@ -4210,7 +4223,7 @@ function renderDashboardTiles() {
       : flightsAll;
 
     // 2) Privat/Geschäft scopen
-    const tripFilterRaw = localStorage.getItem("dash_tripType"); // "p" | "g" | null
+    const tripFilterRaw = localStorage.getItem("dash_tripType");
     const tripFilter = (tripFilterRaw || "").trim().toLowerCase();
 
     const flights = tripFilter
@@ -4243,75 +4256,8 @@ function renderDashboardTiles() {
       return;
     }
 
-    // --- KPIs ---
+    // --- KPIs für Monatsverlauf & Distanz ---
     const totalKm = flights.reduce((s, f) => s + Number(f.distanceKm || 0), 0);
-	const totalCo2Tons = (totalKm * 0.115) / 1000; // Umrechnung in Tonnen
-	const treesToOffset = Math.round(totalCo2Tons * 80); // 1 Tonne CO2 = ca. 80 Bäume im Jahr
-    const totalHours = flights.reduce((s, f) => s + Number(f.durationHours || 0), 0);
-
-    const airportsSet = new Set();
-    const airlinesSet = new Set();
-
-    flights.forEach(f => {
-      if (AIRPORTS?.[f.from]) airportsSet.add(f.from);
-      if (AIRPORTS?.[f.to])   airportsSet.add(f.to);
-      const a = String(f.airline || "").trim();
-      if (a) airlinesSet.add(a);
-    });
-
-    const countriesSet = new Set();
-    airportsSet.forEach(code => {
-      const c = String(AIRPORTS?.[code]?.country || "").toUpperCase();
-      if (c && c.length === 2) countriesSet.add(c);
-    });
-
-    // --- Highlights ---
-    const flightsWithDist = flights.filter(f => Number(f.distanceKm) > 0);
-    const longest = flightsWithDist.length
-      ? [...flightsWithDist].sort((a, b) => Number(b.distanceKm || 0) - Number(a.distanceKm || 0))[0]
-      : null;
-    const shortest = flightsWithDist.length
-      ? [...flightsWithDist].sort((a, b) => Number(a.distanceKm || 0) - Number(b.distanceKm || 0))[0]
-      : null;
-
-    // Häufigste Routen
-    const topRoutesAll = (() => {
-      const routeCounts = countOccurrences(flights, f =>
-        (f.from && f.to)
-          ? `${String(f.from).trim().toUpperCase()} → ${String(f.to).trim().toUpperCase()}`
-          : null
-      );
-      return sortedEntries(routeCounts).slice(0, 3);
-    })();
-
-    const airlineCounts = countOccurrences(flights, f => String(f.airline || "").trim() || null);
-    const topAirline = sortedEntries(airlineCounts)[0] || null;
-
-    // --- Top Airport ohne Homebase ---
-    const movement = {};
-    flights.forEach(f => {
-      const from = String(f.from || "").trim().toUpperCase();
-      const to   = String(f.to || "").trim().toUpperCase();
-      if (from) movement[from] = (movement[from] || 0) + 1;
-      if (to)   movement[to]   = (movement[to]   || 0) + 1;
-    });
-
-    const visits = {};
-    Object.entries(movement).forEach(([k, v]) => {
-      visits[k] = Math.ceil(v / 2);
-    });
-
-    const homeAirport = getHomeAirportIata();
-
-    const topAirport = Object.entries(visits)
-      .filter(([iata]) => {
-        const code = String(iata || "").trim().toUpperCase();
-        return code && code !== homeAirport;
-      })
-      .sort((a, b) => b[1] - a[1])[0] || null;
-
-    const airportCity = (code) => AIRPORTS?.[code]?.city || "";
-    const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
 
     // --- Recent ---
     const sortedByDate = [...flights]
@@ -4333,114 +4279,34 @@ function renderDashboardTiles() {
       
       if (mbMode === "km") buckets[m] += Number(f.distanceKm || 0);
       else if (mbMode === "hours") buckets[m] += Number(f.durationHours || 0);
-      else buckets[m] += 1; // flights
+      else buckets[m] += 1;
     });
 
     const max = Math.max(...buckets, 1);
     const monthsShort = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
-    // Hilfsfunktion für Tooltip-Label
     const getBarLabel = (v) => {
-      if (mbMode === "km") {
-        return `${Math.round(v).toLocaleString()} km`;
-      }
-      
+      if (mbMode === "km") return `${Math.round(v).toLocaleString()} km`;
       if (mbMode === "hours") {
         const totalMinutes = Math.round(v * 60);
         const hh = Math.floor(totalMinutes / 60);
         const mm = totalMinutes % 60;
-        const mmPadded = String(mm).padStart(2, '0');
-        return `${hh}:${mmPadded} h`;
+        return `${hh}:${String(mm).padStart(2, '0')} h`;
       }
-      
       return `${v} Flüge`;
     };
 
-    // 🔥 NEU: Generierung der Beschriftungswerte für die Y-Achse
     const unitLabel = mbMode === "km" ? "km" : (mbMode === "hours" ? "h" : "Flg");
-    const yTop    = Math.round(max);
-    const yMid    = Math.round(max * 0.5);
+    const yTop = Math.round(max);
+    const yMid = Math.round(max * 0.5);
 
-    function parseRouteKey(routeKey) {
-      const parts = String(routeKey).split("→").map(s => s.trim());
-      return { from: parts[0] || "", to: parts[1] || "" };
-    }
-    
-    const totalMiles = Math.round(totalKm * 0.621371);
-    
-wrap.innerHTML = getMilestoneHTML(totalKm);
+    const airportCity = (code) => AIRPORTS?.[code]?.city || "";
+    const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
+
+    // --- HTML RENDERING FÜR HOME (Schlank & Aufgeräumt) ---
+    wrap.innerHTML = getMilestoneHTML(totalKm);
     wrap.innerHTML += `
-      <!-- PAAR 1: Flüge & Flugdistanz -->
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">✈️ Flüge</div><div class="stat-value" style="color: #6ee7b7;">${flights.length}</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">📏 Flugdistanz</div><div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div><div class="stat-note">${totalMiles.toLocaleString()} miles</div></div>
-      
-      <!-- PAAR 2: Zeit in der Luft & Eco-Bilanz -->
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">⏰ Zeit in der Luft</div><div class="stat-value" style="color: #6ee7b7;">${formatHours(totalHours)}</div><div class="stat-note">${hoursToText(totalHours)}</div></div>
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🌱 Eco-Bilanz</div>
-        <div class="stat-value" style="color: #6ee7b7;">${totalCo2Tons.toFixed(2)} t</div>
-        <div class="stat-note">CO₂-Emissionen (berechnet)</div>
-        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.3rem; font-family: monospace;">
-          🌳 Kompensation: ca. ${treesToOffset.toLocaleString()} Bäume/Jahr nötig
-        </div>
-      </div>
-
-      <!-- PAAR 3: Airports & Airlines -->
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛬 Airports</div><div class="stat-value" style="color: #6ee7b7;">${airportsSet.size}</div></div>
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🛫 Airlines</div><div class="stat-value" style="color: #6ee7b7;">${airlinesSet.size}</div></div>
-      
-      <!-- PAAR 4: Länder & Top Airport -->
-      <div class="stat-card holo-card"><div class="stat-label terminal-label">🌍 Länder</div><div class="stat-value" style="color: #6ee7b7;">${countriesSet.size}</div></div>
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🛬 Top Airport (w/o Homebase${homeAirport ? ` ${homeAirport}` : ""})</div>
-        <div class="stat-value" style="color: #6ee7b7;">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
-        <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
-      </div>
-
-      <!-- PAAR 5: Längster Flug & Kürzester Flug (Symmetrischer Höhen-Match!) -->
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🏔 Längster Flug</div>
-        <div class="stat-value" style="color: #6ee7b7;">${longest ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
-        <div class="stat-note">${longest ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
-      </div>
-      <div class="stat-card holo-card">
-        <div class="stat-label terminal-label">🧊 Kürzester Flug</div>
-        <div class="stat-value" style="color: #6ee7b7;">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
-        <div class="stat-note">${shortest ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
-      </div>
-
-      <!-- PAAR 6: Top Airline (Links) & Ein leerer Platzhalter-Kompensationstrick (Rechts)? 
-           Besser: Wir machen die Top Airline ab hier jetzt zu einer vollwertigen, eleganten Zeile, um den Übergang zu den großen Kacheln zu schaffen. -->
-      <div class="stat-card holo-card tile-full">
-        <div class="stat-label terminal-label">🏆 Top Airline</div>
-        <div class="stat-value" style="color: #6ee7b7; display: flex; align-items: center; gap: 8px;">
-          ${topAirline ? `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} <span>${topAirline[0]}</span>` : "–"}
-        </div>
-        <div class="stat-note">${topAirline ? `${topAirline[1]}× geflogen` : ""}</div>
-      </div>
-
-      <!-- AB HIER: Die großen Listen- und Chart-Kacheln im Full-Tile-Format -->
-      <div class="stat-card holo-card tile-full">
-        <div class="stat-label terminal-label">🔁 Häufigste Routen</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.6rem;">
-          ${
-            topRoutesAll.length
-              ? topRoutesAll.map(([route, count], idx) => {
-                  const { from, to } = parseRouteKey(route);
-                  return `
-                    <div>
-                      <div class="stat-value" style="font-size: 1.1rem; color: #6ee7b7;">
-                        ${airportCodeWithFlag(from)} → ${airportCodeWithFlag(to)}
-                      </div>
-                      <div class="stat-note">${airportCityLabel(from)} → ${airportCityLabel(to)} · ${count}×</div>
-                    </div>
-                  `;
-                }).join("")
-              : `<div class="stat-value" style="color: #6ee7b7;">–</div><div class="stat-note">Keine Routendaten</div>`
-          }
-        </div>
-      </div>
-
+      <!-- Monatsverlauf -->
       <div class="stat-card holo-card tile-full">
         <div class="toolbar" style="margin-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.1); padding-bottom: 8px;">
           <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
@@ -4452,14 +4318,12 @@ wrap.innerHTML = getMilestoneHTML(totalKm);
         </div>
 
         <div style="display: flex; gap: 0.8rem; align-items: stretch; height: 120px;">
-          <!-- Dynamic Y-Axis Labels -->
           <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; color: #64748b; font-family: monospace; font-size: 0.72rem; width: 55px; padding-bottom: 18px; border-right: 1px solid rgba(56, 189, 248, 0.1); padding-right: 6px; user-select: none;">
             <div>${yTop.toLocaleString()}<span style="font-size:0.6rem; margin-left:1px;">${unitLabel}</span></div>
             <div>${yMid.toLocaleString()}</div>
             <div>0</div>
           </div>
 
-          <!-- Balken-Diagramm -->
           <div class="dash-bars" style="flex: 1; height: 100%; display: flex;">
             ${buckets.map((v, i) => {
               const h = Math.round((v / max) * 100);
@@ -4480,6 +4344,7 @@ wrap.innerHTML = getMilestoneHTML(totalKm);
         <div class="stat-note" style="margin-top:.7rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
 
+      <!-- Quick Actions -->
       <div class="stat-card holo-card tile-full">
         <div class="stat-label">⚡ Quick Actions</div>
         <div class="dash-actions">
@@ -4492,6 +4357,7 @@ wrap.innerHTML = getMilestoneHTML(totalKm);
         <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
       </div>
 
+      <!-- Zuletzt geflogen -->
       <div class="stat-card holo-card tile-full">
         <div class="stat-label">🧾 Zuletzt geflogen</div>
         <div class="dash-recent">
@@ -4512,6 +4378,7 @@ wrap.innerHTML = getMilestoneHTML(totalKm);
       </div>
     `;
 
+    // Event-Listener anheften
     document.getElementById("dashGoAdd")?.addEventListener("click", () => {
       window.showPage?.("flightsPage");
       setTimeout(() => document.getElementById("flightFormCard")?.scrollIntoView({ behavior: "smooth" }), 120);
@@ -4868,58 +4735,185 @@ function renderFullStatistics() {
     if (c && c.length === 2) countriesSet.add(c);
   });
 
-  const statsSelectedYearEl = document.getElementById("statsSelectedYear");
-if (statsSelectedYearEl) {
+const statsSelectedYearEl = document.getElementById("statsSelectedYear");
+  if (statsSelectedYearEl) {
+    const totalMiles = Math.round(totalKm * 0.621371);
 
-const totalMiles = Math.round(totalKm * 0.621371);
-
-let ecoCount = 0;
-let bizCount = 0;
-
-flightsScope.forEach(f => {
-    if (f.flightClass === "Business" || f.flightClass === "First") {
+    // 1. Eco vs. Biz Klassen-Berechnung
+    let ecoCount = 0;
+    let bizCount = 0;
+    flightsScope.forEach(f => {
+      if (f.flightClass === "Business" || f.flightClass === "First") {
         bizCount++;
-    } else {
+      } else {
         ecoCount++;
-    }
-});
+      }
+    });
 
-// 🔥 Die HTML-Kachel für die Flüge vorab als Variable definieren:
-const fluegeTileHTML = `
-  <div class="stat-card holo-card">
-    <div class="stat-label terminal-label">✈️ FLÜGE</div>
-    <div class="stat-value">${flightsScope.length}</div>
-    <div class="stat-note" style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; justify-content: left;">
-      <span>🥫 ${ecoCount} Eco</span>
-      ${bizCount > 0 ? `<span style="color: #eab308;">🥂 ${bizCount} Biz</span>` : ""}
-    </div>
-  </div>
-`;
+    // 2. Erweiterte KPI-Berechnungen (Eco-Bilanz, Airports, Airlines, Highlights, Routen)
+    const totalCo2Tons = (totalKm * 0.115) / 1000;
+    const treesToOffset = Math.round(totalCo2Tons * 80);
 
-// Jetzt das gesamte HTML in das Element injizieren:
-statsSelectedYearEl.innerHTML = `
-    <div class="stat-card holo-card">
-       <div class="stat-label terminal-label"><span class="icon">📅</span>Bereich</div>
-       <div class="stat-value">${year ?? "Alle Jahre"}</div>
-    </div>
-    
-    ${fluegeTileHTML}
-    
-    <div class="stat-card holo-card">
-       <div class="stat-label terminal-label"><span class="icon">📏</span>Flugdistanz</div>
-       <div class="stat-value" style="color: #6ee7b7;">${Math.round(totalKm).toLocaleString()} km</div>
-       <div class="stat-note">${totalMiles.toLocaleString()} miles</div>
-    </div>
-    <div class="stat-card holo-card">
-       <div class="stat-label terminal-label"><span class="icon">⏰</span>Zeit</div>
-       <div class="stat-value">${formatHours(totalHours)}</div>
-       <div class="stat-note">${hoursToText(totalHours)}</div>
-    </div>
-    <div class="stat-card holo-card">
-       <div class="stat-label terminal-label"><span class="icon">🌍</span>Länder</div>
-       <div class="stat-value">${countriesSet.size}</div>
-    </div>`;
-}
+    const airportsSet = new Set();
+    const airlinesSet = new Set();
+    flightsScope.forEach(f => {
+      if (AIRPORTS?.[f.from]) airportsSet.add(f.from);
+      if (AIRPORTS?.[f.to]) airportsSet.add(f.to);
+      const a = String(f.airline || "").trim();
+      if (a) airlinesSet.add(a);
+    });
+
+    // Highlights (Längster / Kürzester Flug)
+    const flightsWithDist = flightsScope.filter(f => Number(f.distanceKm) > 0);
+    const longest = flightsWithDist.length
+      ? [...flightsWithDist].sort((a, b) => Number(b.distanceKm || 0) - Number(a.distanceKm || 0))[0]
+      : null;
+    const shortest = flightsWithDist.length
+      ? [...flightsWithDist].sort((a, b) => Number(a.distanceKm || 0) - Number(b.distanceKm || 0))[0]
+      : null;
+
+    // Top Airline & Top Airport (ohne Homebase)
+    const airlineCounts = countOccurrences(flightsScope, f => String(f.airline || "").trim() || null);
+    const topAirline = sortedEntries(airlineCounts)[0] || null;
+
+    const movement = {};
+    flightsScope.forEach(f => {
+      const from = String(f.from || "").trim().toUpperCase();
+      const to = String(f.to || "").trim().toUpperCase();
+      if (from) movement[from] = (movement[from] || 0) + 1;
+      if (to) movement[to] = (movement[to] || 0) + 1;
+    });
+
+    const visits = {};
+    Object.entries(movement).forEach(([k, v]) => { visits[k] = Math.ceil(v / 2); });
+    const homeAirport = getHomeAirportIata();
+
+    const topAirport = Object.entries(visits)
+      .filter(([iata]) => String(iata || "").trim().toUpperCase() !== homeAirport)
+      .sort((a, b) => b[1] - a[1])[0] || null;
+
+    // Häufigste Routen
+    const topRoutesAll = (() => {
+      const routeCounts = countOccurrences(flightsScope, f =>
+        (f.from && f.to) ? `${String(f.from).trim().toUpperCase()} → ${String(f.to).trim().toUpperCase()}` : null
+      );
+      return sortedEntries(routeCounts).slice(0, 3);
+    })();
+
+    const parseRouteKey = (rk) => {
+      const p = String(rk).split("→").map(s => s.trim());
+      return { from: p[0] || "", to: p[1] || "" };
+    };
+
+    const airportCity = (code) => AIRPORTS?.[code]?.city || "";
+    const airportCityLabel = (code) => AIRPORTS?.[code] ? airportCity(code) : code;
+
+    // 3. Das vereinte Super-KPI-HTML für den BEREICH-Abschnitt im Stats-Tab:
+    // Das vereinte Super-KPI-HTML für den BEREICH-Abschnitt im Stats-Tab (Alles einheitlich WEISS)
+    statsSelectedYearEl.innerHTML = `
+      <!-- Row 1: Bereich & Flüge -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label"><span class="icon">📅</span>BEREICH</div>
+        <div class="stat-value" style="color: #ffffff;">${year ?? "Alle Jahre"}</div>
+      </div>
+      
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">✈️ FLÜGE</div>
+        <div class="stat-value" style="color: #ffffff;">${flightsScope.length}</div>
+        <div class="stat-note" style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; justify-content: left;">
+          <span>🥫 ${ecoCount} Eco</span>
+          ${bizCount > 0 ? `<span style="color: #eab308;">🥂 ${bizCount} Biz</span>` : ""}
+        </div>
+      </div>
+
+      <!-- Row 2: Flugdistanz & Zeit -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label"><span class="icon">📏</span>FLUGDISTANZ</div>
+        <div class="stat-value" style="color: #ffffff;">${Math.round(totalKm).toLocaleString()} km</div>
+        <div class="stat-note">${totalMiles.toLocaleString()} miles</div>
+      </div>
+
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label"><span class="icon">⏰</span>ZEIT IN DER LUFT</div>
+        <div class="stat-value" style="color: #ffffff;">${formatHours(totalHours)}</div>
+        <div class="stat-note">${hoursToText(totalHours)}</div>
+      </div>
+
+      <!-- Row 3: Eco-Bilanz & Airports -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🌱 ECO-BILANZ</div>
+        <div class="stat-value" style="color: #ffffff;">${totalCo2Tons.toFixed(2)} t</div>
+        <div class="stat-note">CO₂-Emissionen (berechnet)</div>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.3rem; font-family: monospace;">🌳 Kompensation: ca. ${treesToOffset.toLocaleString()} Bäume/Jahr</div>
+      </div>
+
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🛬 AIRPORTS</div>
+        <div class="stat-value" style="color: #ffffff;">${airportsSet.size}</div>
+      </div>
+
+      <!-- Row 4: Airlines & Länder -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🛫 AIRLINES</div>
+        <div class="stat-value" style="color: #ffffff;">${airlinesSet.size}</div>
+      </div>
+
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label"><span class="icon">🌍</span>LÄNDER</div>
+        <div class="stat-value" style="color: #ffffff;">${countriesSet.size}</div>
+      </div>
+
+      <!-- Row 5: Top Airport & Längster Flug -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🛬 TOP AIRPORT (W/O HOMEBASE ${homeAirport || ""})</div>
+        <div class="stat-value" style="color: #ffffff;">${topAirport ? airportCodeWithFlag(topAirport[0]) : "–"}</div>
+        <div class="stat-note">${topAirport ? `${airportCityLabel(topAirport[0])} · ${topAirport[1]} Besuche` : ""}</div>
+      </div>
+
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🏔 LÄNGSTER FLUG</div>
+        <div class="stat-value" style="color: #ffffff;">${longest ? `${airportCodeWithFlag(longest.from)} → ${airportCodeWithFlag(longest.to)}` : "–"}</div>
+        <div class="stat-note">${longest ? `${airportCityLabel(longest.from)} → ${airportCityLabel(longest.to)} · ${Math.round(longest.distanceKm)} km` : ""}</div>
+      </div>
+
+      <!-- Row 6: Kürzester Flug & Top Airline -->
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🧊 KÜRZESTER FLUG</div>
+        <div class="stat-value" style="color: #ffffff;">${shortest ? `${airportCodeWithFlag(shortest.from)} → ${airportCodeWithFlag(shortest.to)}` : "–"}</div>
+        <div class="stat-note">${shortest ? `${airportCityLabel(shortest.from)} → ${airportCityLabel(shortest.to)} · ${Math.round(shortest.distanceKm)} km` : ""}</div>
+      </div>
+
+      <div class="stat-card holo-card">
+        <div class="stat-label terminal-label">🏆 TOP AIRLINE</div>
+        <div class="stat-value" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          ${topAirline ? `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} <span>${topAirline[0]}</span>` : "–"}
+        </div>
+        <div class="stat-note">${topAirline ? `${topAirline[1]}× geflogen` : ""}</div>
+      </div>
+
+      <!-- Row 7: Häufigste Routen -->
+      <div class="stat-card holo-card" style="grid-column: 1 / -1;">
+        <div class="stat-label terminal-label">🔁 HÄUFIGSTE ROUTEN</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.6rem;">
+          ${
+            topRoutesAll.length
+              ? topRoutesAll.map(([route, count]) => {
+                  const { from, to } = parseRouteKey(route);
+                  return `
+                    <div>
+                      <div class="stat-value" style="font-size: 1.1rem; color: #ffffff;">
+                        ${airportCodeWithFlag(from)} → ${airportCodeWithFlag(to)}
+                      </div>
+                      <div class="stat-note">${airportCityLabel(from)} → ${airportCityLabel(to)} · ${count}×</div>
+                    </div>
+                  `;
+                }).join("")
+              : `<div class="stat-value" style="color: #ffffff;">–</div><div class="stat-note">Keine Routendaten</div>`
+          }
+        </div>
+      </div>
+    `;
+  }
 
   // --- 3) Rankings: Airports / Länder / Airlines / Aircrafts ---
   // Airports (Besuche: hin+zurück = 1)
