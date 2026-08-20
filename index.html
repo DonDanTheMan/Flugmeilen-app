@@ -4256,17 +4256,220 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       return;
     }
 
-    // --- KPIs für Monatsverlauf & Distanz ---
+    // --- KPIs & Hilfswerte ---
     const totalKm = flights.reduce((s, f) => s + Number(f.distanceKm || 0), 0);
 
-    // --- Recent ---
+// 1. WIDGET: Nächster Flug (Geplante Reisen & Countdown)
+    const plannedFlights = loadPlannedFlights();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const upcomingPlan = plannedFlights
+      .filter(f => {
+        const d = parseFlightDateAny(f.date);
+        return d && d >= now;
+      })
+      .sort((a, b) => parseFlightDateToTs(a.date) - parseFlightDateToTs(b.date))[0];
+
+    let nextFlightHTML = "";
+
+    if (upcomingPlan) {
+      const flightDate = parseFlightDateAny(upcomingPlan.date);
+      const diffDays = Math.ceil((flightDate - now) / (1000 * 60 * 60 * 24));
+
+      nextFlightHTML = `
+        <div class="stat-card holo-card tile-full" style="border-color: #38bdf8 !important;">
+          <div class="stat-label terminal-label" style="color:#38bdf8; display:flex; justify-content:space-between; align-items:center;">
+            <span>⏳ NÄCHSTER GEPLANTER FLUG</span>
+            <button class="btn btn-secondary btn-xs" style="padding:1px 6px; font-size:0.65rem;" onclick="openPlanFlightModal()">➕ Weitere Reise planen</button>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 8px;">
+            <div>
+              <div class="stat-value" style="color:#ffffff; font-size:1.25rem;">
+                ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.from) : upcomingPlan.from} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.to) : upcomingPlan.to}
+              </div>
+              <div class="stat-note">${formatDate(upcomingPlan.date)} · ${upcomingPlan.airline || "Airline tbd"} ${upcomingPlan.flightClass ? `(${upcomingPlan.flightClass})` : ""}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size: 1.7rem; font-weight: bold; color: #6ee7b7; font-family: monospace;">in ${diffDays}d</div>
+            </div>
+          </div>
+
+          <!-- Aktionsleiste unten: Bearbeiten, Löschen & Ins Logbuch übernehmen -->
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(56, 189, 248, 0.15); display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:6px;">
+              <button class="action-btn" title="Bearbeiten" onclick="editPlannedFlight('${upcomingPlan.id}')">✏️</button>
+              <button class="action-btn danger" title="Löschen" onclick="deletePlannedFlight('${upcomingPlan.id}')">🗑️</button>
+            </div>
+            <button class="btn btn-primary btn-xs" onclick="completePlannedFlight('${upcomingPlan.id}')">
+              🛫 Bereits geflogen? Ins Logbuch übernehmen
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      nextFlightHTML = `
+        <div class="stat-card holo-card tile-full" style="border: 1px dashed rgba(56, 189, 248, 0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="stat-label terminal-label" style="color:#94a3b8;">⏳ KEINE GEPLANTEN FLÜGE</div>
+              <div class="stat-note">Trage deine nächsten gebuchten Reisen ein für den Live-Countdown.</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openPlanFlightModal()">➕ Flug planen</button>
+          </div>
+        </div>
+      `;
+    }
+
+// --- 2. WIDGET: Miles & More Status Tracker ---
+    
+    // A) Punkte aus den erfassten Flügen berechnen
+    let calculatedPoints = 0;
+    let calculatedQPoints = 0;
+
+    scoped.forEach(f => {
+      const res = calculateMMPoints(f);
+      calculatedPoints += res.points;
+      calculatedQPoints += res.qualifyingPoints;
+    });
+
+    // B) Echte/Manuelle Speicherwerte abfragen (falls per Sync überschrieben)
+    const savedPoints  = localStorage.getItem("mm_real_points");
+    const savedQPoints = localStorage.getItem("mm_real_qpoints");
+    const savedMiles   = localStorage.getItem("mm_real_miles");
+    const savedVoucher = localStorage.getItem("mm_real_vouchers");
+
+    // C) Falls Sync-Werte da sind, diese nutzen, sonst die eben berechneten!
+    const mmPoints     = savedPoints  !== null ? Number(savedPoints)  : calculatedPoints;
+    const mmQualPoints = savedQPoints !== null ? Number(savedQPoints) : calculatedQPoints;
+    const mmMiles      = savedMiles   !== null ? Number(savedMiles)   : 104627;
+    const mmVouchers   = savedVoucher !== null ? Number(savedVoucher) : 1;
+
+    // D) Status-Ziele berechnen
+    let currentStatus = "Frequent Traveller 🥈";
+    let targetStatus  = "FTL Re-Qualifikation 🥈";
+    let targetPoints  = 650;
+    let targetQPoints = 325;
+
+    if (mmPoints >= 650 && mmQualPoints >= 325) {
+      targetStatus  = "Senator Status 🥇";
+      targetPoints  = 2000;
+      targetQPoints = 1000;
+    }
+
+    const ptsNeeded  = Math.max(0, targetPoints - mmPoints);
+    const qPtsNeeded = Math.max(0, targetQPoints - mmQualPoints);
+    
+    const pctPoints  = Math.min(100, Math.round((mmPoints / targetPoints) * 100));
+    const pctQPoints = Math.min(100, Math.round((mmQualPoints / targetQPoints) * 100));
+
+    // E) HTML generieren
+    const mmTrackerHTML = `
+      <div class="stat-card holo-card tile-full">
+        <div class="stat-label terminal-label" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>💳 Miles & More Status-Tracker (${year || new Date().getFullYear()})</span>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span style="color:#eab308; font-size:0.78rem;">${currentStatus}</span>
+            <button class="btn btn-secondary btn-xs" style="padding: 1px 6px; font-size:0.65rem;" onclick="promptMMUpdate()">✏️ Sync</button>
+          </div>
+        </div>
+        
+        <div style="margin-top: 0.7rem; display: flex; flex-direction: column; gap: 8px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 3px;">
+              <span style="color:#cbd5e1;">Total Points (P)</span>
+              <span style="color:#ffffff; font-family:monospace;">${mmPoints} / ${targetPoints} P</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+              <div style="width: ${pctPoints}%; height: 100%; background: #38bdf8; transition: width 0.8s ease;"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 3px;">
+              <span style="color:#cbd5e1;">Qualifying Points (Q)</span>
+              <span style="color:#ffffff; font-family:monospace;">${mmQualPoints} / ${targetQPoints} Q</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+              <div style="width: ${pctQPoints}%; height: 100%; background: #eab308; transition: width 0.8s ease;"></div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; justify-content: space-between; font-family: monospace;">
+            <span>🎯 Fehlt für ${targetStatus}: <strong style="color:#6ee7b7;">${ptsNeeded} P</strong> & <strong style="color:#6ee7b7;">${qPtsNeeded} Q</strong></span>
+            <span>💰 ${mmMiles.toLocaleString()} M | 🎫 ${mmVouchers} eVoucher</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+   // 3. WIDGET: Logbuch-Erinnerung ("Heute vor X Jahren" oder Fallback)
+    const pastFlights = flightsAll.filter(f => {
+      const d = parseFlightDateAny(f.date);
+      return d && d < now;
+    });
+
+    let randomMemoryHTML = "";
+    if (pastFlights.length) {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentDate = today.getDate();
+
+      // A) Suche nach Flügen, die in der Vergangenheit an exakt DIESEM Kalendertag (Monat + Tag) stattfanden
+      const anniversaryFlights = pastFlights.filter(f => {
+        const d = parseFlightDateAny(f.date);
+        return d && d.getMonth() === currentMonth && d.getDate() === currentDate && d.getFullYear() < today.getFullYear();
+      });
+
+      let randFlight = null;
+      let isExactAnniversary = false;
+
+      if (anniversaryFlights.length > 0) {
+        // Exakter Treffer für den heutigen Tag!
+        randFlight = anniversaryFlights[Math.floor(Math.random() * anniversaryFlights.length)];
+        isExactAnniversary = true;
+      } else {
+        // Fallback: Zufälliger Flug aus allen vergangenen Flügen
+        randFlight = pastFlights[Math.floor(Math.random() * pastFlights.length)];
+      }
+
+      const flightDate = parseFlightDateAny(randFlight.date);
+      const yearsAgo = today.getFullYear() - flightDate.getFullYear();
+      
+      // Passender Label-Text
+      let timeLabel = "";
+      if (isExactAnniversary) {
+        timeLabel = `🎉 Heute vor ${yearsAgo} Jahr${yearsAgo > 1 ? 'en' : ''}`;
+      } else {
+        timeLabel = yearsAgo > 0 ? `Vor ${yearsAgo} Jahr${yearsAgo > 1 ? 'en' : ''}` : "Erinnerung";
+      }
+
+      const cardStyle = isExactAnniversary
+        ? "background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(2, 6, 23, 0.7) 100%); border-color: #10b981 !important;"
+        : "background: linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(2, 6, 23, 0.6) 100%);";
+
+      randomMemoryHTML = `
+        <div class="stat-card holo-card tile-full" style="${cardStyle}">
+          <div class="stat-label terminal-label" style="${isExactAnniversary ? 'color: #10b981;' : ''}">
+            ${isExactAnniversary ? '📅 JUBILÄUMS-FLUG (ON THIS DAY)' : '🎲 LOGBUCH-ERINNERUNG'}
+          </div>
+          <div class="stat-value" style="font-size: 1.05rem; color: #ffffff; margin-top: 4px;">
+            ${timeLabel}: ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(randFlight.from) : randFlight.from} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(randFlight.to) : randFlight.to}
+          </div>
+          <div class="stat-note">
+            Am ${formatDate(randFlight.date)} mit ${randFlight.airline || "unbekannter Airline"} ${randFlight.aircraft ? `(${randFlight.aircraft})` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- Recent & Month Bars ---
     const sortedByDate = [...flights]
       .filter(f => parseFlightDateAny(f.date))
       .sort((a, b) => parseFlightDateToTs(b.date) - parseFlightDateToTs(a.date));
-
     const recent = sortedByDate.slice(0, 5);
 
-    // --- Month Bars ---
     let mbMode = localStorage.getItem("stats_monthbars_mode") || "km";
     const yearNow = new Date().getFullYear();
     const barsYear = year || yearNow;
@@ -4276,7 +4479,6 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       const d = parseFlightDateAny(f.date);
       if (!d || d.getFullYear() !== barsYear) return;
       const m = d.getMonth();
-      
       if (mbMode === "km") buckets[m] += Number(f.distanceKm || 0);
       else if (mbMode === "hours") buckets[m] += Number(f.durationHours || 0);
       else buckets[m] += 1;
@@ -4289,9 +4491,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       if (mbMode === "km") return `${Math.round(v).toLocaleString()} km`;
       if (mbMode === "hours") {
         const totalMinutes = Math.round(v * 60);
-        const hh = Math.floor(totalMinutes / 60);
-        const mm = totalMinutes % 60;
-        return `${hh}:${String(mm).padStart(2, '0')} h`;
+        return `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, '0')} h`;
       }
       return `${v} Flüge`;
     };
@@ -4303,13 +4503,54 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     const airportCity = (code) => AIRPORTS?.[code]?.city || "";
     const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
 
-    // --- HTML RENDERING FÜR HOME (Schlank & Aufgeräumt) ---
-    wrap.innerHTML = getMilestoneHTML(totalKm);
-    wrap.innerHTML += `
-      <!-- Monatsverlauf -->
+    // --- FINAL COCKPIT ASSEMBLY ---
+    wrap.innerHTML = `
+      <!-- 1. QUICK ACTIONS -->
+      <div class="stat-card holo-card tile-full">
+        <div class="stat-label terminal-label">⚡ Quick Actions</div>
+        <div class="dash-actions">
+          <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashThisYear">📅 ${yearNow}</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🌴 Privat</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
+          <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
+        </div>
+        <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
+      </div>
+
+      <!-- 2. COUNTDOWN NÄCHSTER FLUG (falls vorhanden) -->
+      ${nextFlightHTML}
+
+      <!-- 3. MILES & MORE TRACKER -->
+      ${mmTrackerHTML}
+
+      <!-- 4. LOGBUCH-ERINNERUNG -->
+      ${randomMemoryHTML}
+
+      <!-- 5. ZULETZT GEFLOGEN -->
+      <div class="stat-card holo-card tile-full">
+        <div class="stat-label terminal-label">🧾 Zuletzt geflogen</div>
+        <div class="dash-recent">
+          ${recent.map(f => {
+            const logo = (typeof renderAirlineLogo === "function") ? renderAirlineLogo(String(f.airline || "").trim()) : "";
+            const typ = String(f.tripType || "").trim().toLowerCase() === "g" ? "💼" : "🌴";
+            return `
+              <div class="stat-card holo-card">
+                <div class="recent-top">
+                  <div class="recent-route">${f.from} → ${f.to}</div>
+                  <div style="display:flex;align-items:center;gap:.35rem;">${logo}<span>${typ}</span></div>
+                </div>
+                <div class="recent-sub">${formatDate(f.date)} · ${airportLabel(f.from)} → ${airportLabel(f.to)}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
+      <!-- 6. MONATSVERLAUF -->
       <div class="stat-card holo-card tile-full">
         <div class="toolbar" style="margin-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.1); padding-bottom: 8px;">
-          <div class="stat-label">📊 Monatsverlauf ${barsYear}</div>
+          <div class="stat-label terminal-label">📊 Monatsverlauf ${barsYear}</div>
           <div class="flex-row" style="gap: 5px;">
             <button class="btn btn-secondary btn-xs ${mbMode === 'km' ? 'nav-active' : ''}" onclick="setDashBarMode('km')">Km</button>
             <button class="btn btn-secondary btn-xs ${mbMode === 'flights' ? 'nav-active' : ''}" onclick="setDashBarMode('flights')">Flüge</button>
@@ -4330,9 +4571,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
               return `
                 <div style="flex:1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
                   <div class="dash-bar-wrap" style="width: 70%; height: ${h}%;">
-                    <div class="dash-bar" 
-                         data-tip="${monthsShort[i]} · ${getBarLabel(v)}" 
-                         style="height: 100%; width: 100%;"></div>
+                    <div class="dash-bar" data-tip="${monthsShort[i]} · ${getBarLabel(v)}" style="height: 100%; width: 100%;"></div>
                   </div>
                   <div class="dash-bar-label" style="font-size: 0.65rem; margin-top: 4px;">${monthsShort[i]}</div>
                 </div>
@@ -4340,43 +4579,12 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             }).join("")}
           </div>
         </div>
-
         <div class="stat-note" style="margin-top:.7rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
-
-      <!-- Quick Actions -->
-      <div class="stat-card holo-card tile-full">
-        <div class="stat-label">⚡ Quick Actions</div>
-        <div class="dash-actions">
-          <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashThisYear">📅 ${yearNow}</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🌴 Privat</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
-        </div>
-        <div class="stat-note" style="margin-top:.35rem;">Tip: Privat/Geschäft wirkt nur fürs Dashboard.</div>
-      </div>
-
-      <!-- Zuletzt geflogen -->
-      <div class="stat-card holo-card tile-full">
-        <div class="stat-label">🧾 Zuletzt geflogen</div>
-        <div class="dash-recent">
-          ${recent.map(f => {
-            const logo = (typeof renderAirlineLogo === "function") ? renderAirlineLogo(String(f.airline || "").trim()) : "";
-            const typ = String(f.tripType || "").trim().toLowerCase() === "g" ? "💼" : "🌴";
-            return `
-              <div class="stat-card holo-card">
-                <div class="recent-top">
-                  <div class="recent-route">${f.from} → ${f.to}</div>
-                  <div style="display:flex;align-items:center;gap:.35rem;">${logo}<span>${typ}</span></div>
-                </div>
-                <div class="recent-sub">${formatDate(f.date)} · ${airportLabel(f.from)} → ${airportLabel(f.to)}</div>
-              </div>
-            `;
-          }).join("")}
-        </div>
-      </div>
     `;
+
+    // 7. DEEP SPACE PROGRESS (Hero-Abschluss am Ende)
+    wrap.innerHTML += getMilestoneHTML(totalKm);
 
     // Event-Listener anheften
     document.getElementById("dashGoAdd")?.addEventListener("click", () => {
@@ -4415,6 +4623,239 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       </div>
     `;
   }
+}
+
+// --- TRIP PLANNER & GEPLANTE FLÜGE LOGIK ---
+
+// --- TRIP PLANNER & GEPLANTE FLÜGE LOGIK (MIT BEARBEITEN & LÖSCHEN) ---
+
+function loadPlannedFlights() {
+  try {
+    return JSON.parse(localStorage.getItem("planned_flights") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function savePlannedFlights(arr) {
+  localStorage.setItem("planned_flights", JSON.stringify(arr));
+}
+
+// Geplanten Flug löschen
+function deletePlannedFlight(planId) {
+  if (!confirm("Möchtest du diesen geplanten Flug wirklich löschen?")) return;
+  const planned = loadPlannedFlights().filter(p => p.id !== planId);
+  savePlannedFlights(planned);
+  renderDashboardTiles();
+}
+
+// Geplanten Flug bearbeiten
+function editPlannedFlight(planId) {
+  const planned = loadPlannedFlights();
+  const item = planned.find(p => p.id === planId);
+  if (!item) return;
+
+  openPlanFlightModal(item);
+}
+
+// Modal öffnen (unterstützt Erstellen UND Bearbeiten)
+function openPlanFlightModal(editItem = null) {
+  let modal = document.getElementById("planFlightModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "planFlightModal";
+    modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,6,23,0.85); display:flex; align-items:center; justify-content:center; z-index:99999; backdrop-filter:blur(4px);";
+    document.body.appendChild(modal);
+  }
+
+  const isEdit = !!editItem;
+
+  modal.innerHTML = `
+    <div class="stat-card holo-card" style="width: 90%; max-width: 450px; background:#0f172a; border:1px solid #38bdf8; padding:1.5rem;">
+      <h3 style="margin-top:0; color:#38bdf8;">${isEdit ? "✏️ Geplanten Flug bearbeiten" : "⏳ Geplanten Flug erfassen"}</h3>
+      <form id="planFlightForm" style="display:flex; flex-direction:column; gap:10px;">
+        <input type="hidden" id="planEditId" value="${isEdit ? editItem.id : ""}">
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8;">Flugdatum</label>
+          <input type="date" id="planDate" value="${isEdit ? editItem.date : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+        </div>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
+            <input type="text" id="planFrom" value="${isEdit ? editItem.from : ""}" placeholder="ZRH" maxlength="3" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
+            <input type="text" id="planTo" value="${isEdit ? editItem.to : ""}" placeholder="JFK" maxlength="3" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
+            <input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Klasse</label>
+            <select id="planClass" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+              <option value="Economy" ${isEdit && editItem.flightClass === "Economy" ? "selected" : ""}>Economy</option>
+              <option value="Business" ${isEdit && editItem.flightClass === "Business" ? "selected" : ""}>Business</option>
+              <option value="First" ${isEdit && editItem.flightClass === "First" ? "selected" : ""}>First</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closePlanFlightModal()">Abbrechen</button>
+          <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  modal.style.display = "flex";
+
+  document.getElementById("planFlightForm").onsubmit = function(e) {
+    e.preventDefault();
+    const editId = document.getElementById("planEditId").value;
+    let planned = loadPlannedFlights();
+
+    const flightData = {
+      id: editId || ("plan_" + Date.now()),
+      date: document.getElementById("planDate").value,
+      from: document.getElementById("planFrom").value.trim().toUpperCase(),
+      to: document.getElementById("planTo").value.trim().toUpperCase(),
+      airline: document.getElementById("planAirline").value.trim(),
+      flightClass: document.getElementById("planClass").value
+    };
+
+    if (editId) {
+      planned = planned.map(p => p.id === editId ? flightData : p);
+    } else {
+      planned.push(flightData);
+    }
+
+    savePlannedFlights(planned);
+    closePlanFlightModal();
+    renderDashboardTiles();
+  };
+}
+
+function closePlanFlightModal() {
+  const modal = document.getElementById("planFlightModal");
+  if (modal) modal.style.display = "none";
+}
+
+function completePlannedFlight(planId) {
+  const planned = loadPlannedFlights();
+  const flightToMove = planned.find(p => p.id === planId);
+  if (!flightToMove) return;
+
+  const updatedPlanned = planned.filter(p => p.id !== planId);
+  savePlannedFlights(updatedPlanned);
+
+  const realFlights = loadFlights() || [];
+  let dist = 0;
+  if (typeof calcAirportDistanceKm === "function") {
+    dist = calcAirportDistanceKm(flightToMove.from, flightToMove.to) || 0;
+  }
+
+  const newRealFlight = {
+    id: String(Date.now()),
+    date: flightToMove.date,
+    from: flightToMove.from,
+    to: flightToMove.to,
+    airline: flightToMove.airline,
+    flightClass: flightToMove.flightClass,
+    distanceKm: dist,
+    tripType: "p"
+  };
+
+  realFlights.push(newRealFlight);
+  
+  if (typeof saveFlights === "function") {
+    saveFlights(realFlights);
+  } else {
+    localStorage.setItem("flights", JSON.stringify(realFlights));
+  }
+
+  if (typeof renderAll === "function") renderAll();
+  renderDashboardTiles();
+}
+
+function calculateMMPoints(flight) {
+  // 1. Streckentyp bestimmen (Unter 3.000 km = Kontinental, ab 3.000 km = Interkontinental)
+  const isIntercont = Number(flight.distanceKm || 0) >= 3000;
+  const fClass = (flight.flightClass || "Economy").toLowerCase();
+
+  let p = 0;
+
+  // 2. Offizielle Miles & More Punktetabelle (2024+)
+  if (fClass.includes("first")) {
+    p = isIntercont ? 300 : 40;
+  } else if (fClass.includes("business")) {
+    p = isIntercont ? 200 : 40;
+  } else if (fClass.includes("premium")) {
+    p = isIntercont ? 80 : 20;
+  } else {
+    // Economy Class
+    p = isIntercont ? 60 : 20;
+  }
+
+  const airline = String(flight.airline || "").toLowerCase();
+
+  // 3. Lufthansa Group (liefert Points UND Qualifying Points)
+  const isLHGroup = [
+    "swiss", "lufthansa", "austrian", "brussels", "eurowings", 
+    "discover", "air dolomiti", "lot", "croatia",
+    "lx", "lh", "os", "sn", "ew", "4y", "en", "lo", "ou"
+  ].some(key => airline.includes(key));
+
+  // 4. Star Alliance Partner (liefert nur Total Points)
+  const isStarAlliance = isLHGroup || [
+    "aegean", "air canada", "air china", "air india", "air new zealand", 
+    "ana", "all nippon", "asiana", "avianca", "copa", "egyptair", 
+    "ethiopian", "eva air", "shenzhen", "singapore", "south african", 
+    "tap", "thai", "turkish", "united",
+    "ac", "ca", "ai", "nz", "nh", "oz", "av", "cm", "ms", 
+    "et", "br", "zh", "sq", "sa", "tp", "tg", "tk", "ua"
+  ].some(key => airline.includes(key));
+
+  // Falls es keine Star Alliance Airline war (z.B. Emirates, Ryanair, EasyJet), gibt es 0 Points
+  if (!isStarAlliance) {
+    return { points: 0, qualifyingPoints: 0 };
+  }
+
+  return {
+    points: p,                                  // Gibt es für ALLE Star Alliance Flüge
+    qualifyingPoints: isLHGroup ? p : 0         // Gibt es NUR für Lufthansa Group Flüge
+  };
+}
+
+function promptMMUpdate() {
+  const currentP = localStorage.getItem("mm_real_points") || "355";
+  const currentQ = localStorage.getItem("mm_real_qpoints") || "315";
+  const currentM = localStorage.getItem("mm_real_miles") || "104627";
+  const currentV = localStorage.getItem("mm_real_vouchers") || "1";
+
+  const p = prompt("Aktuelle Points (P):", currentP);
+  if (p === null) return; // Abbrechen falls der User im ersten Fenster abbricht
+
+  const q = prompt("Aktuelle Qualifying Points (Q):", currentQ);
+  if (q === null) return;
+
+  const m = prompt("Aktuelle Prämienmeilen (M):", currentM);
+  if (m === null) return;
+
+  const v = prompt("Anzahl eVoucher:", currentV);
+  if (v === null) return;
+
+  // Werte im Speicher ablegen
+  localStorage.setItem("mm_real_points", p);
+  localStorage.setItem("mm_real_qpoints", q);
+  localStorage.setItem("mm_real_miles", m);
+  localStorage.setItem("mm_real_vouchers", v);
+
+  // Cockpit sofort neu rendern
+  renderDashboardTiles();
 }
 
 function renderDashboard(){
@@ -4519,59 +4960,6 @@ function renderDashboardLogbook(flights) {
     return;
   }
 
-  const flightsWithDist = flights.filter(f => f.distanceKm);
-  let longest = null;
-  let shortest = null;
-  flightsWithDist.forEach(f => {
-    if (!longest || f.distanceKm > longest.distanceKm) longest = f;
-    if (!shortest || f.distanceKm < shortest.distanceKm) shortest = f;
-  });
-
-  // Meistgeflogene Route (alle Jahre)
-  const routeCounts = countOccurrences(flights, f => {
-    if (!f.from || !f.to) return null;
-    return f.from + " \u2192 " + f.to;
-  });
-  const sortedRoutes = sortedEntries(routeCounts);
-  const topRouteEntry = sortedRoutes.length ? sortedRoutes[0] : null;
-
-  function airportLabel(code) {
-    const a = AIRPORTS[code];
-    return a ? (a.city || code) + " (" + code + ")" : code;
-  }
-
-  let html = "<div class=\"muted\"><ul style=\"padding-left:1.1rem; margin:0;\">";
-  if (longest) {
-    html += "<li><b>L&auml;ngster Flug (gesamt):</b> "+
-      formatDate(longest.date)+" – "+
-      airportLabel(longest.from)+" \u2192 "+airportLabel(longest.to)+
-      " ("+formatKm(longest.distanceKm)+", "+formatHours(longest.durationHours)+")</li>";
-  }
-  if (shortest) {
-    html += "<li><b>K&uuml;rzester Flug (gesamt):</b> "+
-      formatDate(shortest.date)+" – "+
-      airportLabel(shortest.from)+" \u2192 "+airportLabel(shortest.to)+
-      " ("+formatKm(shortest.distanceKm)+", "+formatHours(shortest.durationHours)+")</li>";
-  }
-  if (topRouteEntry) {
-    const [routeKey,count] = topRouteEntry;
-    html += "<li><b>Meistgeflogene Route (gesamt):</b> "+routeKey+" ("+count+"x)</li>";
-  }
-  html += "</ul></div>";
-
-  logEl.innerHTML = html;
-}
-
-function renderDashboardLogbook(flights) {
-  const logEl = document.getElementById("dashboardLogbook");
-  if (!logEl) return;
-
-  if (!flights.length) {
-    logEl.innerHTML = "<span class=\"muted\">Noch keine Fl&uuml;ge erfasst.</span>";
-    return;
-  }
-
-  // längster / kürzester Flug nach Distanz
   const flightsWithDist = flights.filter(f => f.distanceKm);
   let longest = null;
   let shortest = null;
@@ -6105,6 +6493,127 @@ function getMilestoneHTML(totalKm) {
                 ${milestonesHTML}
             </div>
         </div>`;
+}
+
+function renderMilesAndMoreTracker(flightsCurrentYear) {
+  // Points-Schätzung basierend auf M&M 2024+ System (Kontinental / Interkontinental)
+  // Kurzstrecke Eco: 20 P, Biz: 40 P | Langstrecke Eco: 60 P, Biz: 200 P
+  let points = 0;
+  let qualPoints = 0;
+  let segments = flightsCurrentYear.length;
+
+  flightsCurrentYear.forEach(f => {
+    const isIntercont = Number(f.distanceKm || 0) > 3000; // Vereinfachte Grenze
+    const isBiz = (f.flightClass === "Business" || f.flightClass === "First");
+    
+    let p = isIntercont ? (isBiz ? 200 : 60) : (isBiz ? 40 : 20);
+    points += p;
+    
+    // Angenommen voll integrierte M&M Airline (LH, LX, OS, SN etc.)
+    const isMmAirline = ["swiss", "lufthansa", "austrian", "brussels"].some(a => 
+      String(f.airline || "").toLowerCase().includes(a)
+    );
+    if (isMmAirline) qualPoints += p;
+  });
+
+  // Ziel bestimmen
+  let targetName = "Frequent Traveller";
+  let targetPoints = 650;
+  let currentStatus = "Basic";
+
+  if (points >= 650 || segments >= 30) {
+    currentStatus = "Frequent Traveller 🥈";
+    targetName = "Senator 🥇";
+    targetPoints = 2000;
+  }
+  if (points >= 2000) {
+    currentStatus = "Senator 🥇";
+    targetName = "HON Circle 💎";
+    targetPoints = 6000;
+  }
+
+  const pctPoints = Math.min(100, Math.round((points / targetPoints) * 100));
+
+  return `
+    <div class="stat-card holo-card tile-full">
+      <div class="stat-label terminal-label" style="display:flex; justify-between; align-items:center;">
+        <span>💳 Miles & More Status-Tracker</span>
+        <span style="color:#eab308; font-size:0.8rem;">Status: ${currentStatus}</span>
+      </div>
+      
+      <div style="margin-top: 0.8rem;">
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom: 4px;">
+          <span>Fortschritt zu <strong>${targetName}</strong></span>
+          <span style="color:#6ee7b7; font-family:monospace;">${points} / ${targetPoints} Points (${pctPoints}%)</span>
+        </div>
+        
+        <!-- Status Progress Bar -->
+        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.08); border-radius: 5px; overflow: hidden;">
+          <div style="width: ${pctPoints}%; height: 100%; background: linear-gradient(90deg, #eab308, #38bdf8); transition: width 0.8s ease;"></div>
+        </div>
+        
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px; display: flex; gap: 15px;">
+          <span>✈️ Segmente: ${segments} / 30 (FTL-Option)</span>
+          <span>⭐ Quali-Points: ${qualPoints}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderRandomMemory(flights) {
+  if (!flights.length) return "";
+  
+  const randFlight = flights[Math.floor(Math.random() * flights.length)];
+  const yearsAgo = new Date().getFullYear() - new Date(randFlight.date).getFullYear();
+  const timeLabel = yearsAgo > 0 ? `Vor ${yearsAgo} Jahr${yearsAgo > 1 ? 'en' : ''}` : "Dieses Jahr";
+
+  return `
+    <div class="stat-card holo-card tile-full" style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(2, 6, 23, 0.6) 100%);">
+      <div class="stat-label terminal-label">🎲 Logbuch-Erinnerung</div>
+      <div class="stat-value" style="font-size: 1.1rem; color: #f8fafc; margin-top: 4px;">
+        ${timeLabel}: ${airportCodeWithFlag(randFlight.from)} → ${airportCodeWithFlag(randFlight.to)}
+      </div>
+      <div class="stat-note">
+        Am ${formatDate(randFlight.date)} mit ${randFlight.airline || "unbekannter Airline"} (${randFlight.aircraft || "–"})
+      </div>
+    </div>
+  `;
+}
+
+function renderNextFlightWidget(flights) {
+  const now = new Date();
+  now.setHours(0,0,0,0);
+
+  const upcoming = flights
+    .filter(f => {
+      const d = parseFlightDateAny(f.date);
+      return d && d >= now;
+    })
+    .sort((a,b) => parseFlightDateToTs(a.date) - parseFlightDateToTs(b.date))[0];
+
+  if (!upcoming) return ""; // Kein zukünftiger Flug geplant
+
+  const flightDate = parseFlightDateAny(upcoming.date);
+  const diffDays = Math.ceil((flightDate - now) / (1000 * 60 * 60 * 24));
+
+  return `
+    <div class="stat-card holo-card tile-full" style="border: 1px solid #38bdf8 !important;">
+      <div class="stat-label terminal-label" style="color:#38bdf8;">⏳ NÄCHSTER FLUG (COUNTDOWN)</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 6px;">
+        <div>
+          <div class="stat-value" style="color:#ffffff; font-size:1.3rem;">
+            ${airportCodeWithFlag(upcoming.from)} → ${airportCodeWithFlag(upcoming.to)}
+          </div>
+          <div class="stat-note">${formatDate(upcoming.date)} · ${airportCityLabel(upcoming.from)} → ${airportCityLabel(upcoming.to)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size: 1.8rem; font-weight: bold; color: #6ee7b7; font-family: monospace;">in ${diffDays}d</div>
+          <div class="stat-note">${upcoming.airline || ''}</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Wir hängen uns an alle Nav-Buttons
