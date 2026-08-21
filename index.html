@@ -2065,6 +2065,65 @@ body.map-in-fullscreen #mapFullscreenBtn {
   }
 }
 
+/* ==========================================================================
+   MOBILE OPTIMIERUNGEN (COCKPIT & DASHBOARD)
+   ========================================================================== */
+@media (max-width: 600px) {
+  /* Flexbox-Header umbrechen lassen */
+  .stat-label.terminal-label {
+    flex-wrap: wrap !important;
+    gap: 4px 10px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Nächster Flug Widget */
+  .stat-card.tile-full {
+    padding: 0.85rem !important;
+  }
+
+  .stat-card.tile-full .stat-value {
+    font-size: 1.05rem !important;
+  }
+
+  /* Aktionsleiste unten im "Nächsten Flug" vertikal stapeln */
+  .stat-card.tile-full > div:last-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .stat-card.tile-full > div:last-child > div {
+    justify-content: flex-start !important;
+  }
+
+  .stat-card.tile-full .btn-xs {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* Miles & More Status Tracker Mobil-Anpassung */
+  .mm-footer-info {
+    flex-direction: column !important;
+    gap: 4px !important;
+    align-items: flex-start !important;
+  }
+
+  /* Quick Actions Buttons gleichmäßiger verteilen */
+  .dash-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .dash-actions .btn {
+    flex: 1 1 calc(50% - 6px) !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 0.75rem !important;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -4425,10 +4484,10 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             </div>
           </div>
 
-          <!-- Footer-Infos -->
-          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; justify-content: space-between; font-family: monospace;">
-            <span>🎯 Fehlt für ${targetStatus}: <strong style="color:#6ee7b7;">${ptsNeeded} P</strong> & <strong style="color:#6ee7b7;">${qPtsNeeded} Q</strong></span>
-            <span>💰 ${mmMiles.toLocaleString()} M | 🎫 ${mmVouchers} eVoucher</span>
+		  <!-- Footer-Infos (Flex-wrap für mobile Bildschirme) -->
+          <div class="mm-footer-info" style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; justify-content: space-between; font-family: monospace;">
+            <div>🎯 Fehlt: <strong style="color:#6ee7b7;">${ptsNeeded} P</strong> & <strong style="color:#6ee7b7;">${qPtsNeeded} Q</strong></div>
+            <div>💰 <strong style="color:#ffffff;">${mmMiles.toLocaleString()} M</strong> | 🎫 <strong style="color:#ffffff;">${mmVouchers} eVoucher</strong></div>
           </div>
 
           <!-- Sync-Zeitstempel unten rechts -->
@@ -4858,7 +4917,7 @@ function calculateMMPoints(flight) {
   // 3. Lufthansa Group (liefert Points UND Qualifying Points)
   const isLHGroup = [
     "swiss", "lufthansa", "austrian", "brussels", "eurowings", 
-    "discover", "air dolomiti", "lot", "croatia",
+    "discover", "air dolomiti", "lot", "croatia", "helveic",
     "lx", "lh", "os", "sn", "ew", "4y", "en", "lo", "ou"
   ].some(key => airline.includes(key));
 
