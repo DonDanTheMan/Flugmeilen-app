@@ -4323,35 +4323,62 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     }
 
 // --- 2. WIDGET: Miles & More Status Tracker ---
-    
-    // A) Punkte aus den erfassten Flügen berechnen
+    const currentYear = new Date().getFullYear();
+    const lastYear = currentYear - 1;
+
+    // A) Punkte für das LETZTE JAHR berechnen (bestimmt deinen AKTUELLEN Status)
+    let lastYearPoints = 0;
+    let lastYearQPoints = 0;
+
+    flightsAll.forEach(f => {
+      const d = parseFlightDateAny(f.date);
+      if (d && d.getFullYear() === lastYear) {
+        const res = calculateMMPoints(f);
+        lastYearPoints += res.points;
+        lastYearQPoints += res.qualifyingPoints;
+      }
+    });
+
+    // B) Punkte für das AKTUELLE JAHR berechnen (bestimmt deine RE-QUALIFIKATION)
     let calculatedPoints = 0;
     let calculatedQPoints = 0;
 
-    scoped.forEach(f => {
-      const res = calculateMMPoints(f);
-      calculatedPoints += res.points;
-      calculatedQPoints += res.qualifyingPoints;
+    flightsAll.forEach(f => {
+      const d = parseFlightDateAny(f.date);
+      if (d && d.getFullYear() === currentYear) {
+        const res = calculateMMPoints(f);
+        calculatedPoints += res.points;
+        calculatedQPoints += res.qualifyingPoints;
+      }
     });
 
-    // B) Echte/Manuelle Speicherwerte abfragen (falls per Sync überschrieben)
-    const savedPoints  = localStorage.getItem("mm_real_points");
-    const savedQPoints = localStorage.getItem("mm_real_qpoints");
-    const savedMiles   = localStorage.getItem("mm_real_miles");
-    const savedVoucher = localStorage.getItem("mm_real_vouchers");
+    // C) Echte/Manuelle Speicherwerte abfragen
+    const savedPoints   = localStorage.getItem("mm_real_points");
+    const savedQPoints  = localStorage.getItem("mm_real_qpoints");
+    const savedMiles    = localStorage.getItem("mm_real_miles");
+    const savedVoucher  = localStorage.getItem("mm_real_vouchers");
+    const lastSyncTime  = localStorage.getItem("mm_last_sync");
 
-    // C) Falls Sync-Werte da sind, diese nutzen, sonst die eben berechneten!
+    // D) Werte zuweisen (Fallback auf Berechnung)
     const mmPoints     = savedPoints  !== null ? Number(savedPoints)  : calculatedPoints;
     const mmQualPoints = savedQPoints !== null ? Number(savedQPoints) : calculatedQPoints;
     const mmMiles      = savedMiles   !== null ? Number(savedMiles)   : 104627;
     const mmVouchers   = savedVoucher !== null ? Number(savedVoucher) : 1;
 
-    // D) Status-Ziele berechnen
-    let currentStatus = "Frequent Traveller 🥈";
+    // E) Aktuellen Status basierend auf dem VORJAHR ermitteln
+    let currentStatus = "Basic ⚪";
+    if (lastYearPoints >= 2000 && lastYearQPoints >= 1000) {
+      currentStatus = "Senator 🥇";
+    } else if (lastYearPoints >= 650 && lastYearQPoints >= 325) {
+      currentStatus = "Frequent Traveller 🥈";
+    }
+
+    // F) Status-Ziel für das AKTUELLE Jahr (Re-Qualifikation)
     let targetStatus  = "FTL Re-Qualifikation 🥈";
     let targetPoints  = 650;
     let targetQPoints = 325;
 
+    // Falls FTL im aktuellen Jahr bereits geschafft ist -> Ziel: Senator
     if (mmPoints >= 650 && mmQualPoints >= 325) {
       targetStatus  = "Senator Status 🥇";
       targetPoints  = 2000;
@@ -4364,18 +4391,19 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     const pctPoints  = Math.min(100, Math.round((mmPoints / targetPoints) * 100));
     const pctQPoints = Math.min(100, Math.round((mmQualPoints / targetQPoints) * 100));
 
-    // E) HTML generieren
+    // G) HTML generieren
     const mmTrackerHTML = `
       <div class="stat-card holo-card tile-full">
         <div class="stat-label terminal-label" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>💳 Miles & More Status-Tracker (${year || new Date().getFullYear()})</span>
+          <span>💳 Miles & More Status-Tracker (${currentYear} - theoretisch berechnet)</span>
           <div style="display:flex; gap:10px; align-items:center;">
-            <span style="color:#eab308; font-size:0.78rem;">${currentStatus}</span>
+            <span style="color:#eab308; font-size:0.78rem;">Status: ${currentStatus}</span>
             <button class="btn btn-secondary btn-xs" style="padding: 1px 6px; font-size:0.65rem;" onclick="promptMMUpdate()">✏️ Sync</button>
           </div>
         </div>
         
         <div style="margin-top: 0.7rem; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Points (Star Alliance & Partner) -->
           <div>
             <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 3px;">
               <span style="color:#cbd5e1;">Total Points (P)</span>
@@ -4386,6 +4414,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             </div>
           </div>
 
+          <!-- Qualifying Points (Lufthansa Group) -->
           <div>
             <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 3px;">
               <span style="color:#cbd5e1;">Qualifying Points (Q)</span>
@@ -4396,9 +4425,15 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             </div>
           </div>
 
+          <!-- Footer-Infos -->
           <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; justify-content: space-between; font-family: monospace;">
             <span>🎯 Fehlt für ${targetStatus}: <strong style="color:#6ee7b7;">${ptsNeeded} P</strong> & <strong style="color:#6ee7b7;">${qPtsNeeded} Q</strong></span>
             <span>💰 ${mmMiles.toLocaleString()} M | 🎫 ${mmVouchers} eVoucher</span>
+          </div>
+
+          <!-- Sync-Zeitstempel unten rechts -->
+          <div style="font-size: 0.65rem; color: #64748b; text-align: right; margin-top: 2px;">
+            ${lastSyncTime ? `Zuletzt synchronisiert: ${lastSyncTime}` : 'Noch nicht synchronisiert'}
           </div>
         </div>
       </div>
@@ -4744,40 +4779,58 @@ function closePlanFlightModal() {
   if (modal) modal.style.display = "none";
 }
 
+// Geplanten Flug ins echte Logbuch übernehmen (Nutzt exakt deine hauseigenen Rechen-Funktionen!)
 function completePlannedFlight(planId) {
   const planned = loadPlannedFlights();
   const flightToMove = planned.find(p => p.id === planId);
   if (!flightToMove) return;
 
+  // 1. Aus den geplanten Flügen entfernen
   const updatedPlanned = planned.filter(p => p.id !== planId);
   savePlannedFlights(updatedPlanned);
 
-  const realFlights = loadFlights() || [];
-  let dist = 0;
-  if (typeof calcAirportDistanceKm === "function") {
-    dist = calcAirportDistanceKm(flightToMove.from, flightToMove.to) || 0;
-  }
+  const fromIata = (flightToMove.from || "").trim().toUpperCase();
+  const toIata   = (flightToMove.to || "").trim().toUpperCase();
 
-  const newRealFlight = {
-    id: String(Date.now()),
+  // Standard-Geschwindigkeit (liest das Feld 'speed' aus der UI aus oder nimmt Fallback 800 km/h)
+  const speedEl = document.getElementById("speed");
+  const speed = (speedEl && Number(speedEl.value) > 0) ? Number(speedEl.value) : 800;
+
+  // 2. Deine exakten Berechnungsfunktionen aufrufen
+  const distanceKm = (typeof calcDistanceKm === "function") 
+    ? calcDistanceKm(fromIata, toIata) 
+    : 0;
+
+  const durationHours = (typeof calcDurationHours === "function") 
+    ? calcDurationHours(distanceKm, speed) 
+    : 0;
+
+  // 3. Flug-Objekt exakt im Schema deiner addFlight()-Funktion zusammensetzen
+  const realFlights = loadFlights() || [];
+
+  const newFlight = {
+    id: Date.now(),
     date: flightToMove.date,
-    from: flightToMove.from,
-    to: flightToMove.to,
-    airline: flightToMove.airline,
-    flightClass: flightToMove.flightClass,
-    distanceKm: dist,
-    tripType: "p"
+    from: fromIata,
+    to: toIata,
+    airline: flightToMove.airline || "",
+    aircraft: "",
+    tripType: "p", // Standard: Privat
+    flightClass: flightToMove.flightClass || "Economy",
+    speedKmh: speed,
+    distanceKm: distanceKm,
+    durationHours: durationHours
   };
 
-  realFlights.push(newRealFlight);
-  
-  if (typeof saveFlights === "function") {
-    saveFlights(realFlights);
-  } else {
-    localStorage.setItem("flights", JSON.stringify(realFlights));
-  }
+  realFlights.push(newFlight);
 
+  // 4. Speichern und Anwendungs-Views neu rendern
+  saveFlights(realFlights);
+
+  if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
   if (typeof renderAll === "function") renderAll();
+  if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
+  
   renderDashboardTiles();
 }
 
@@ -4837,7 +4890,7 @@ function promptMMUpdate() {
   const currentV = localStorage.getItem("mm_real_vouchers") || "1";
 
   const p = prompt("Aktuelle Points (P):", currentP);
-  if (p === null) return; // Abbrechen falls der User im ersten Fenster abbricht
+  if (p === null) return;
 
   const q = prompt("Aktuelle Qualifying Points (Q):", currentQ);
   if (q === null) return;
@@ -4848,11 +4901,23 @@ function promptMMUpdate() {
   const v = prompt("Anzahl eVoucher:", currentV);
   if (v === null) return;
 
+  // Zeitstempel generieren (z. B. "21.08.2026, 07:53")
+  const now = new Date();
+  const timestamp = now.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }) + ", " + now.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
   // Werte im Speicher ablegen
   localStorage.setItem("mm_real_points", p);
   localStorage.setItem("mm_real_qpoints", q);
   localStorage.setItem("mm_real_miles", m);
   localStorage.setItem("mm_real_vouchers", v);
+  localStorage.setItem("mm_last_sync", timestamp);
 
   // Cockpit sofort neu rendern
   renderDashboardTiles();
