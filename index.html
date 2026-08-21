@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta charset="UTF-8" />
   <title>Flugmeilen Tracker</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -2524,6 +2525,168 @@ body.map-in-fullscreen #mapFullscreenBtn {
 </button>
 
 <script>
+
+let flightsAll = [];         
+let plannedFlightsAll = [];
+
+// --- SUPABASE INITIALISIERUNG ---
+const SUPABASE_URL = "https://uluqbxlrjakvmeptbphs.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsdXFieGxyamFrdm1lcHRicGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMTE4MDAsImV4cCI6MjEwMjg4NzgwMH0.alkM-_C8xSzwCVg-Om1GUHzgj-ELMYgBID06xYFMwec"; 
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Globaler Fallback für alte Aufrufe in Filtern oder Widgets
+function loadFlights() {
+  return flightsAll;
+}
+
+function loadPlannedFlights() {
+  return plannedFlightsAll;
+}
+
+// --- CLOUD LOAD FUNCTIONS ---
+
+async function loadFlightsFromCloud() {
+  if (!db) return;
+  
+  // 1. Daten von Supabase abfragen
+  const { data, error } = await db
+    .from('flights')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error("Fehler beim Laden aus Supabase:", error);
+    return;
+  }
+
+  if (data) {
+    // 2. Datenbank-Felder auf das Datenformat deiner App mappen
+    flightsAll = data.map(f => ({
+      id: f.id,
+      date: f.date,
+      from: f.from_iata,
+      to: f.to_iata,
+      airline: f.airline || "",
+      aircraft: f.aircraft || "",
+      tripType: f.trip_type || "p",
+      flightClass: f.flight_class || "Economy",
+      speedKmh: f.speed_kmh || 800,
+      distanceKm: f.distance_km || 0,
+      durationHours: f.duration_hours || 0
+    }));
+
+    // 3. UI komplett mit den neuen Daten aktualisieren
+    if (typeof rebuildYearSelect === "function") rebuildYearSelect();
+    if (typeof renderAll === "function") renderAll();
+    if (typeof renderDashboardTiles === "function") renderDashboardTiles();
+  }
+}
+
+async function loadPlannedFlightsFromCloud() {
+  if (!db) return;
+
+  const { data, error } = await db
+    .from('planned_flights')
+    .select('*')
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error("Fehler beim Laden der geplanten Flüge:", error);
+    return;
+  }
+
+  if (data) {
+    plannedFlightsAll = data;
+    if (typeof renderPlannedFlights === "function") renderPlannedFlights();
+  }
+}
+
+async function initAppFromCloud() {
+  console.log("Starte Cloud-Sync...");
+  await loadFlightsFromCloud();
+  await loadPlannedFlightsFromCloud();
+}
+
+// --- AUTH LOGIK ---
+async function handleLogin(e) {
+  if (e) e.preventDefault();
+  const email = document.getElementById("authEmail")?.value;
+  const password = document.getElementById("authPassword")?.value;
+  const errBox = document.getElementById("authError");
+  if (errBox) errBox.textContent = "";
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  
+  if (error) {
+    if (errBox) errBox.textContent = "Login fehlgeschlagen: " + error.message;
+  } else {
+    // 1. Modal nach erfolgreichem Login verbergen
+    const modal = document.getElementById("authModal");
+    if (modal) modal.style.display = "none";
+    
+    // 2. E-Mail-Adresse direkt im Profil-Feld anzeigen (falls vorhanden)
+    const profileEmailEl = document.getElementById("profileEmail");
+    if (profileEmailEl && data?.user?.email) {
+      profileEmailEl.textContent = data.user.email;
+    }
+
+    // 3. Cloud-Sync abwarten und Dashboard neu rendern
+    if (typeof initAppFromCloud === "function") {
+      await initAppFromCloud();
+    }
+  }
+}
+
+async function handleSignUp() {
+  const email = document.getElementById("authEmail")?.value;
+  const password = document.getElementById("authPassword")?.value;
+  const errBox = document.getElementById("authError");
+  if (errBox) errBox.textContent = "";
+
+  if (!email || !password) {
+    if (errBox) errBox.textContent = "Bitte E-Mail und Passwort eingeben.";
+    return;
+  }
+
+  const { data, error } = await db.auth.signUp({ email, password });
+
+  if (error) {
+    if (errBox) errBox.textContent = "Registrierung fehlgeschlagen: " + error.message;
+  } else {
+    alert("Konto erfolgreich erstellt! Du bist jetzt eingeloggt.");
+    const modal = document.getElementById("authModal");
+    if (modal) modal.style.display = "none";
+    
+    if (typeof initAppFromCloud === "function") {
+      await initAppFromCloud();
+    }
+  }
+}
+
+async function checkAuthSession() {
+  const { data: { session } } = await db.auth.getSession();
+  
+  if (session) {
+    // Nutzer IST eingeloggt -> Modal ausblenden & Cloud-Daten laden
+    document.getElementById("authModal").style.display = "none";
+    if (typeof initAppFromCloud === "function") {
+      await initAppFromCloud();
+    }
+  } else {
+    // Nutzer IST NICHT eingeloggt -> Login-Modal anzeigen
+    document.getElementById("authModal").style.display = "flex";
+  }
+
+}
+
+// Beim Laden der Seite die Session prüfen
+window.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("authForm");
+  if (form) form.onsubmit = handleLogin;
+  checkAuthSession();
+});
+
   const STORAGE_KEY_FLIGHTS = "flugmeilen_flights_v3";
   const STORAGE_KEY_AIRPORTS = "flugmeilen_airports_v3";
   
@@ -3032,39 +3195,39 @@ function refreshFlightFormDatalists(){
   fillDatalist("aircraftList", uniqueSorted(flights.map(f => f.aircraft)));
 }
 
-function rebuildYearSelect(){
-  const sel = document.getElementById("yearSelect");
-  if (!sel) return;
+function rebuildYearSelect() {
+  // Alt: const flights = loadFlights();
+  // Neu: Greife direkt auf das globale Cloud-Array flightsAll zu
+  const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
 
-  const flights = loadFlights();
-  const years = new Set();
+  const yearSelect = document.getElementById("yearSelect");
+  if (!yearSelect) return;
+
+  const currentYear = new Date().getFullYear();
+  const years = new Set([currentYear]);
 
   flights.forEach(f => {
-    const d = new Date(f.date);
-    if (!isNaN(d)) years.add(d.getFullYear());
+    const d = parseFlightDateAny(f.date);
+    if (d) years.add(d.getFullYear());
   });
 
-  const sorted = Array.from(years).sort((a,b)=>b-a);
+  const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-  // aktuelle Auswahl merken
-  const current = sel.value || localStorage.getItem("selectedYear") || "";
+  const currentValue = yearSelect.value;
+  yearSelect.innerHTML = '<option value="ALL">Alle Jahre</option>';
 
-  sel.innerHTML = "";
-  // optional: leerer Eintrag oben
-  const optEmpty = document.createElement("option");
-  optEmpty.value = "";
-  optEmpty.textContent = "Alle Jahre";
-  sel.appendChild(optEmpty);
-
-  sorted.forEach(y => {
-    const o = document.createElement("option");
-    o.value = String(y);
-    o.textContent = String(y);
-    sel.appendChild(o);
+  sortedYears.forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    yearSelect.appendChild(opt);
   });
 
-  // restore selection
-  sel.value = sorted.includes(Number(current)) ? String(current) : "";
+  if (sortedYears.includes(Number(currentValue)) || currentValue === "ALL") {
+    yearSelect.value = currentValue;
+  } else {
+    yearSelect.value = "ALL";
+  }
 }
 
 function getHomeAirportIata(){
@@ -3113,28 +3276,6 @@ function logAllAirlinesFromData() {
   function saveAirportsToStorage() {
     localStorage.setItem(STORAGE_KEY_AIRPORTS, JSON.stringify(AIRPORTS));
   }
-
-  function loadFlights() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_FLIGHTS);
-      if (!raw) return [];
-      const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  
-  function saveFlights(flights){
-  const cleaned = (flights || []).map(f => {
-    const copy = { ...f };
-    const ts = parseFlightDateToTs(copy.date);
-    if (ts) copy.date = new Date(ts).toISOString().slice(0,10);
-    return copy;
-  });
-
-  localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(cleaned));
-}
 
   function deg2rad(deg) { return deg * Math.PI / 180; }
 
@@ -3616,115 +3757,106 @@ importFile.onchange = async () => {
     }
   }
 
-function addFlight() {
-    // 1. Oben den Wert aus dem (neuen) Select-Feld auslesen
-    const date = document.getElementById("flightDate").value;
-    const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
-    const toIata = document.getElementById("toIata").value.trim().toUpperCase();
-    const airline = document.getElementById("airline").value.trim();
-    const aircraft = document.getElementById("aircraft").value.trim();
-    const tripType = document.getElementById("tripType").value;
-    const speed = Number(document.getElementById("speed").value);
-    
-    // NEU: Hier die Flugklasse auslesen
-    const flightClass = document.getElementById("f_flightClass") ? document.getElementById("f_flightClass").value : "Economy";
+async function addFlight() {
+  // 1. Werte aus den Eingabefeldern auslesen
+  const date = document.getElementById("flightDate").value;
+  const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
+  const toIata = document.getElementById("toIata").value.trim().toUpperCase();
+  const airline = document.getElementById("airline").value.trim();
+  const aircraft = document.getElementById("aircraft").value.trim();
+  const tripType = document.getElementById("tripType").value;
+  const speed = Number(document.getElementById("speed").value);
+  const flightClass = document.getElementById("f_flightClass") ? document.getElementById("f_flightClass").value : "Economy";
 
-    const errBox = document.getElementById("flightError");
-    if (errBox) errBox.textContent = "";
+  const errBox = document.getElementById("flightError");
+  if (errBox) errBox.textContent = "";
 
-    const errors = [];
-    if (!date) errors.push("Datum fehlt.");
-    if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
-    if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
-    if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
-    if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
-    if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+  // 2. Validierung
+  const errors = [];
+  if (!date) errors.push("Datum fehlt.");
+  if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
+  if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
+  if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
+  if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
+  if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
 
-    if (errors.length) {
-      if (errBox) errBox.textContent = errors.join(" ");
+  if (errors.length) {
+    if (errBox) errBox.textContent = errors.join(" ");
+    return;
+  }
+
+  const distanceKm = calcDistanceKm(fromIata, toIata);
+  const durationHours = calcDurationHours(distanceKm, speed);
+  const currentYear = new Date().getFullYear();
+
+  // 3. M&M-Punkte-Verrechnung
+  if (editingFlightId !== null) {
+    // FALL A: Flug wird bearbeitet -> Alte Punkte abziehen
+    const oldFlight = flightsAll.find(f => String(f.id) === String(editingFlightId));
+    if (oldFlight) {
+      const oldDate = parseFlightDateAny(oldFlight.date);
+      if (oldDate && oldDate.getFullYear() === currentYear) {
+        const oldPoints = calculateMMPoints(oldFlight);
+        const savedP = localStorage.getItem("mm_real_points");
+        const savedQ = localStorage.getItem("mm_real_qpoints");
+        if (savedP !== null) localStorage.setItem("mm_real_points", Math.max(0, Number(savedP) - oldPoints.points));
+        if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Math.max(0, Number(savedQ) - oldPoints.qualifyingPoints));
+      }
+    }
+  }
+
+  // Neue Punkte aufaddieren (bei NEU & EDIT)
+  const newFlightObj = { date, from: fromIata, to: toIata, airline, flightClass, distanceKm };
+  const newDate = parseFlightDateAny(date);
+
+  if (newDate && newDate.getFullYear() === currentYear) {
+    const newPoints = calculateMMPoints(newFlightObj);
+    const savedP = localStorage.getItem("mm_real_points");
+    const savedQ = localStorage.getItem("mm_real_qpoints");
+
+    if (savedP !== null) localStorage.setItem("mm_real_points", Number(savedP) + newPoints.points);
+    if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Number(savedQ) + newPoints.qualifyingPoints);
+  }
+
+  // 4. Datenbank-Operation in Supabase ausführen
+  const payload = {
+    date: date,
+    from_iata: fromIata,
+    to_iata: toIata,
+    airline: airline,
+    aircraft: aircraft,
+    trip_type: tripType,
+    flight_class: flightClass,
+    speed_kmh: speed,
+    distance_km: distanceKm,
+    duration_hours: durationHours
+  };
+
+  if (editingFlightId === null) {
+    // NEUER FLUG -> INSERT
+    const { error } = await db.from('flights').insert([payload]);
+    if (error) {
+      alert("Fehler beim Speichern in Supabase: " + error.message);
       return;
     }
-
-    const distanceKm = calcDistanceKm(fromIata, toIata);
-    const durationHours = calcDurationHours(distanceKm, speed);
-    const flights = loadFlights();
-
-    if (editingFlightId === null) {
-      const newFlight = {
-        id: Date.now(),
-        date,
-        from: fromIata,
-        to: toIata,
-        airline,
-        aircraft,
-        tripType,
-        flightClass, 
-        speedKmh: speed,
-        distanceKm,
-        durationHours
-      };
-      flights.push(newFlight);
-      document.getElementById("airline").value = "";
-      document.getElementById("aircraft").value = "";
-    } else {
-      const idx = flights.findIndex(f => String(f.id) === String(editingFlightId));
-      if (idx !== -1) {
-        flights[idx] = {
-          ...flights[idx],
-          date,
-          from: fromIata,
-          to: toIata,
-          airline,
-          aircraft,
-          tripType,
-          flightClass, 
-          speedKmh: speed,
-          distanceKm,
-          durationHours
-        };
-      }
+    document.getElementById("airline").value = "";
+    document.getElementById("aircraft").value = "";
+  } else {
+    // FLUG BEARBEITEN -> UPDATE
+    const { error } = await db.from('flights').update(payload).eq('id', editingFlightId);
+    if (error) {
+      alert("Fehler beim Aktualisieren in Supabase: " + error.message);
+      return;
     }
-	
-	const currentYear = new Date().getFullYear();
+  }
 
-    if (editingFlightId !== null) {
-      // --- FALL A: FLUG WIRD BEARBEITET ---
-      const oldFlight = flights.find(f => String(f.id) === String(editingFlightId));
-      if (oldFlight) {
-        const oldDate = parseFlightDateAny(oldFlight.date);
-        if (oldDate && oldDate.getFullYear() === currentYear) {
-          const oldPoints = calculateMMPoints(oldFlight);
-          
-          // Alte Punkte abziehen
-          const savedP = localStorage.getItem("mm_real_points");
-          const savedQ = localStorage.getItem("mm_real_qpoints");
-          if (savedP !== null) localStorage.setItem("mm_real_points", Math.max(0, Number(savedP) - oldPoints.points));
-          if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Math.max(0, Number(savedQ) - oldPoints.qualifyingPoints));
-        }
-      }
-    }
-
-    // --- NEUE PUNKTE AUFADDIEREN (Sowohl bei NEU als auch bei EDIT) ---
-    const newFlightObj = { date, from: fromIata, to: toIata, airline, flightClass, distanceKm };
-    const newDate = parseFlightDateAny(date);
-
-    if (newDate && newDate.getFullYear() === currentYear) {
-      const newPoints = calculateMMPoints(newFlightObj);
-      const savedP = localStorage.getItem("mm_real_points");
-      const savedQ = localStorage.getItem("mm_real_qpoints");
-
-      if (savedP !== null) localStorage.setItem("mm_real_points", Number(savedP) + newPoints.points);
-      if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Number(savedQ) + newPoints.qualifyingPoints);
-    }
-	
-    saveFlights(flights);
-    if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
-    editingFlightId = null;
-    setEditMode(false);
-    renderAll();
-    
-    // 🔥 FIX: Hier korrekter Funktionsname aufgerufen
-    refreshAirlineAircraftDatalists(); 
+  // 5. UI-Reset & Daten neu aus Supabase laden
+  if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
+  editingFlightId = null;
+  if (typeof setEditMode === "function") setEditMode(false);
+  
+  await loadFlightsFromCloud(); // Lädt die Daten neu und ruft renderAll() auf
+  if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists(); 
 }
 
 function refreshAirlineAircraftDatalists(){
@@ -3817,42 +3949,35 @@ function escapeHtml(s){
     setEditMode(false);
   }
 
-function deleteFlight(id) {
+async function deleteFlight(id) {
   if (!confirm("Möchtest du diesen Flug wirklich löschen?")) return;
 
-  const flights = loadFlights() || [];
-  const flightToDelete = flights.find(f => String(f.id) === String(id));
+  // 1. Flug vor dem Löschen für M&M-Abzug ermitteln
+  const flightToDelete = flightsAll.find(f => String(f.id) === String(id));
 
   if (flightToDelete) {
     const currentYear = new Date().getFullYear();
     const flightDateObj = parseFlightDateAny(flightToDelete.date);
 
-    // Nur Punkte abziehen, wenn der Flug im AKTUELEN Kalenderjahr lag
     if (flightDateObj && flightDateObj.getFullYear() === currentYear) {
       const lost = calculateMMPoints(flightToDelete);
-
       const savedP = localStorage.getItem("mm_real_points");
       const savedQ = localStorage.getItem("mm_real_qpoints");
 
-      // Abziehen, aber nicht unter 0 fallen lassen
-      if (savedP !== null) {
-        const newP = Math.max(0, Number(savedP) - lost.points);
-        localStorage.setItem("mm_real_points", newP);
-      }
-      if (savedQ !== null) {
-        const newQ = Math.max(0, Number(savedQ) - lost.qualifyingPoints);
-        localStorage.setItem("mm_real_qpoints", newQ);
-      }
+      if (savedP !== null) localStorage.setItem("mm_real_points", Math.max(0, Number(savedP) - lost.points));
+      if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Math.max(0, Number(savedQ) - lost.qualifyingPoints));
     }
   }
 
-  // Flug aus dem Array filtern und speichern
-  const updatedFlights = flights.filter(f => String(f.id) !== String(id));
-  saveFlights(updatedFlights);
+  // 2. Direkt in Supabase löschen
+  const { error } = await db.from('flights').delete().eq('id', id);
 
-  // UI aktualisieren
-  if (typeof renderAll === "function") renderAll();
-  renderDashboardTiles();
+  if (error) {
+    alert("Fehler beim Löschen: " + error.message);
+  } else {
+    // Neu aus Cloud laden
+    await loadFlightsFromCloud();
+  }
 }
 
   function clearAllFlights() {
@@ -4348,7 +4473,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
   wrap.innerHTML = `<div class="muted">Dashboard lädt…</div>`;
 
   try {
-    const flightsAll = loadFlights() || [];
+    const allFlights = (typeof flightsAll !== "undefined") ? flightsAll : [];
 
     // Jahr aus UI
     const year = (typeof getSelectedYear === "function") ? getSelectedYear() : null;
@@ -4818,18 +4943,6 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
 
 // --- TRIP PLANNER & GEPLANTE FLÜGE LOGIK (MIT BEARBEITEN & LÖSCHEN) ---
 
-function loadPlannedFlights() {
-  try {
-    return JSON.parse(localStorage.getItem("planned_flights") || "[]");
-  } catch (e) {
-    return [];
-  }
-}
-
-function savePlannedFlights(arr) {
-  localStorage.setItem("planned_flights", JSON.stringify(arr));
-}
-
 // Geplanten Flug löschen
 function deletePlannedFlight(planId) {
   if (!confirm("Möchtest du diesen geplanten Flug wirklich löschen?")) return;
@@ -4933,17 +5046,18 @@ function closePlanFlightModal() {
   if (modal) modal.style.display = "none";
 }
 
-function completePlannedFlight(planId) {
-  const planned = loadPlannedFlights();
-  const flightToMove = planned.find(p => p.id === planId);
-  if (!flightToMove) return;
+async function completePlannedFlight(planId) {
+  // 1. Geplanten Flug aus Supabase holen
+  const { data: plannedFlight, error: fetchErr } = await db
+    .from('planned_flights')
+    .select('*')
+    .eq('id', planId)
+    .single();
 
-  // 1. Aus den geplanten Flügen entfernen
-  const updatedPlanned = planned.filter(p => p.id !== planId);
-  savePlannedFlights(updatedPlanned);
+  if (fetchErr || !plannedFlight) return;
 
-  const fromIata = (flightToMove.from || "").trim().toUpperCase();
-  const toIata   = (flightToMove.to || "").trim().toUpperCase();
+  const fromIata = (plannedFlight.from_iata || "").trim().toUpperCase();
+  const toIata   = (plannedFlight.to_iata || "").trim().toUpperCase();
 
   const speedEl = document.getElementById("speed");
   const speed = (speedEl && Number(speedEl.value) > 0) ? Number(speedEl.value) : 800;
@@ -4956,50 +5070,51 @@ function completePlannedFlight(planId) {
     ? calcDurationHours(distanceKm, speed) 
     : 0;
 
-  // 2. Neuer Flug ins Logbuch eintragen
-  const newFlight = {
-    id: Date.now(),
-    date: flightToMove.date,
-    from: fromIata,
-    to: toIata,
-    airline: flightToMove.airline || "",
+  // 2. In die absolvierten Flüge (flights) einfügen
+  const { error: insertErr } = await db.from('flights').insert([{
+    date: plannedFlight.date,
+    from_iata: fromIata,
+    to_iata: toIata,
+    airline: plannedFlight.airline || "",
     aircraft: "",
-    tripType: "p",
-    flightClass: flightToMove.flightClass || "Economy",
-    speedKmh: speed,
-    distanceKm: distanceKm,
-    durationHours: durationHours
-  };
+    trip_type: "p",
+    flight_class: plannedFlight.flight_class || "Economy",
+    speed_kmh: speed,
+    distance_km: distanceKm,
+    duration_hours: durationHours
+  }]);
 
-  const realFlights = loadFlights() || [];
-  realFlights.push(newFlight);
-  saveFlights(realFlights);
+  if (insertErr) {
+    alert("Fehler beim Verschieben des Flugs: " + insertErr.message);
+    return;
+  }
 
-  // 3. PUNKTE AUF GESPEICHERTEN SYNC-STAND AUFADDIEREN
+  // 3. Aus geplanten Flügen löschen
+  await db.from('planned_flights').delete().eq('id', planId);
+
+  // 4. M&M Punkte aufaddieren (Sync-Wert anpassen falls vorhanden)
   const currentYear = new Date().getFullYear();
-  const flightDate = parseFlightDateAny(newFlight.date);
+  const flightDate = parseFlightDateAny(plannedFlight.date);
 
   if (flightDate && flightDate.getFullYear() === currentYear) {
-    const earned = calculateMMPoints(newFlight);
-    
-    // Falls ein Sync-Wert existiert, addieren wir die neuen Punkte dazu
+    const earned = calculateMMPoints({
+      flightClass: plannedFlight.flight_class,
+      distanceKm: distanceKm,
+      airline: plannedFlight.airline
+    });
+
     const savedP = localStorage.getItem("mm_real_points");
     const savedQ = localStorage.getItem("mm_real_qpoints");
 
-    if (savedP !== null) {
-      localStorage.setItem("mm_real_points", Number(savedP) + earned.points);
-    }
-    if (savedQ !== null) {
-      localStorage.setItem("mm_real_qpoints", Number(savedQ) + earned.qualifyingPoints);
-    }
+    if (savedP !== null) localStorage.setItem("mm_real_points", Number(savedP) + earned.points);
+    if (savedQ !== null) localStorage.setItem("mm_real_qpoints", Number(savedQ) + earned.qualifyingPoints);
   }
 
-  // 4. Views & Widgets neu rendern
+  // 5. Views neu aus der Cloud laden
   if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
-  if (typeof renderAll === "function") renderAll();
   if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
   
-  renderDashboardTiles();
+  await initAppFromCloud();
 }
 
 // Modal mit allen geplanten Flügen anzeigen
@@ -5887,7 +6002,7 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
 function renderAll() {
   updateAirportCount();
 
-  const flights = loadFlights();
+  const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
   buildYearOptions(flights);
 
   let visible = applyFilters(flights);
@@ -5980,8 +6095,12 @@ function wireProfileLogoTooltips(){
     tile.classList.toggle("show-tooltip");
   });
 }
+document.addEventListener("DOMContentLoaded", () => {
+  // Auth & Session Check
+  const form = document.getElementById("authForm");
+  if (form) form.onsubmit = handleLogin;
+  checkAuthSession();
 
-  document.addEventListener("DOMContentLoaded", () => {
   // Event-Listener & Buttons
   document.getElementById("loadAirportBtn")?.addEventListener("click", handleAirportCsvLoad);
   document.getElementById("loadFlightsBtn")?.addEventListener("click", handleFlightsCsvLoad);
@@ -5991,9 +6110,9 @@ function wireProfileLogoTooltips(){
   document.getElementById("searchInput")?.addEventListener("input", renderAll);
   
   const fromIataInput = document.getElementById("fromIata");
-    const toIataInput = document.getElementById("toIata");
+  const toIataInput = document.getElementById("toIata");
 
-if (fromIataInput && toIataInput) {
+  if (fromIataInput && toIataInput) {
     toIataInput.addEventListener("input", () => {
       if (editingFlightId !== null) return; 
 
@@ -6001,7 +6120,8 @@ if (fromIataInput && toIataInput) {
       const toVal = toIataInput.value.trim().toUpperCase();
 
       if (fromVal.length === 3 && toVal.length === 3) {
-        const flights = loadFlights() || [];
+        // FIXED: Greift jetzt auf das Cloud-Array flightsAll zu statt loadFlights()
+        const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
         
         // 1. Alle Flüge filtern, die exakt auf dieser Route liegen
         const matchingFlights = flights.filter(f => 
@@ -6021,7 +6141,7 @@ if (fromIataInput && toIataInput) {
           matchingFlights.forEach(f => {
             if (f.airline)  airlineCounts[f.airline]   = (airlineCounts[f.airline] || 0) + 1;
             if (f.aircraft) aircraftCounts[f.aircraft] = (aircraftCounts[f.aircraft] || 0) + 1;
-            if (f.speedKmh)  speedCounts[f.speedKmh]   = (speedCounts[f.speedKmh] || 0) + 1;
+            if (f.speedKmh) speedCounts[f.speedKmh]   = (speedCounts[f.speedKmh] || 0) + 1;
           });
 
           // Helper-Funktion, um den Schlüssel mit dem höchsten Wert (den Favoriten) zu finden
@@ -6055,103 +6175,97 @@ if (fromIataInput && toIataInput) {
     });
   }
 
-document.getElementById("yearSelect")?.addEventListener("change", (e) => {
-  const value = e.target.value || "";
-  localStorage.setItem("selectedYear", value);
-  renderAll();
-  renderDashboardTiles();
-});
+  document.getElementById("yearSelect")?.addEventListener("change", (e) => {
+    const value = e.target.value || "";
+    localStorage.setItem("selectedYear", value);
+    renderAll();
+    renderDashboardTiles();
+  });
 
-document.getElementById("resetYearBtn")?.addEventListener("click", () => {
-  const ys = document.getElementById("yearSelect");
-  if (ys) ys.value = "";
-  localStorage.setItem("selectedYear", "");
-  renderAll();
-  renderDashboardTiles();
-});
+  document.getElementById("resetYearBtn")?.addEventListener("click", () => {
+    const ys = document.getElementById("yearSelect");
+    if (ys) ys.value = "";
+    localStorage.setItem("selectedYear", "");
+    renderAll();
+    renderDashboardTiles();
+  });
 
   // Pages
   const pages = {
     dashboardPage: document.getElementById("dashboardPage"),
     flightsPage:   document.getElementById("flightsPage"),
-    mapPage:     document.getElementById("mapPage"),
-	statsPage:     document.getElementById("statsPage"),
+    mapPage:       document.getElementById("mapPage"),
+    statsPage:     document.getElementById("statsPage"),
     dataPage:      document.getElementById("dataPage"),
     profilePage:   document.getElementById("profilePage")
   };
 
-function showPage(targetId) {
-  console.log("showPage ->", targetId);
-  
-  // 1. Alle Seiten umschalten
-  Object.entries(pages).forEach(([id, el]) => {
-    if (!el) return;
-    const isActive = (id === targetId);
-    el.style.display = isActive ? "block" : "none";
-    el.classList.toggle("page-active", isActive);
-  });
+  function showPage(targetId) {
+    console.log("showPage ->", targetId);
+    
+    // 1. Alle Seiten umschalten
+    Object.entries(pages).forEach(([id, el]) => {
+      if (!el) return;
+      const isActive = (id === targetId);
+      el.style.display = isActive ? "block" : "none";
+      el.classList.toggle("page-active", isActive);
+    });
 
-  // 2. Year-Filter Logik (Karte hinzugefügt!)
-  const yearSelect = document.getElementById("yearSelect");
-  const resetYearBtn = document.getElementById("resetYearBtn");
-  const yearWrap = yearSelect?.parentElement;
+    // 2. Year-Filter Logik
+    const yearSelect = document.getElementById("yearSelect");
+    const resetYearBtn = document.getElementById("resetYearBtn");
+    const yearWrap = yearSelect?.parentElement;
 
-  // Hier "mapPage" hinzugefügt, falls du die Karte auch filtern willst
-  const showYear = (targetId === "flightsPage" || targetId === "statsPage" || targetId === "mapPage");
+    const showYear = (targetId === "flightsPage" || targetId === "statsPage" || targetId === "mapPage");
 
-  if (yearSelect) yearSelect.style.display = showYear ? "" : "none";
-  if (resetYearBtn) resetYearBtn.style.display = showYear ? "" : "none";
-  if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
+    if (yearSelect) yearSelect.style.display = showYear ? "" : "none";
+    if (resetYearBtn) resetYearBtn.style.display = showYear ? "" : "none";
+    if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
 
-  // 3. Nav-Active markieren
-  document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
-    btn.classList.toggle("nav-active", btn.getAttribute("data-target") === targetId);
-  });
+    // 3. Nav-Active markieren
+    document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+      btn.classList.toggle("nav-active", btn.getAttribute("data-target") === targetId);
+    });
 
-  // 4. RENDER LOGIK (Hier fehlte die mapPage)
-  if (targetId === "dashboardPage") {
-    setTimeout(renderDashboardTiles, 0);
-  } 
-	else if (targetId === "flightsPage") {
-		setTimeout(() => {
-		  renderAll?.();
-		  
-		  // 🔥 FIX: Korrekter Name aufgerufen! 
-		  // Baut die Dropdowns bei jedem Betreten des Tabs mit den allerneuesten Stammdaten auf.
-		  if (typeof refreshAirlineAircraftDatalists === "function") {
-			refreshAirlineAircraftDatalists();
-		  }
-		}, 0);
-	  }
-		else if (targetId === "statsPage") {
-			setTimeout(() => {
-			  if (typeof renderFullStatistics === "function") renderFullStatistics();
-			  if (typeof renderClassStats === "function") renderClassStats();
-			  
-			  // 🔥 HIER EINBAUEN: Rendert die neuen Meilensteine auf der Stats-Seite!
-			  if (typeof renderAviatikAchievements === "function") {
-				renderAviatikAchievements();
-			  }
-			}, 0);
-		  }
-  else if (targetId === "mapPage") {
-    // --- NEU: Karten-Trigger ---
-    setTimeout(() => {
-      console.log("Karten-Tab aktiviert: Starte Rendering...");
-      const flights = loadFlights() || [];
-      renderMap(flights);
-    }, 50); // Kleiner Delay, damit das Display "block" aktiv ist
+    // 4. RENDER LOGIK
+    if (targetId === "dashboardPage") {
+      setTimeout(renderDashboardTiles, 0);
+    } 
+    else if (targetId === "flightsPage") {
+      setTimeout(() => {
+        renderAll?.();
+        if (typeof refreshAirlineAircraftDatalists === "function") {
+          refreshAirlineAircraftDatalists();
+        }
+      }, 0);
+    }
+    else if (targetId === "statsPage") {
+      setTimeout(() => {
+        if (typeof renderFullStatistics === "function") renderFullStatistics();
+        if (typeof renderClassStats === "function") renderClassStats();
+        if (typeof renderAviatikAchievements === "function") {
+          renderAviatikAchievements();
+        }
+      }, 0);
+    }
+    else if (targetId === "mapPage") {
+      setTimeout(() => {
+        console.log("Karten-Tab aktiviert: Starte Rendering...");
+        // FIXED: Greift jetzt ebenfalls auf flightsAll zu
+        const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
+        if (typeof renderMap === "function") renderMap(flights);
+      }, 50);
+    }
+    else if (targetId === "dataPage") {
+      setTimeout(() => {
+        updateAirportCount?.();
+        wireBackupImportExport?.();
+      }, 0);
+    }
+    else if (targetId === "profilePage") {
+      setTimeout(renderProfile, 0);
+    } 
   }
-  else if (targetId === "dataPage") {
-    setTimeout(() => {
-      updateAirportCount?.();
-      wireBackupImportExport?.();
-    }, 0);
-  }
-  else if (targetId === "profilePage") {
-    setTimeout(renderProfile, 0);
-  } 
-}
 
   // Klick-Handler (NUR EINMAL!)
   document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
@@ -6162,13 +6276,13 @@ function showPage(targetId) {
 
   window.showPage = showPage;
   
-  rebuildYearSelect();
+  if (typeof rebuildYearSelect === "function") rebuildYearSelect();
 
   // Start
-	showPage("dashboardPage");
-	wireDashBarTooltips();
-	
-	// --- Komfort-Feature: Text bei Fokus automatisch markieren ---
+  showPage("dashboardPage");
+  if (typeof wireDashBarTooltips === "function") wireDashBarTooltips();
+  
+  // Komfort-Feature: Text bei Fokus automatisch markieren
   const formFields = [
     "flightDate", 
     "fromIata", 
@@ -6181,9 +6295,7 @@ function showPage(targetId) {
   formFields.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      // Sobald das Feld angewählt wird (Klick oder Tabulator)
       el.addEventListener("focus", () => {
-        // Kleiner Timeout, damit der Browser-Standardklick die Markierung nicht sofort wieder aufhebt
         setTimeout(() => el.select(), 50);
       });
     }
@@ -7033,5 +7145,26 @@ document.addEventListener("DOMContentLoaded", () => {
     <span class="nav-label">Profil</span>
   </button>
 </nav>
+
+<!-- LOGIN MODAL -->
+<div id="authModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,6,23,0.92); display:flex; align-items:center; justify-content:center; z-index:99999; backdrop-filter:blur(6px);">
+  <div class="stat-card holo-card" style="width: 90%; max-width: 380px; background:#0f172a; border:1px solid #38bdf8; padding:2rem; text-align:center;">
+    <h2 style="color:#38bdf8; margin-top:0;">✈️ Flight Tracker</h2>
+    <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:1.5rem;">Bitte anmelden oder neues Konto erstellen.</p>
+    
+    <form id="authForm" style="display:flex; flex-direction:column; gap:12px;">
+      <input type="email" id="authEmail" placeholder="E-Mail" required style="padding:10px; background:#020617; border:1px solid #334155; color:#fff; border-radius:6px; font-size:0.9rem;">
+      <input type="password" id="authPassword" placeholder="Passwort" required style="padding:10px; background:#020617; border:1px solid #334155; color:#fff; border-radius:6px; font-size:0.9rem;">
+      
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="handleSignUp()">Registrieren</button>
+        <button type="submit" class="btn btn-primary btn-sm" style="flex:1;">Einloggen</button>
+      </div>
+    </form>
+    
+    <div id="authError" style="color:#f43f5e; font-size:0.75rem; margin-top:12px;"></div>
+  </div>
+</div>
+
 </body>
 </html>
