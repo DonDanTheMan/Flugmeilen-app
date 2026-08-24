@@ -3444,6 +3444,9 @@ function renderAirportWithFlag(iata) {
   `;
 }
 
+// 🟢 Alias für alte Aufrufe setzen:
+const airportCodeWithFlag = renderAirportWithFlag;
+
 function flagImgHtml(iso2) {
   const cc = (iso2 || "").toLowerCase();
   if (!cc || cc.length !== 2) return "";
