@@ -1208,9 +1208,9 @@ label span,
   max-width: 110px;
   height: 44px;
   object-fit: contain;
-  background: rgba(2,6,23,0.35);
-  border-radius: .45rem;
-  padding: .25rem;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 0.45rem;
+  padding: 0.25rem;
 }
 
 .logo-tile .airline-name {
@@ -1826,18 +1826,6 @@ body.no-year header > .flex-row{
     margin-bottom: 15px;
 }
 
-/* Scanline-Effekt über die gesamte Statistik-Sektion */
-#statsSelectedYear::after {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-    background-size: 100% 2px, 3px 100%;
-    pointer-events: none;
-    z-index: 10;
-}
-
 /* Top 5 Blöcke unten */
 .top5-block {
     background: rgba(15, 23, 42, 0.8);
@@ -2046,10 +2034,6 @@ body.map-in-fullscreen #mapFullscreenBtn {
 	right: auto !important;
 }
 
-/* Macht alle großen KPI-Zahlen einheitlich mintgrün */
-#dashboardTiles .stat-value {
-  color: #f8fafc !important;
-}
 
 .stats-grid {
   display: grid;
@@ -2145,6 +2129,16 @@ body.map-in-fullscreen #mapFullscreenBtn {
     letter-spacing: -0.5px;
   }
 }
+
+.airline-logo {
+  background-color: rgba(255, 255, 255, 0.9); /* Fast reines Weiß */
+  padding: 3px 6px;
+  border-radius: 4px;
+  object-fit: contain;
+  max-height: 26px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 
   </style>
 </head>
@@ -2725,60 +2719,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 const STORAGE_KEY_FLIGHTS = "flugmeilen_flights_v3";
 const STORAGE_KEY_AIRPORTS = "flugmeilen_airports_v3";
-
-// Airline -> Logo-Datei (Schlüssel in GROSSSCHRIFT)
-const AIRLINE_LOGOS = {
-  "SWISS": "img/airlines/Swiss.png",
-  "LUFTHANSA": "img/airlines/Lufthansa.png",
-  "EUROWINGS": "img/airlines/Eurowings.png",
-  "EDELWEISS": "img/airlines/Edelweiss.png",
-  "RYANAIR": "img/airlines/Ryanair.jpg",
-  "EASYJET": "img/airlines/Easyjet.png",
-  "AIR FRANCE": "img/airlines/Air France.png",
-  "AIR BALTIC": "img/airlines/Air Baltic.png",
-  "AUSTRIAN": "img/airlines/Austrian.png",
-  "HELVETIC": "img/airlines/Helvetic.png",
-  "TURKISH AIRLINES": "img/airlines/Turkish Airlines.png",
-  "EMIRATES": "img/airlines/Emirates.png",
-  "AIR DOLOMITI": "img/airlines/Air Dolomiti.png",
-  "BRUSSELS AIRLINES": "img/airlines/Brussels Airlines.png",
-  "AEGAEN": "img/airlines/Aegaen.png",
-  "AIR ALGERIE": "img/airlines/Air Algerie.png",
-  "AIR BERLIN": "img/airlines/Air Berlin.png",
-  "AIR CHINA": "img/airlines/Air China.png",
-  "AIR INDIA": "img/airlines/Air India.png",
-  "AIR MALTA": "img/airlines/Air Malta.png",
-  "BANGKOK AIRWAYS": "img/airlines/Bangkok Airways.png",
-  "BRITISH AIRWAYS": "img/airlines/British Airways.png",
-  "CHINA EASTERN": "img/airlines/China Eastern.png",
-  "DELTA AIRLINES": "img/airlines/Delta Airlines.png",
-  "EGYPTAIR": "img/airlines/Egyptair.png",
-  "ETHIOPIAN": "img/airlines/Ethiopian.png",
-  "ETIHAD": "img/airlines/Etihad.png",
-  "FINNAIR": "img/airlines/Finnair.png",
-  "GERMANIA": "img/airlines/Germania.png",
-  "HAWAIIAN": "img/airlines/Hawaiian.png",
-  "IBERIA": "img/airlines/Iberia.png",
-  "KLM": "img/airlines/KLM.png",
-  "LATAM": "img/airlines/Latam.png",
-  "MALAWIAN AIRWAYS": "img/airlines/Malawian Airways.png",
-  "NIKI": "img/airlines/Niki.png",
-  "QANTAS": "img/airlines/Qantas.png",
-  "QATAR": "img/airlines/Qatar Airways.png",
-  "SAUDIA": "img/airlines/Saudia.png",
-  "SOUTH AFRICAN": "img/airlines/South African.png",
-  "SUNEXPRESS": "img/airlines/SunExpress.png",
-  "TAP": "img/airlines/Tap.png",
-  "THAI SMILE": "img/airlines/Thai Smile.png",
-  "TIGERAIR": "img/airlines/Tigerair.png",
-  "UNITED": "img/airlines/United.png",
-  "VIRGIN AU": "img/airlines/Virgin AU.png",
-  "VUELING": "img/airlines/Vueling.png",
-  "XIAMEN AIR": "img/airlines/Xiamen Air.png",
-  "CHINA SOUTHERN": "img/airlines/China Southern.png",
-  "GERMANWINGS": "img/airlines/Germanwings.png",
-  "AEROFLOT": "img/airlines/Aeroflot.png"
-};
 
 // --- Globale Flugzeug-Datenbank für Autocomplete & Statistiken ---
 const AIRCRAFT_DATABASE = {
@@ -3434,17 +3374,17 @@ function countryToFlagEmoji(countryCode) {
 }
 
 function renderAirportWithFlag(iata) {
-  const a = AIRPORTS[iata];
-  if (!a) return iata;
+  const code = String(iata || "").trim().toUpperCase();
+  const a = (typeof AIRPORTS !== "undefined") ? AIRPORTS[code] : null;
+  if (!a) return code;
 
-  const flag = renderFlagImg(a.country);
-  return `
-    ${flag}
-    <span class="airport-name">${a.city} (${iata})</span>
-  `;
+  const flag = (typeof renderFlagImg === "function") ? renderFlagImg(a.country) : "";
+  
+  // Nur Flagge + IATA-Code (ohne Stadtname in der Hauptzeile)
+  return `${flag} ${code}`.trim();
 }
 
-// 🟢 Alias für alte Aufrufe setzen:
+// Alias für bestehende Aufrufe
 const airportCodeWithFlag = renderAirportWithFlag;
 
 function flagImgHtml(iso2) {
@@ -5316,15 +5256,24 @@ function renderFullStatistics() {
   const sortedCountries = (typeof computeCountryCounts === "function") ? computeCountryCounts(flightsScope) : [];
 
   // Render Rankings
-  const airportsEl = document.getElementById("statsAirports");
+const airportsEl = document.getElementById("statsAirports");
   if (airportsEl && typeof buildRankBarsExpandable === "function") {
     airportsEl.innerHTML = buildRankBarsExpandable(sortedAirports, 10, {
       withSearch: true,
       searchPlaceholder: "Airport suchen…",
       renderNameHtml: (name) => {
+        // Extrahiert den IATA-Code aus dem Format "Stadt (IATA)"
         const m = /\(([A-Z]{3})\)\s*$/.exec(name);
         const iata = m ? m[1] : name.trim();
-        return (typeof renderAirportWithFlag === "function") ? renderAirportWithFlag(iata) : name;
+        
+        // Liest die Daten aus der AIRPORTS-Datenbank
+        const ap = (typeof AIRPORTS !== "undefined") ? AIRPORTS[iata] : null;
+        const flag = (ap && typeof renderFlagImg === "function") ? renderFlagImg(ap.country) : "";
+        
+        // Verhindert doppelte Stadtnamen, falls 'name' bereits die Stadt enthält
+        const cityName = ap?.city || name.replace(/\s*\([A-Z]{3}\)\s*$/, "").trim();
+
+        return `${flag} ${cityName} (${iata})`.trim();
       }
     });
   }
@@ -5941,20 +5890,183 @@ function setLogoOverride(airlineName, dataUrl) {
   saveLogoOverrides(o);
 }
 
+// Globales Mapping für Sonderfälle (wird nur benötigt, wenn der Klarname stark vom Code abweicht)
+const AIRLINE_ICAO_MAP = {
+  // Europa & DACH
+  "SWISS": "SWR",
+  "LUFTHANSA": "DLH",
+  "EUROWINGS": "EWG",
+  "EDELWEISS": "EDW",
+  "HELVETIC": "OAW",
+  "AUSTRIAN": "AUA",
+  "RYANAIR": "RYR",
+  "EASYJET": "EZY",
+  "AIR FRANCE": "AFR",
+  "KLM": "KLM",
+  "BRITISH AIRWAYS": "BAW",
+  "IBERIA": "IBE",
+  "VUELING": "VLG",
+  "TAP AIR PORTUGAL": "TAP",
+  "TURKISH AIRLINES": "THY",
+  "SUNEXPRESS": "SXS",
+  "AIR BALTIC": "BTI",
+  "AIR DOLOMITI": "DLA",
+  "BRUSSELS AIRLINES": "BEL",
+  "AEGEAN": "AEE",
+  "FINNAIR": "FIN",
+  "NORWEGIAN": "NOZ",
+  "WIZZ AIR": "WZZ",
+  "LOT POLISH AIRLINES": "LOT",
+  "SAS": "SAS",
+  "CONDOR": "CFG",
+  "DISCOVER AIRLINES": "OCN",
+  "PEGASUS": "PGT",
+  "TAROM": "ROT",
+  "AIR MALTA": "AMC",
+  "AIR SERBIA": "ASL",
+  "CROATIA AIRLINES": "CTN",
+  "ITA AIRWAYS": "ITY",
+  "LUXAIR": "LGL",
+  "ICELANDAIR": "ICE",
+
+  // Nordamerika
+  "AMERICAN AIRLINES": "AAL",
+  "DELTA": "DAL",
+  "DELTA AIR LINES": "DAL",
+  "UNITED": "UAL",
+  "UNITED AIRLINES": "UAL",
+  "SOUTHWEST AIRLINES": "SWA",
+  "AIR CANADA": "ACA",
+  "ALASKA AIRLINES": "ASA",
+  "JETBLUE": "JBU",
+  "SPIRIT AIRLINES": "NKS",
+  "FRONTIER AIRLINES": "FFT",
+  "HAWAIIAN AIRLINES": "HAL",
+  "WESTJET": "WJA",
+  "AIR TRANSAT": "TSC",
+  "ALLEGIANT AIR": "AAY",
+  "AERO MEXICO": "AMX",
+
+  // Naher Osten
+  "EMIRATES": "UAE",
+  "QATAR AIRWAYS": "QTR",
+  "ETIHAD": "ETD",
+  "SAUDIA": "SVA",
+  "FLYDUBAI": "FDB",
+  "EL AL": "ELY",
+  "GULF AIR": "GFA",
+  "OMAN AIR": "OMA",
+  "ROYAL JORDANIAN": "RJA",
+  "AIR ARABIA": "ABY",
+
+  // Asien & Pazifik
+  "SINGAPORE AIRLINES": "SIA",
+  "CATHAY PACIFIC": "CPA",
+  "ANA": "ANA",
+  "ALL NIPPON AIRWAYS": "ANA",
+  "JAPAN AIRLINES": "JAL",
+  "KOREAN AIR": "KAL",
+  "ASIANA AIRLINES": "AAR",
+  "EVA AIR": "EVA",
+  "CHINA AIRLINES": "CAL",
+  "QANTAS": "QFA",
+  "AIR NEW ZEALAND": "ANZ",
+  "VIRGIN AUSTRALIA": "VOZ",
+  "JETSTAR": "JST",
+  "GARUDA INDONESIA": "GIA",
+  "MALAYSIA AIRLINES": "MAS",
+  "AIRASIA": "AXM",
+  "THAI AIRWAYS": "THA",
+  "VIETNAM AIRLINES": "HVN",
+  "INDIGO": "IGO",
+  "AIR INDIA": "AIC",
+  "CHINA SOUTHERN": "CSN",
+  "CHINA EASTERN": "CES",
+  "AIR CHINA": "CCA",
+  "HAINAN AIRLINES": "CHH",
+  "XIAMEN AIR": "CXA",
+  "PHILIPPINE AIRLINES": "PAL",
+
+  // Lateinamerika
+  "LATAM": "LAN",
+  "AVIANCA": "AVA",
+  "COPA AIRLINES": "CMP",
+  "AZUL": "AZU",
+  "GOL": "GLO",
+  "VOLARIS": "VOI",
+
+  // Afrika
+  "ETHIOPIAN AIRLINES": "ETH",
+  "EGYPTAIR": "MSR",
+  "ROYAL AIR MAROC": "RAM",
+  "SOUTH AFRICAN AIRWAYS": "SAA",
+  "KENYA AIRWAYS": "KQA",
+  "AIR ALGERIE": "DAH",
+  "TUNISAIR": "TAR"
+};
+
 function getLogoUrlForAirline(name) {
   const raw = String(name || "").trim();
   if (!raw) return "";
 
   const key = raw.toUpperCase();
 
-  const ov = loadLogoOverrides();
+  // 1) Overrides aus dem Profil
+  const ov = (typeof loadLogoOverrides === "function") ? loadLogoOverrides() : {};
   if (ov[key]) return ov[key];
 
-  if (typeof AIRLINE_LOGOS !== "undefined" && AIRLINE_LOGOS && AIRLINE_LOGOS[key]) {
-    return AIRLINE_LOGOS[key];
+  // 2) ICAO-Code ermitteln
+  let code = (typeof AIRLINE_ICAO_MAP !== "undefined" && AIRLINE_ICAO_MAP[key]) 
+    ? AIRLINE_ICAO_MAP[key] 
+    : key;
+
+  if (code === key && key.length > 3) {
+    code = key.replace(/(AIRLINES|AIRWAYS|AIR|FLUG)/g, "").trim().replace(/\s+/g, "");
   }
 
-  return "";
+  // 3) Flightradar24 CDN (WICHTIG: .toLowerCase(), da FR24 nur kleine ICAO-Codes wie "swr_logo.png" akzeptiert)
+  return `https://cdn.flightradar24.com/assets/airlines/logotypes/${code.toLowerCase()}_logo.png`;
+}
+
+function renderAirlineLogo(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+
+  const key = raw.toUpperCase();
+  const url = getLogoUrlForAirline(raw);
+  const safeAlt = raw.replace(/"/g, "&quot;");
+
+  const code = (typeof AIRLINE_ICAO_MAP !== "undefined" && AIRLINE_ICAO_MAP[key]) 
+    ? AIRLINE_ICAO_MAP[key] 
+    : key;
+
+  // Pfad aus deiner lokalen AIRLINE_LOGOS-Liste (falls vorhanden)
+  const localUrl = (typeof AIRLINE_LOGOS !== "undefined" && AIRLINE_LOGOS[key]) 
+    ? AIRLINE_LOGOS[key] 
+    : "";
+
+  /* 
+     3-Stufen-Kaskade im onerror-Handler:
+     1. Versuch: Flightradar24 (über getLogoUrlForAirline)
+     2. Versuch: RadarBox (https://cdn.radarbox.com/airlines/CODE.png)
+     3. Versuch: Lokales Bild aus AIRLINE_LOGOS (z. B. für Air Berlin)
+     Ende: Falls gar nichts vorhanden -> Bild sauber ausblenden
+  */
+  return `<img src="${url}" 
+               alt="${safeAlt}" 
+               title="${safeAlt}" 
+               class="airline-logo" 
+               onerror="
+                 if(!this.dataset.fail) {
+                   this.dataset.fail = '1';
+                   this.src = 'https://cdn.radarbox.com/airlines/${code.toUpperCase()}.png';
+                 } else if(this.dataset.fail === '1' && '${localUrl}') {
+                   this.dataset.fail = '2';
+                   this.src = '${localUrl}';
+                 } else {
+                   this.style.display = 'none';
+                 }
+               ">`;
 }
 
 function hasLogoForAirline(name) {
@@ -5971,17 +6083,6 @@ function hasLogoForAirline(name) {
   return Object.keys(AIRLINE_LOGOS).some(k =>
     k.toLowerCase().replace(/[^a-z0-9]/g, "") === norm
   );
-}
-
-function renderAirlineLogo(name) {
-  const raw = String(name || "").trim();
-  if (!raw) return "";
-
-  const url = getLogoUrlForAirline(raw);
-  if (!url) return "";
-
-  const safeAlt = raw.replace(/"/g, "&quot;");
-  return `<img src="${url}" alt="${safeAlt}" title="${safeAlt}" class="airline-logo">`;
 }
 
 function renderProfile() {
