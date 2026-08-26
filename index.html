@@ -4395,9 +4395,6 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       return;
     }
 
-    // --- KPIs & Hilfswerte ---
-    const totalKm = flights.reduce((s, f) => s + Number(f.distanceKm || 0), 0);
-
     // 1. WIDGET: Nächster Flug (Geplante Reisen & Countdown)
     const plannedFlights = (typeof plannedFlightsAll !== "undefined") ? plannedFlightsAll : [];
     const now = new Date();
@@ -4530,7 +4527,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     let targetPoints  = 650;
     let targetQPoints = 325;
 
-    // Prpfen, ob die FTL-Schwelle im laufenden Jahr bereits erreicht wurde
+    // Prüfen, ob die FTL-Schwelle im laufenden Jahr bereits erreicht wurde
     const hasReachedFTL = (mmPoints >= 650 && mmQualPoints >= 325);
     // Prüfen, ob die SEN-Schwelle im laufenden Jahr bereits erreicht wurde
     const hasReachedSEN = (mmPoints >= 2000 && mmQualPoints >= 1000);
@@ -4708,6 +4705,10 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     const airportCity = (code) => AIRPORTS?.[code]?.city || "";
     const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
 
+	// --- 4. WIDGET: Deep Space Progress ---
+    const totalKmAllTime = allFlights.reduce((sum, f) => sum + Number(f.distanceKm || f.distance_km || 0), 0);
+    const deepSpaceHTML = (typeof getMilestoneHTML === "function") ? getMilestoneHTML(totalKmAllTime) : "";
+
     // --- FINAL COCKPIT ASSEMBLY ---
     wrap.innerHTML = `
       <!-- 1. QUICK ACTIONS -->
@@ -4785,6 +4786,9 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
         </div>
         <div class="stat-note" style="margin-top:.5rem;">${scopeLabel}${typeLabel ? " · " + typeLabel : ""}</div>
       </div>
+	  
+	  <!-- 7. DEEP SPACE PROGRESS (Jetzt ganz unten) -->
+      ${deepSpaceHTML}
     `;
 
     // Event-Listener anheften
@@ -5490,34 +5494,6 @@ const airportsEl = document.getElementById("statsAirports");
       bar.style.setProperty('width', finalWidth, 'important');
     });
   }, 300);
-}
-
-function buildTop5Stack(sortedAirports, sortedAirlines, sortedAircrafts) {
-  function tableBlock(title, rows) {
-    return `
-      <div class="top5-block">
-        <div class="top5-title">${title}</div>
-        <div class="top5-table">
-          ${rows.length ? rows.map(([name, val]) => `
-            <div class="top5-row">
-              <div class="top5-name">${name}</div>
-              <div class="top5-val">${val}</div>
-            </div>
-          `).join("") : `<div class="muted">Keine Daten</div>`}
-        </div>
-      </div>
-    `;
-  }
-
-  const a1 = sortedAirports.slice(0, 5);
-  const a2 = sortedAirlines.slice(0, 5);
-  const a3 = sortedAircrafts.slice(0, 5);
-
-  return `
-    ${tableBlock("Flughäfen", a1)}
-    ${tableBlock("Airlines", a2)}
-    ${tableBlock("Flugzeugtypen", a3)}
-  `;
 }
 
 let displayLimit = 50;
