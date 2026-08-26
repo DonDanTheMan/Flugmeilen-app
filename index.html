@@ -3708,6 +3708,9 @@ async function addFlight() {
   
   await loadFlightsFromCloud();
   if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists(); 
+  if (typeof renderDashboardTiles === "function") {
+    renderDashboardTiles();
+  }
 }
 
 function refreshAirlineAircraftDatalists() {
@@ -4397,7 +4400,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       `;
     }
 
-    // --- 2. WIDGET: Miles & More Status Tracker ---
+// --- 2. WIDGET: Miles & More Status Tracker ---
     const currentYear = new Date().getFullYear();
     const lastYear = currentYear - 1;
 
@@ -4408,11 +4411,12 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       const d = parseFlightDateAny(f.date);
       if (d && d.getFullYear() === lastYear) {
         const res = calculateMMPoints(f);
-        lastYearPoints += res.points;
-        lastYearQPoints += res.qualifyingPoints;
+        lastYearPoints += (res.points || 0);
+        lastYearQPoints += (res.qualifyingPoints || 0);
       }
     });
 
+    // 1. Immer alle Flüge des aktuellen Jahres dynamisch berechnen
     let calculatedPoints = 0;
     let calculatedQPoints = 0;
 
@@ -4420,37 +4424,58 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       const d = parseFlightDateAny(f.date);
       if (d && d.getFullYear() === currentYear) {
         const res = calculateMMPoints(f);
-        calculatedPoints += res.points;
-        calculatedQPoints += res.qualifyingPoints;
+        calculatedPoints += (res.points || 0);
+        calculatedQPoints += (res.qualifyingPoints || 0);
       }
     });
 
-    const savedPoints   = localStorage.getItem("mm_real_points");
-    const savedQPoints  = localStorage.getItem("mm_real_qpoints");
+    // 2. Sync-Daten & Offsets auslesen
+    const savedStatus   = localStorage.getItem("mm_real_status");
+    const offsetP       = Number(localStorage.getItem("mm_offset_points") || "0");
+    const offsetQ       = Number(localStorage.getItem("mm_offset_qpoints") || "0");
     const savedMiles    = localStorage.getItem("mm_real_miles");
     const savedVoucher  = localStorage.getItem("mm_real_vouchers");
     const lastSyncTime  = localStorage.getItem("mm_last_sync");
 
-    const mmPoints     = savedPoints  !== null ? Number(savedPoints)  : calculatedPoints;
-    const mmQualPoints = savedQPoints !== null ? Number(savedQPoints) : calculatedQPoints;
+    // Dynamische Gesamtsumme = Punkte aller aktuellen Flüge + Sync-Offset
+    const mmPoints     = calculatedPoints + offsetP;
+    const mmQualPoints = calculatedQPoints + offsetQ;
     const mmMiles      = savedMiles   !== null ? Number(savedMiles)   : 104627;
     const mmVouchers   = savedVoucher !== null ? Number(savedVoucher) : 1;
 
-    let currentStatus = "Basic ⚪";
-    if (lastYearPoints >= 2000 && lastYearQPoints >= 1000) {
+    // 3. Status-Variablen definieren (BEVOR sie im HTML genutzt werden!)
+    const rawStatus = (savedStatus || "").toUpperCase().trim();
+    let currentStatus = "Member ⚪";
+
+    if (rawStatus === "FTL" || rawStatus.includes("FREQUENT")) {
+      currentStatus = "Frequent Traveller 🥈";
+    } else if (rawStatus === "SEN" || rawStatus.includes("SENATOR")) {
+      currentStatus = "Senator 🥇";
+    } else if (rawStatus === "HON" || rawStatus.includes("HON CIRCLE")) {
+      currentStatus = "HON Circle 💎";
+    } else if (lastYearPoints >= 2000 && lastYearQPoints >= 1000) {
       currentStatus = "Senator 🥇";
     } else if (lastYearPoints >= 650 && lastYearQPoints >= 325) {
       currentStatus = "Frequent Traveller 🥈";
     }
 
-    let targetStatus  = "FTL Re-Qualifikation 🥈";
+    // 4. Ziel-Punkte je nach Status anpassen
+    let targetStatus  = "FTL Status 🥈";
     let targetPoints  = 650;
     let targetQPoints = 325;
 
-    if (mmPoints >= 650 && mmQualPoints >= 325) {
+    if (currentStatus.includes("Frequent") || rawStatus === "FTL") {
       targetStatus  = "Senator Status 🥇";
       targetPoints  = 2000;
       targetQPoints = 1000;
+    } else if (currentStatus.includes("Senator") || rawStatus === "SEN") {
+      targetStatus  = "HON Circle Status 💎";
+      targetPoints  = 6000;
+      targetQPoints = 6000;
+    } else if (currentStatus.includes("HON") || rawStatus === "HON") {
+      targetStatus  = "HON Re-Qualifikation 💎";
+      targetPoints  = 6000;
+      targetQPoints = 6000;
     }
 
     const ptsNeeded  = Math.max(0, targetPoints - mmPoints);
@@ -4459,6 +4484,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     const pctPoints  = Math.min(100, Math.round((mmPoints / targetPoints) * 100));
     const pctQPoints = Math.min(100, Math.round((mmQualPoints / targetQPoints) * 100));
 
+    // 5. HTML zusammensetzen (currentStatus ist jetzt sicher oben definiert)
     const mmTrackerHTML = `
       <div class="stat-card holo-card tile-full">
         <div class="stat-label terminal-label" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4996,41 +5022,85 @@ function calculateMMPoints(flight) {
   };
 }
 
-function promptMMUpdate() {
-  const currentP = localStorage.getItem("mm_real_points") || "355";
-  const currentQ = localStorage.getItem("mm_real_qpoints") || "315";
-  const currentM = localStorage.getItem("mm_real_miles") || "104627";
-  const currentV = localStorage.getItem("mm_real_vouchers") || "1";
+async function promptMMUpdate() {
+  const currentYear = new Date().getFullYear();
+  const flights = (typeof allFlights !== "undefined") ? allFlights : ((typeof flightsAll !== "undefined") ? flightsAll : []);
+  
+  let currentCalcP = 0;
+  let currentCalcQ = 0;
 
-  const p = prompt("Aktuelle Points (P):", currentP);
-  if (p === null) return;
-
-  const q = prompt("Aktuelle Qualifying Points (Q):", currentQ);
-  if (q === null) return;
-
-  const m = prompt("Aktuelle Prämienmeilen (M):", currentM);
-  if (m === null) return;
-
-  const v = prompt("Anzahl eVoucher:", currentV);
-  if (v === null) return;
-
-  const now = new Date();
-  const timestamp = now.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  }) + ", " + now.toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit"
+  flights.forEach(f => {
+    const d = (typeof parseFlightDateAny === "function") ? parseFlightDateAny(f.date) : new Date(f.date);
+    if (d && d.getFullYear() === currentYear && typeof calculateMMPoints === "function") {
+      const res = calculateMMPoints(f);
+      currentCalcP += (res.points || 0);
+      currentCalcQ += (res.qualifyingPoints || 0);
+    }
   });
 
-  localStorage.setItem("mm_real_points", p);
-  localStorage.setItem("mm_real_qpoints", q);
-  localStorage.setItem("mm_real_miles", m);
-  localStorage.setItem("mm_real_vouchers", v);
+  const currentStatus  = localStorage.getItem("mm_real_status") || "FTL";
+  const currentOffsetP = Number(localStorage.getItem("mm_offset_points") || "0");
+  const currentOffsetQ = Number(localStorage.getItem("mm_offset_qpoints") || "0");
+  const currentM       = localStorage.getItem("mm_real_miles") || "104627";
+  const currentV       = localStorage.getItem("mm_real_vouchers") || "1";
+
+  const statusInput = prompt("Aktueller Status (MEMBER, FTL, SEN, HON):", currentStatus);
+  if (statusInput === null) return;
+
+  const pInput = prompt("Aktuelle Points laut M&M Konto (P):", currentCalcP + currentOffsetP);
+  if (pInput === null) return;
+
+  const qInput = prompt("Aktuelle Qualifying Points laut M&M Konto (Q):", currentCalcQ + currentOffsetQ);
+  if (qInput === null) return;
+
+  const mInput = prompt("Aktuelle Prämienmeilen (M):", currentM);
+  if (mInput === null) return;
+
+  const vInput = prompt("Anzahl eVoucher:", currentV);
+  if (vInput === null) return;
+
+  const cleanStatus = statusInput.trim().toUpperCase();
+  const inputP = parseInt(pInput, 10) || 0;
+  const inputQ = parseInt(qInput, 10) || 0;
+
+  // Offset-Berechnung: Eingabe minus rein aus den Flügen berechnete Punkte
+  const offsetP = inputP - currentCalcP;
+  const offsetQ = inputQ - currentCalcQ;
+
+  const now = new Date();
+  const timestamp = now.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + 
+                    ", " + now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+
+  // In Supabase speichern
+  try {
+    if (typeof db !== "undefined" && db.auth) {
+      const { data: { user } } = await db.auth.getUser();
+      if (user) {
+        await db.from('user_settings').upsert({ 
+          user_id: user.id, 
+          mm_status: cleanStatus,
+          mm_offset_points: offsetP,
+          mm_offset_qpoints: offsetQ,
+          mm_miles: parseInt(mInput, 10) || 0,
+          mm_vouchers: parseInt(vInput, 10) || 0,
+          mm_last_sync: timestamp,
+          updated_at: new Date().toISOString()
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Fehler beim Speichern in Supabase:", err);
+  }
+
+  // LocalStorage aktualisieren
+  localStorage.setItem("mm_real_status", cleanStatus);
+  localStorage.setItem("mm_offset_points", offsetP);
+  localStorage.setItem("mm_offset_qpoints", offsetQ);
+  localStorage.setItem("mm_real_miles", mInput);
+  localStorage.setItem("mm_real_vouchers", vInput);
   localStorage.setItem("mm_last_sync", timestamp);
 
-  renderDashboardTiles();
+  if (typeof renderDashboardTiles === "function") renderDashboardTiles();
 }
 
 function renderFullStatistics() {
@@ -5708,6 +5778,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.showPage = showPage;
 
   if (typeof rebuildYearSelect === "function") rebuildYearSelect();
+
+	await ensureDefaultAirportsLoaded();
 
   showPage("dashboardPage");
   if (typeof wireDashBarTooltips === "function") wireDashBarTooltips();
@@ -6484,6 +6556,79 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// Hilfsfunktion: Wandelt deine CSV in ein JavaScript-Array um
+function parseAirportCsvContent(csvText) {
+  const lines = csvText.trim().split("\n");
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
+  const iataIdx = headers.indexOf("IATA");
+  const stadtIdx = headers.indexOf("STADT");
+  const breiteIdx = headers.indexOf("BREITE");
+  const laengeIdx = headers.indexOf("LÄNGE");
+  const isoIdx = headers.indexOf("ISO2");
+
+  const airports = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i].split(",");
+    if (row.length < 4) continue;
+
+    const iata = row[iataIdx]?.trim().toUpperCase();
+    const city = row[stadtIdx]?.trim() || iata;
+    const lat = parseFloat(row[breiteIdx]);
+    const lon = parseFloat(row[laengeIdx]);
+    const country = row[isoIdx]?.trim() || "";
+
+    if (iata && iata.length === 3 && !isNaN(lat) && !isNaN(lon)) {
+      airports.push({ iata, city, lat, lon, country });
+    }
+  }
+  return airports;
+}
+
+// Fallback-Liste der wichtigsten Flughäfen für den absoluten Notfall (Offline + Cache gelöscht)
+const EMERGENCY_AIRPORTS_FALLBACK = [
+  { iata: "ZRH", city: "Zurich", lat: 47.4582, lon: 8.5554, country: "CH" },
+  { iata: "FRA", city: "Frankfurt", lat: 50.0379, lon: 8.5622, country: "DE" },
+  { iata: "MUC", city: "Munich", lat: 48.3538, lon: 11.7861, country: "DE" },
+  { iata: "VIE", city: "Vienna", lat: 48.1103, lon: 16.5697, country: "AT" },
+  { iata: "HRG", city: "Hurghada", lat: 27.1783, lon: 33.7994, country: "EG" }
+];
+
+async function ensureDefaultAirportsLoaded() {
+  const existingAirports = JSON.parse(localStorage.getItem("airportsData") || "[]");
+
+  // 1. Wenn Flughäfen im Speicher sind -> Alles super!
+  if (existingAirports && existingAirports.length > 0) {
+    window.airportsData = existingAirports;
+    return;
+  }
+
+  // 2. Cache war leer -> Versuche die vollständige CSV von GitHub/Server zu laden
+  try {
+    const response = await fetch("./airports_with_country.csv");
+    if (!response.ok) throw new Error("CSV Fetch failed");
+
+    const csvText = await response.text();
+    const parsedAirports = parseAirportCsvContent(csvText);
+
+    if (parsedAirports.length > 0) {
+      localStorage.setItem("airportsData", JSON.stringify(parsedAirports));
+      window.airportsData = parsedAirports;
+      console.log(`✅ ${parsedAirports.length} Flughäfen geladen.`);
+      if (typeof updateAirportCount === "function") updateAirportCount();
+      return;
+    }
+  } catch (err) {
+    console.warn("Konnte CSV nicht laden (evtl. offline). Nutze Notfall-Set:", err);
+  }
+
+  // 3. Notfall-Fallback (Falls Offline UND Cache gelöscht):
+  window.airportsData = EMERGENCY_AIRPORTS_FALLBACK;
+  localStorage.setItem("airportsData", JSON.stringify(EMERGENCY_AIRPORTS_FALLBACK));
+}
 </script>
 
 <nav class="bottom-nav">
