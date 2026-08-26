@@ -31,6 +31,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+<script src="airports-data.js"></script>
+
   <style>
     :root {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -2290,7 +2292,7 @@ body.map-in-fullscreen #mapFullscreenBtn {
     <div class="toolbar">
       <div>
         <h2 style="margin:0;"><span class="icon">🏅</span> Aviatik-Meilensteine</h2>
-        <div class="muted">Herausforderungen basierend auf deinen Flugmustern und Destinationen.</div>
+        <div class="muted">Herausforderungen basierend auf deinen Flugmustern und Destinationen. (Jahresfilter hier nicht aktiv)</div>
       </div>
     </div>
     <div class="card-body">
@@ -2431,9 +2433,6 @@ body.map-in-fullscreen #mapFullscreenBtn {
         <input id="importFile" type="file" accept="application/json" style="display:none;">
       </label>
 
-      <button id="resetDataBtn" class="btn btn-secondary btn-sm" type="button">
-        <span class="icon">🧨</span> Reset (alles)
-      </button>
     </div>
 
     <div id="backupMsg" class="muted" style="margin-top:.4rem;"></div>
@@ -3451,99 +3450,127 @@ function wireBackupImportExport() {
 
   if (!exportBtn || !importFile) return;
 
-  // ===== EXPORT (mit Web Share & Fallback) =====
-  exportBtn.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+// ===== EXPORT (mit Web Share, Bereinigung & Fallback) =====
+exportBtn.onclick = async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-    try {
-      // 1. Daten sammeln
-      let flightsToExport = [];
-      if (typeof flightsAll !== "undefined" && flightsAll.length > 0) {
-        flightsToExport = flightsAll;
-      }
+  try {
+    // 1. Daten sammeln
+    let flightsToExport = [];
+    if (typeof flightsAll !== "undefined" && flightsAll.length > 0) {
+      flightsToExport = flightsAll;
+    }
 
-      // Sicherheitsnetz: Falls leer, Fallback auf loadFlights
-      if (!flightsToExport || flightsToExport.length === 0) {
-        const yearSelect = document.getElementById("yearSelect");
-        const previousYearValue = yearSelect ? yearSelect.value : "";
-        
-        if (yearSelect) yearSelect.value = ""; 
-        flightsToExport = typeof loadFlights === "function" ? loadFlights() : [];
-        if (yearSelect) yearSelect.value = previousYearValue;
-      }
+    // Sicherheitsnetz: Falls leer, Fallback auf loadFlights
+    if (!flightsToExport || flightsToExport.length === 0) {
+      const yearSelect = document.getElementById("yearSelect");
+      const previousYearValue = yearSelect ? yearSelect.value : "";
+      
+      if (yearSelect) yearSelect.value = ""; 
+      flightsToExport = typeof loadFlights === "function" ? loadFlights() : [];
+      if (yearSelect) yearSelect.value = previousYearValue;
+    }
 
-      const airportsToExport = (typeof loadAirportsFromStorage === "function") 
-        ? loadAirportsFromStorage() 
-        : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
-      const profileToExport = (typeof loadProfile === "function") ? loadProfile() : {};
+    // --- WICHTIG: user_id & Supabase-Metadaten vor dem Export bereinigen ---
+    const cleanFlights = flightsToExport.map(flight => {
+      const { user_id, created_at, updated_at, ...cleanFlight } = flight;
+      return cleanFlight;
+    });
 
-      // 2. Das Paket schnüren
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        flights: flightsToExport,
-        airports: airportsToExport,
-        profile: profileToExport
-      };
+    const airportsToExport = (typeof loadAirportsFromStorage === "function") 
+      ? loadAirportsFromStorage() 
+      : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
+    const profileToExport = (typeof loadProfile === "function") ? loadProfile() : {};
 
-      const json = JSON.stringify(payload, null, 2);
-      const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    // 2. Das Paket schnüren (mit bereinigten Flügen)
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      flights: cleanFlights,
+      airports: airportsToExport,
+      profile: profileToExport
+    };
 
-      let shared = false; 
+    const json = JSON.stringify(payload, null, 2);
+    const filename = `flugtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
 
-      // 3. Mobil-Versuch: Web Share API
-      if (navigator.share && navigator.canShare) {
-        const file = new File([json], filename, { type: "application/json" });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'Flugtracker Backup',
-              text: `Backup von ${flightsToExport.length} Flügen.`
-            });
-            shared = true;
-            if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
-          } catch (shareErr) {
-            console.warn("Share abgebrochen, wechsle zu Download.", shareErr);
-          }
+    let shared = false; 
+
+    // 3. Mobil-Versuch: Web Share API
+    if (navigator.share && navigator.canShare) {
+      const file = new File([json], filename, { type: "application/json" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Flugtracker Backup',
+            text: `Backup von ${cleanFlights.length} Flügen.`
+          });
+          shared = true;
+          if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
+        } catch (shareErr) {
+          console.warn("Share abgebrochen, wechsle zu Download.", shareErr);
         }
       }
-
-      // 4. Desktop-Versuch oder Fallback: Download
-      if (!shared) {
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
-
-        if (backupMsg) backupMsg.textContent = "⬇️ Backup heruntergeladen.";
-      }
-    } catch (err) {
-      console.error("Export Fehler:", err);
-      if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
     }
-  };
 
-  // ===== IMPORT (mit Supabase Cloud-Upload) =====
-  importFile.onchange = async () => {
-    const file = importFile.files?.[0];
-    if (!file) return;
+    // 4. Desktop-Versuch oder Fallback: Download
+    if (!shared) {
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
 
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const flightsArray = Array.isArray(data) ? data : (data.flights || []);
+      if (backupMsg) backupMsg.textContent = "⬇️ Backup heruntergeladen.";
+    }
+  } catch (err) {
+    console.error("Export Fehler:", err);
+    if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
+  }
+};
 
-      if (!flightsArray.length) {
-        alert("Import fehlgeschlagen: Keine Flüge in der Datei gefunden.");
-        return;
+// ===== IMPORT (mit Cloud-Bereinigung & Upload) =====
+importFile.onchange = async () => {
+  const file = importFile.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const flightsArray = Array.isArray(data) ? data : (data.flights || []);
+
+    if (!flightsArray.length) {
+      alert("Import fehlgeschlagen: Keine Flüge in der Datei gefunden.");
+      return;
+    }
+
+    // 1. Aktuellen Supabase-User ermitteln
+    let currentUserId = null;
+    if (typeof db !== "undefined" && db.auth) {
+      const { data: { user } } = await db.auth.getUser();
+      currentUserId = user ? user.id : null;
+    }
+
+    // 2. WICHTIG: Altdaten vor dem Import in Supabase & lokal leeren!
+    if (typeof db !== "undefined" && db) {
+      if (currentUserId) {
+        await db.from('flights').delete().eq('user_id', currentUserId);
+      } else {
+        await db.from('flights').delete().not('id', 'is', null);
       }
+    }
+    flightsAll = [];
+    if (typeof STORAGE_KEY_FLIGHTS !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY_FLIGHTS);
+    }
 
-      const payload = flightsArray.map(f => ({
+    // 3. Payload aufbereiten
+    const payload = flightsArray.map(f => {
+      const item = {
         date: f.date,
         from_iata: (f.from || f.from_iata || "").trim().toUpperCase(),
         to_iata: (f.to || f.to_iata || "").trim().toUpperCase(),
@@ -3554,40 +3581,48 @@ function wireBackupImportExport() {
         speed_kmh: Number(f.speedKmh || f.speed_kmh || 800),
         distance_km: Number(f.distanceKm || f.distance_km || 0),
         duration_hours: Number(f.durationHours || f.duration_hours || 0)
-      }));
+      };
 
-      const { error } = await db.from('flights').insert(payload);
+      if (currentUserId) {
+        item.user_id = currentUserId;
+      }
 
-      if (error) {
-        if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: " + error.message;
-      } else {
-        if (backupMsg) backupMsg.textContent = `✅ ${payload.length} Flüge erfolgreich in die Cloud importiert!`;
+      return item;
+    });
+
+    // 4. In Supabase einfügen
+    const { error } = await db.from('flights').insert(payload);
+
+    if (error) {
+      if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: " + error.message;
+    } else {
+      if (backupMsg) backupMsg.textContent = `✅ ${payload.length} Flüge erfolgreich in die Cloud importiert!`;
+      
+      // Cloud-Daten neu laden
+      if (typeof loadFlightsFromCloud === "function") {
         await loadFlightsFromCloud();
       }
 
-      if (data.airports && typeof data.airports === "object") {
-        AIRPORTS = data.airports;
-        if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
-      }
-
-    } catch (err) {
-      console.error("Import Fehler:", err);
-      if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: Ungültiges Format.";
-    } finally {
-      importFile.value = "";
+      // Ansichten & UI sofort aktualisieren
+      if (typeof renderAll === "function") renderAll();
+      if (typeof renderDashboardTiles === "function") renderDashboardTiles();
     }
-  };
 
-  // ===== RESET =====
-  if (resetBtn) {
-    resetBtn.onclick = () => {
-      if (!confirm("Wirklich ALLES löschen? Deine Flüge gehen verloren!")) return;
-      localStorage.clear();
-      AIRPORTS = {};
-      if (backupMsg) backupMsg.textContent = "🧨 Reset durchgeführt.";
-      location.reload(); 
-    };
+    // 5. Flughäfen wiederherstellen, falls im Backup enthalten
+    if (data.airports && typeof data.airports === "object") {
+      AIRPORTS = data.airports;
+      if (typeof saveAirportsToStorage === "function") saveAirportsToStorage();
+      if (typeof updateAirportCount === "function") updateAirportCount();
+    }
+
+  } catch (err) {
+    console.error("Import Fehler:", err);
+    if (backupMsg) backupMsg.textContent = "❌ Import fehlgeschlagen: Ungültiges Format.";
+  } finally {
+    importFile.value = "";
   }
+};
+
 }
 
 function handleAirportCsvLoad() {
@@ -3619,8 +3654,12 @@ function handleAirportCsvLoad() {
 function updateAirportCount() {
   const el = document.getElementById("airportCount");
   if (!el) return;
-  const n = Object.keys(AIRPORTS).length;
-  el.innerHTML = "<span class=\"icon\">🛰️</span>" + n + (n === 1 ? " Airport" : " Airports");
+
+  // Greift sicher auf AIRPORTS oder window.AIRPORTS zu
+  const airportsObj = (typeof AIRPORTS !== "undefined" && AIRPORTS) ? AIRPORTS : window.AIRPORTS;
+  const n = airportsObj ? Object.keys(airportsObj).length : 0;
+
+  el.innerHTML = '<span class="icon">🛰️</span> ' + n + (n === 1 ? " Airport" : " Airports");
 }
 
 function setEditMode(active) {
@@ -3803,13 +3842,37 @@ async function deleteFlight(id) {
 }
 
 async function clearAllFlights() {
-  if (!confirm("Alle gespeicherten Flüge wirklich aus deiner Cloud-Datenbank löschen?")) return;
-  
-  const { error } = await db.from('flights').delete().neq('id', 0);
-  if (error) {
-    alert("Fehler beim Löschen: " + error.message);
-  } else {
-    await loadFlightsFromCloud();
+  if (!confirm("Möchtest du wirklich ALLE Flüge löschen?")) return;
+
+  try {
+    // 1. In Supabase löschen
+    if (typeof db !== "undefined" && db) {
+      let currentUserId = null;
+      if (db.auth) {
+        const { data: { user } } = await db.auth.getUser();
+        currentUserId = user ? user.id : null;
+      }
+
+      const query = db.from('flights').delete();
+      const { error } = currentUserId 
+        ? await query.eq('user_id', currentUserId)
+        : await query.not('id', 'is', null);
+
+      if (error) throw error;
+    }
+
+    // 2. Lokalen Speicher & State KOMPLETT leeren
+    flightsAll = [];
+    localStorage.removeItem(STORAGE_KEY_FLIGHTS); // bzw. "flightsData"
+
+    // 3. UI aktualisieren
+    renderAll();
+    if (typeof renderDashboardTiles === "function") renderDashboardTiles();
+
+    alert("✅ Alle Flüge wurden in der Cloud und lokal gelöscht.");
+  } catch (err) {
+    console.error("Fehler beim Löschen:", err);
+    alert("❌ Fehler beim Löschen: " + err.message);
   }
 }
 
@@ -4090,9 +4153,12 @@ function renderMap(flights) {
     zoomControl: false
   }).setView([20, 0], 2);
 
-  const streetLayer = L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    { maxZoom: 12, attribution: "&copy; CARTO" }
+const streetLayer = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 16,
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+    }
   );
   
   streetLayer.addTo(leafletMap);
@@ -4459,21 +4525,38 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       currentStatus = "Frequent Traveller 🥈";
     }
 
-    // 4. Ziel-Punkte je nach Status anpassen
+    // 4. Ziel-Punkte je nach erflogenen Punkten & aktuellem Status anpassen
     let targetStatus  = "FTL Status 🥈";
     let targetPoints  = 650;
     let targetQPoints = 325;
 
-    if (currentStatus.includes("Frequent") || rawStatus === "FTL") {
-      targetStatus  = "Senator Status 🥇";
+    // Prpfen, ob die FTL-Schwelle im laufenden Jahr bereits erreicht wurde
+    const hasReachedFTL = (mmPoints >= 650 && mmQualPoints >= 325);
+    // Prüfen, ob die SEN-Schwelle im laufenden Jahr bereits erreicht wurde
+    const hasReachedSEN = (mmPoints >= 2000 && mmQualPoints >= 1000);
+
+    // LOGIK:
+    // 1. Wenn noch keine FTL-Punkte da sind (egal ob Member oder bereits gesyncter FTL):
+    if (!hasReachedFTL) {
+      targetStatus  = (rawStatus === "FTL" || currentStatus.includes("Frequent")) 
+                        ? "FTL Re-Qualifikation 🥈" 
+                        : "FTL Status 🥈";
+      targetPoints  = 650;
+      targetQPoints = 325;
+    } 
+    // 2. FTL-Punkte sind erreicht ODER User ist gesyncter Senator/HON, der noch SEN braucht:
+    else if (!hasReachedSEN) {
+      targetStatus  = (rawStatus === "SEN" || currentStatus.includes("Senator")) 
+                        ? "Senator Re-Qualifikation 🥇" 
+                        : "Senator Status 🥇";
       targetPoints  = 2000;
       targetQPoints = 1000;
-    } else if (currentStatus.includes("Senator") || rawStatus === "SEN") {
-      targetStatus  = "HON Circle Status 💎";
-      targetPoints  = 6000;
-      targetQPoints = 6000;
-    } else if (currentStatus.includes("HON") || rawStatus === "HON") {
-      targetStatus  = "HON Re-Qualifikation 💎";
+    } 
+    // 3. SEN-Punkte sind erreicht -> Ziel HON Circle:
+    else {
+      targetStatus  = (rawStatus === "HON" || currentStatus.includes("HON")) 
+                        ? "HON Re-Qualifikation 💎" 
+                        : "HON Circle Status 💎";
       targetPoints  = 6000;
       targetQPoints = 6000;
     }
@@ -5620,6 +5703,9 @@ function wireProfileLogoTooltips() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof loadAirportsFromStorage === "function") {
+    AIRPORTS = loadAirportsFromStorage();
+  }
   const form = document.getElementById("authForm");
   if (form && typeof handleLogin === "function") form.onsubmit = handleLogin;
   if (typeof checkAuthSession === "function") { await checkAuthSession();}
@@ -5779,7 +5865,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (typeof rebuildYearSelect === "function") rebuildYearSelect();
 
-	await ensureDefaultAirportsLoaded();
+	if (typeof ensureDefaultAirportsLoaded === "function") {
+		ensureDefaultAirportsLoaded();
+	  }
 
   showPage("dashboardPage");
   if (typeof wireDashBarTooltips === "function") wireDashBarTooltips();
@@ -6557,12 +6645,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Hilfsfunktion: Wandelt deine CSV in ein JavaScript-Array um
+// Robuster CSV-Parser für Kommas und Anführungszeichen
 function parseAirportCsvContent(csvText) {
-  const lines = csvText.trim().split("\n");
+  if (!csvText) return [];
+  const lines = csvText.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
+  // Header analysieren
+  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toUpperCase());
   const iataIdx = headers.indexOf("IATA");
   const stadtIdx = headers.indexOf("STADT");
   const breiteIdx = headers.indexOf("BREITE");
@@ -6572,14 +6662,19 @@ function parseAirportCsvContent(csvText) {
   const airports = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const row = lines[i].split(",");
-    if (row.length < 4) continue;
+    const line = lines[i].trim();
+    if (!line) continue;
 
-    const iata = row[iataIdx]?.trim().toUpperCase();
-    const city = row[stadtIdx]?.trim() || iata;
-    const lat = parseFloat(row[breiteIdx]);
-    const lon = parseFloat(row[laengeIdx]);
-    const country = row[isoIdx]?.trim() || "";
+    // Regex zur korrekten Handhabung von Kommas innerhalb von Anführungszeichen
+    const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(",");
+    
+    const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : "";
+
+    const iata = clean(row[iataIdx]).toUpperCase();
+    const city = clean(row[stadtIdx]) || iata;
+    const lat = parseFloat(clean(row[breiteIdx]));
+    const lon = parseFloat(clean(row[laengeIdx]));
+    const country = clean(row[isoIdx]);
 
     if (iata && iata.length === 3 && !isNaN(lat) && !isNaN(lon)) {
       airports.push({ iata, city, lat, lon, country });
@@ -6588,47 +6683,43 @@ function parseAirportCsvContent(csvText) {
   return airports;
 }
 
-// Fallback-Liste der wichtigsten Flughäfen für den absoluten Notfall (Offline + Cache gelöscht)
-const EMERGENCY_AIRPORTS_FALLBACK = [
-  { iata: "ZRH", city: "Zurich", lat: 47.4582, lon: 8.5554, country: "CH" },
-  { iata: "FRA", city: "Frankfurt", lat: 50.0379, lon: 8.5622, country: "DE" },
-  { iata: "MUC", city: "Munich", lat: 48.3538, lon: 11.7861, country: "DE" },
-  { iata: "VIE", city: "Vienna", lat: 48.1103, lon: 16.5697, country: "AT" },
-  { iata: "HRG", city: "Hurghada", lat: 27.1783, lon: 33.7994, country: "EG" }
-];
-
-async function ensureDefaultAirportsLoaded() {
-  const existingAirports = JSON.parse(localStorage.getItem("airportsData") || "[]");
-
-  // 1. Wenn Flughäfen im Speicher sind -> Alles super!
-  if (existingAirports && existingAirports.length > 0) {
-    window.airportsData = existingAirports;
-    return;
-  }
-
-  // 2. Cache war leer -> Versuche die vollständige CSV von GitHub/Server zu laden
+function ensureDefaultAirportsLoaded() {
   try {
-    const response = await fetch("./airports_with_country.csv");
-    if (!response.ok) throw new Error("CSV Fetch failed");
-
-    const csvText = await response.text();
-    const parsedAirports = parseAirportCsvContent(csvText);
-
-    if (parsedAirports.length > 0) {
-      localStorage.setItem("airportsData", JSON.stringify(parsedAirports));
-      window.airportsData = parsedAirports;
-      console.log(`✅ ${parsedAirports.length} Flughäfen geladen.`);
-      if (typeof updateAirportCount === "function") updateAirportCount();
+    if (AIRPORTS && Object.keys(AIRPORTS).length > 0) {
       return;
     }
-  } catch (err) {
-    console.warn("Konnte CSV nicht laden (evtl. offline). Nutze Notfall-Set:", err);
-  }
 
-  // 3. Notfall-Fallback (Falls Offline UND Cache gelöscht):
-  window.airportsData = EMERGENCY_AIRPORTS_FALLBACK;
-  localStorage.setItem("airportsData", JSON.stringify(EMERGENCY_AIRPORTS_FALLBACK));
+    if (typeof window.DEFAULT_AIRPORTS_DATA !== "undefined" && Array.isArray(window.DEFAULT_AIRPORTS_DATA)) {
+      AIRPORTS = {};
+
+      window.DEFAULT_AIRPORTS_DATA.forEach((row) => {
+        if (Array.isArray(row) && row[0]) {
+          const upperIata = String(row[0]).trim().toUpperCase();
+          const latVal = parseFloat(row[2]) || 0;
+          const lonVal = parseFloat(row[3]) || 0;
+
+          AIRPORTS[upperIata] = {
+            city: row[1] || upperIata,
+            lat: latVal,
+            lon: lonVal,         // <-- WICHTIG: Das erwartet deine calcDistanceKm!
+            lng: lonVal,         // Für Karten/Leaflet-Kompatibilität
+            country: row[4] || ""
+          };
+        }
+      });
+
+      saveAirportsToStorage();
+      console.log(`✅ ${Object.keys(AIRPORTS).length} Flughäfen in STORAGE_KEY_AIRPORTS gespeichert!`);
+
+      if (typeof updateAirportCount === "function") {
+        updateAirportCount();
+      }
+    }
+  } catch (e) {
+    console.error("❌ Fehler beim Laden der Flughäfen:", e);
+  }
 }
+
 </script>
 
 <nav class="bottom-nav">
