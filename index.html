@@ -2156,9 +2156,9 @@ body.map-in-fullscreen #mapFullscreenBtn {
 </head>
 <body>
 <header>
-  <div>
-    <h1><span class="icon">✈️</span> DAN'S FLUGTRACKER</h1>
-  </div>
+	<div>
+	  <h1 id="appHeaderTitle"><span class="icon">✈️</span> DAN'S FLUGTRACKER</h1>
+	</div>
   <div class="flex-row">
     <select id="yearSelect" class="badge"></select>
     <button id="resetYearBtn" class="btn btn-secondary btn-sm" type="button">
@@ -2445,7 +2445,7 @@ body.map-in-fullscreen #mapFullscreenBtn {
   <section class="card">
     <h2><span class="icon">👤</span> Profil</h2>
     <div class="muted">
-      Einstellungen & Verwaltung (Logos, Backup, Daten-Check).
+      Einstellungen & Verwaltung (Nutzer + Airline-Logoverwaltung).
     </div>
 
     <div class="form-grid" style="margin-top:.6rem;">
@@ -5679,6 +5679,7 @@ function wireProfileLogoTooltips() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  updateAppTitle();
   if (typeof loadAirportsFromStorage === "function") {
     AIRPORTS = loadAirportsFromStorage();
   }
@@ -6425,15 +6426,19 @@ function renderProfile() {
   const saveBtn = document.getElementById("saveProfileBtn");
   if (saveBtn) {
     saveBtn.onclick = () => {
-      const obj = {
-        name: (nameEl?.value || "").trim(),
-        homeIata: (homeEl?.value || "").trim().toUpperCase(),
-        defaultSpeedKmh: Number(speedEl?.value || 0) || 0
-      };
-      if (typeof saveProfile === "function") saveProfile(obj);
-      if (noteEl) noteEl.textContent = "✅ Gespeichert.";
-      setTimeout(() => { if (noteEl) noteEl.textContent = ""; }, 1500);
-    };
+  const obj = {
+    name: (nameEl?.value || "").trim(),
+    homeIata: (homeEl?.value || "").trim().toUpperCase(),
+    defaultSpeedKmh: Number(speedEl?.value || 0) || 0
+  };
+  if (typeof saveProfile === "function") saveProfile(obj);
+  
+  // NEU: App-Titel sofort aktualisieren!
+  updateAppTitle();
+
+  if (noteEl) noteEl.textContent = "✅ Gespeichert.";
+  setTimeout(() => { if (noteEl) noteEl.textContent = ""; }, 1500);
+};
   }
 
   const card = document.getElementById("airlineLogoCard");
@@ -6694,6 +6699,28 @@ function ensureDefaultAirportsLoaded() {
     }
   } catch (e) {
     console.error("❌ Fehler beim Laden der Flughäfen:", e);
+  }
+}
+
+function updateAppTitle() {
+  const p = (typeof loadProfile === "function") ? loadProfile() : {};
+  const name = (p.name || "").trim();
+  
+  // Titel bestimmen: "Daniels Flugtracker" vs "Flugtracker"
+  let titleText = "Flugtracker";
+  if (name) {
+    // Falls der Name auf s, x oder z endet -> Daniel's vs Max'
+    const endsWithS = /[sxz]$/i.test(name);
+    titleText = endsWithS ? `${name}' Flugtracker` : `${name}'s Flugtracker`;
+  }
+
+  // A) Titel im Browser-Tab aktualisieren
+  document.title = titleText;
+
+  // B) Titel im Header/Navbar der App aktualisieren (falls vorhanden)
+  const headerTitleEl = document.getElementById("appHeaderTitle");
+  if (headerTitleEl) {
+    headerTitleEl.textContent = titleText;
   }
 }
 
