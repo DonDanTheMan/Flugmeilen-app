@@ -3684,6 +3684,13 @@ function setEditMode(active) {
 }
 
 async function addFlight() {
+
+  if (typeof AIRPORTS === "undefined" || !AIRPORTS || Object.keys(AIRPORTS).length === 0) {
+    if (typeof ensureDefaultAirportsLoaded === "function") {
+      ensureDefaultAirportsLoaded();
+    }
+  }
+  
   const date = document.getElementById("flightDate").value;
   const fromIata = document.getElementById("fromIata").value.trim().toUpperCase();
   const toIata = document.getElementById("toIata").value.trim().toUpperCase();
@@ -6666,13 +6673,16 @@ function parseAirportCsvContent(csvText) {
 
 function ensureDefaultAirportsLoaded() {
   try {
-    if (AIRPORTS && Object.keys(AIRPORTS).length > 0) {
+    // 1. Prüfen, ob bereits Flughäfen vorhanden sind
+    if (typeof AIRPORTS !== "undefined" && AIRPORTS && Object.keys(AIRPORTS).length > 0) {
       return;
     }
 
-    if (typeof window.DEFAULT_AIRPORTS_DATA !== "undefined" && Array.isArray(window.DEFAULT_AIRPORTS_DATA)) {
-      AIRPORTS = {};
+    // 2. Globales AIRPORTS-Objekt initialisieren
+    AIRPORTS = {};
 
+    // 3. Aus window.DEFAULT_AIRPORTS_DATA befüllen
+    if (typeof window.DEFAULT_AIRPORTS_DATA !== "undefined" && Array.isArray(window.DEFAULT_AIRPORTS_DATA)) {
       window.DEFAULT_AIRPORTS_DATA.forEach((row) => {
         if (Array.isArray(row) && row[0]) {
           const upperIata = String(row[0]).trim().toUpperCase();
@@ -6682,45 +6692,28 @@ function ensureDefaultAirportsLoaded() {
           AIRPORTS[upperIata] = {
             city: row[1] || upperIata,
             lat: latVal,
-            lon: lonVal,         // <-- WICHTIG: Das erwartet deine calcDistanceKm!
-            lng: lonVal,         // Für Karten/Leaflet-Kompatibilität
+            lon: lonVal,
+            lng: lonVal,
             country: row[4] || ""
           };
-        }                        // <-- GEFEHLT: schließt if (Array.isArray(row) && row[0])
+        }
       });
 
-      saveAirportsToStorage();
-      console.log(`✅ ${Object.keys(AIRPORTS).length} Flughäfen in STORAGE_KEY_AIRPORTS gespeichert!`);
+      if (typeof saveAirportsToStorage === "function") {
+        saveAirportsToStorage();
+      }
+      console.log(`✅ ${Object.keys(AIRPORTS).length} Flughäfen automatisch aus airports-data.js geladen!`);
 
       if (typeof updateAirportCount === "function") {
         updateAirportCount();
       }
+    } else {
+      console.warn("⚠️ window.DEFAULT_AIRPORTS_DATA ist nicht geladen!");
     }
   } catch (e) {
     console.error("❌ Fehler beim Laden der Flughäfen:", e);
   }
-}
-
-function updateAppTitle() {
-  const p = (typeof loadProfile === "function") ? loadProfile() : {};
-  const name = (p.name || "").trim();
-  
-  let titleText = "FLUGTRACKER";
-  if (name) {
-    const endsWithS = /[sxz]$/i.test(name);
-    const suffix = endsWithS ? "'" : "'S";
-    titleText = `${name.toUpperCase()}${suffix} FLUGTRACKER`;
-  }
-
-  // 1. Browser-Tab Titel (z. B. "Dan's Flugtracker")
-  document.title = name ? `${name}'s Flugtracker` : "Flugtracker";
-
-  // 2. Header-Überschrift in der App aktualisieren
-  const headerTitleEl = document.getElementById("appHeaderTitle");
-  if (headerTitleEl) {
-    headerTitleEl.innerHTML = `<span class="icon">✈️</span> ${titleText}`;
-  }
-}                              
+}                          
 
 </script>
 
