@@ -2159,6 +2159,12 @@ body.map-in-fullscreen #mapFullscreenBtn {
 	<div>
 	  <h1 id="appHeaderTitle"><span class="icon">✈️</span> DAN'S FLUGTRACKER</h1>
 	</div>
+	<div class="header-actions">
+    <!-- Abmelden Button (standardmässig unsichtbar oder nur bei Login aktiv) -->
+    <button id="logoutBtn" class="btn btn-secondary btn-sm" onclick="handleLogout()" style="display:none;">
+      <span class="icon">🚪</span> Abmelden
+    </button>
+  </div>	
   <div class="flex-row">
     <select id="yearSelect" class="badge"></select>
     <button id="resetYearBtn" class="btn btn-secondary btn-sm" type="button">
@@ -2177,31 +2183,37 @@ body.map-in-fullscreen #mapFullscreenBtn {
 <!-- Seite: Flüge -->
 <main id="flightsPage" style="display:none;">
   
-  <section class="card" id="flightFormCard">
-    <h2><span class="icon">📝</span>Flug erfassen / bearbeiten</h2>
-    <div class="form-grid">
-      <div>
-        <label for="flightDate">Datum</label>
-        <input type="date" id="flightDate" />
-      </div>
-      <div>
-        <label for="fromIata">Von (IATA)</label>
-        <input type="text" id="fromIata" maxlength="3" placeholder="ZRH" />
-      </div>
-      <div>
-        <label for="toIata">Nach (IATA)</label>
-        <input type="text" id="toIata" maxlength="3" placeholder="CUN" />
-      </div>
-      <div>
-       <label for="airline">Airline</label>
-       <input type="text" id="airline" placeholder="Swiss" list="airlineList" />
-       <datalist id="airlineList"></datalist>
-      </div>
-      <div>
-       <label for="aircraft">Flugzeugtyp</label>
-       <input type="text" id="aircraft" placeholder="Airbus A320" list="aircraftList" />
-       <datalist id="aircraftList"></datalist>
-      </div>
+	<section class="card" id="flightFormCard">
+	  <h2><span class="icon">📝</span>Flug erfassen / bearbeiten</h2>
+	  <div class="form-grid">
+		<div>
+		  <label for="flightDate">Datum</label>
+		  <input type="date" id="flightDate" />
+		</div>
+		<div>
+		  <label for="fromIata">Von (IATA)</label>
+		  <!-- HIER: list="airportList" hinzugefügt -->
+		  <input type="text" id="fromIata" maxlength="3" placeholder="ZRH" list="airportList" autocomplete="off" />
+		</div>
+		<div>
+		  <label for="toIata">Nach (IATA)</label>
+		  <!-- HIER: list="airportList" hinzugefügt -->
+		  <input type="text" id="toIata" maxlength="3" placeholder="CUN" list="airportList" autocomplete="off" />
+		</div>
+		<div>
+		   <label for="airline">Airline</label>
+		   <input type="text" id="airline" placeholder="Swiss" list="airlineList" autocomplete="off" />
+		   <datalist id="airlineList"></datalist>
+		</div>
+		<div>
+		   <label for="aircraft">Flugzeugtyp</label>
+		   <input type="text" id="aircraft" placeholder="Airbus A320" list="aircraftList" autocomplete="off" />
+		   <datalist id="aircraftList"></datalist>
+		</div>
+		
+		<!-- Zentrale Flughafen Datalist -->
+		<datalist id="airportList"></datalist>
+
       <div>
         <label for="tripType">Privat / Geschäft</label>
         <select id="tripType">
@@ -2645,6 +2657,31 @@ async function checkLocalDataMigration() {
   }
 }
 
+// Variable zum Nachverfolgen einer frischen Registrierung
+let isNewUserSignUp = false;
+
+// Hilfsfunktion zur Seitennavigation
+function navigateAfterAuth(userId) {
+  const profileSetupKey = `hasSeenProfile_${userId}`;
+  const hasSeenProfile = localStorage.getItem(profileSetupKey);
+
+  // Wenn es eine Neuregistrierung war ODER der Nutzer das Profil noch nie gesehen hat
+  if (isNewUserSignUp || !hasSeenProfile) {
+    if (userId) localStorage.setItem(profileSetupKey, "true");
+    isNewUserSignUp = false; // Flag nach Nutzung zurücksetzen
+    
+    // Wechsel zur Profil-Seite (Passe den Funktionsnamen an dein Setup an)
+    if (typeof showPage === "function") {
+      showPage("profilePage"); 
+    }
+  } else {
+    // Standard: Auf das Dashboard leiten
+    if (typeof showPage === "function") {
+      showPage("dashboardPage");
+    }
+  }
+}
+
 // --- AUTH LOGIK ---
 async function handleLogin(e) {
   if (e) e.preventDefault();
@@ -2658,20 +2695,21 @@ async function handleLogin(e) {
   if (error) {
     if (errBox) errBox.textContent = "Login fehlgeschlagen: " + error.message;
   } else {
-    // 1. Modal nach erfolgreichem Login verbergen
     const modal = document.getElementById("authModal");
     if (modal) modal.style.display = "none";
     
-    // 2. E-Mail-Adresse direkt im Profil-Feld anzeigen (falls vorhanden)
     const profileEmailEl = document.getElementById("profileEmail");
     if (profileEmailEl && data?.user?.email) {
       profileEmailEl.textContent = data.user.email;
     }
 
-    // 3. Cloud-Sync abwarten und Dashboard neu rendern
     if (typeof initAppFromCloud === "function") {
       await initAppFromCloud();
     }
+
+    // Navigation ausführen
+    navigateAfterAuth(data?.user?.id);
+	updateLogoutButtonVisibility(true);
   }
 }
 
@@ -2691,6 +2729,9 @@ async function handleSignUp() {
   if (error) {
     if (errBox) errBox.textContent = "Registrierung fehlgeschlagen: " + error.message;
   } else {
+    // Flag für Neuregistrierung setzen
+    isNewUserSignUp = true;
+
     alert("Konto erfolgreich erstellt! Du bist jetzt eingeloggt.");
     const modal = document.getElementById("authModal");
     if (modal) modal.style.display = "none";
@@ -2698,6 +2739,10 @@ async function handleSignUp() {
     if (typeof initAppFromCloud === "function") {
       await initAppFromCloud();
     }
+
+    // Navigation zur Profilseite erzwingen
+    navigateAfterAuth(data?.user?.id);
+	updateLogoutButtonVisibility(true);
   }
 }
 
@@ -2705,14 +2750,17 @@ async function checkAuthSession() {
   const { data: { session } } = await db.auth.getSession();
   
   if (session) {
-    // Nutzer IST eingeloggt -> Modal ausblenden & Cloud-Daten laden
     document.getElementById("authModal").style.display = "none";
+    updateLogoutButtonVisibility(true); // <-- Button anzeigen
+    
     if (typeof initAppFromCloud === "function") {
       await initAppFromCloud();
     }
+
+    navigateAfterAuth(session.user.id);
   } else {
-    // Nutzer IST NICHT eingeloggt -> Login-Modal anzeigen
     document.getElementById("authModal").style.display = "flex";
+    updateLogoutButtonVisibility(false); // <-- Button ausblenden
   }
 }
 
@@ -2735,11 +2783,11 @@ const AIRCRAFT_DATABASE = {
   "A221": { name: "Airbus A220-100", family: "Airbus A220", manufacturer: "Airbus", type: "Jet" },
   "A223": { name: "Airbus A220-300", family: "Airbus A220", manufacturer: "Airbus", type: "Jet" },
   "A318": { name: "Airbus A318", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
-  "A319": { name: "Airbus A319ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A319": { name: "Airbus A319", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
   "A19N": { name: "Airbus A319neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
-  "A320": { name: "Airbus A320ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A320": { name: "Airbus A320", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
   "A20N": { name: "Airbus A320neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
-  "A321": { name: "Airbus A321ceo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
+  "A321": { name: "Airbus A321", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
   "A21N": { name: "Airbus A321neo", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
   "A21X": { name: "Airbus A321XLR", family: "Airbus A320-Familie", manufacturer: "Airbus", type: "Jet" },
 
@@ -3685,7 +3733,8 @@ function setEditMode(active) {
 
 async function addFlight() {
 
-  if (typeof AIRPORTS === "undefined" || !AIRPORTS || Object.keys(AIRPORTS).length === 0) {
+  // 1. Sichere Prüfung der Flughafen-Daten
+  if (typeof AIRPORTS === "undefined" || !AIRPORTS || (Array.isArray(AIRPORTS) ? AIRPORTS.length === 0 : Object.keys(AIRPORTS).length === 0)) {
     if (typeof ensureDefaultAirportsLoaded === "function") {
       ensureDefaultAirportsLoaded();
     }
@@ -3703,13 +3752,21 @@ async function addFlight() {
   const errBox = document.getElementById("flightError");
   if (errBox) errBox.textContent = "";
 
+  // Helper zur Flughafen-Prüfung (unterstützt Array & Objekt-Format)
+  const airportExists = (iata) => {
+    if (Array.isArray(AIRPORTS)) {
+      return AIRPORTS.some(ap => ap[0] === iata);
+    }
+    return Boolean(AIRPORTS[iata]);
+  };
+
   const errors = [];
   if (!date) errors.push("Datum fehlt.");
   if (!fromIata || fromIata.length !== 3) errors.push("Von-IATA muss 3 Zeichen haben.");
   if (!toIata || toIata.length !== 3) errors.push("Nach-IATA muss 3 Zeichen haben.");
   if (!speed || speed <= 0) errors.push("Geschwindigkeit muss > 0 sein.");
-  if (!AIRPORTS[fromIata]) errors.push("Unbekannter Abflugairport: " + fromIata);
-  if (!AIRPORTS[toIata]) errors.push("Unbekannter Zielairport: " + toIata);
+  if (!airportExists(fromIata)) errors.push("Unbekannter Abflugairport: " + fromIata);
+  if (!airportExists(toIata)) errors.push("Unbekannter Zielairport: " + toIata);
 
   if (errors.length) {
     if (errBox) errBox.textContent = errors.join(" ");
@@ -3732,30 +3789,37 @@ async function addFlight() {
     duration_hours: durationHours
   };
 
-  if (editingFlightId === null) {
-    const { error } = await db.from('flights').insert([payload]);
-    if (error) {
-      alert("Fehler beim Speichern in Supabase: " + error.message);
-      return;
+  // Button deaktivieren um doppelte Abfragen zu verhindern
+  const submitBtn = document.getElementById("saveFlightBtn"); // Anpassen an deine ID
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    if (editingFlightId === null) {
+      const { error } = await db.from('flights').insert([payload]);
+      if (error) throw error;
+    } else {
+      const { error } = await db.from('flights').update(payload).eq('id', editingFlightId);
+      if (error) throw error;
     }
+
+    // Formular-Felder zurücksetzen
+    document.getElementById("fromIata").value = "";
+    document.getElementById("toIata").value = "";
     document.getElementById("airline").value = "";
     document.getElementById("aircraft").value = "";
-  } else {
-    const { error } = await db.from('flights').update(payload).eq('id', editingFlightId);
-    if (error) {
-      alert("Fehler beim Aktualisieren in Supabase: " + error.message);
-      return;
-    }
-  }
 
-  if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
-  editingFlightId = null;
-  if (typeof setEditMode === "function") setEditMode(false);
-  
-  await loadFlightsFromCloud();
-  if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists(); 
-  if (typeof renderDashboardTiles === "function") {
-    renderDashboardTiles();
+    if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
+    editingFlightId = null;
+    if (typeof setEditMode === "function") setEditMode(false);
+    
+    await loadFlightsFromCloud();
+    if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists(); 
+    if (typeof renderDashboardTiles === "function") renderDashboardTiles();
+
+  } catch (error) {
+    alert("Fehler beim Speichern in Supabase: " + error.message);
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
@@ -4879,21 +4943,24 @@ function openPlanFlightModal(editItem = null) {
           <label style="font-size:0.75rem; color:#94a3b8;">Flugdatum</label>
           <input type="date" id="planDate" value="${isEdit ? editItem.date : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
         </div>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
-            <input type="text" id="planFrom" value="${isEdit ? (editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
-          </div>
-          <div style="flex:1;">
-            <label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
-            <input type="text" id="planTo" value="${isEdit ? (editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
-          </div>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
-            <input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
-          </div>
+		<div style="display:flex; gap:10px;">
+		  <div style="flex:1;">
+			<label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
+			<!-- HIER: list="airportList" hinzugefügt -->
+			<input type="text" id="planFrom" value="${isEdit ? (editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+		  </div>
+		  <div style="flex:1;">
+			<label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
+			<!-- HIER: list="airportList" hinzugefügt -->
+			<input type="text" id="planTo" value="${isEdit ? (editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+		  </div>
+		</div>
+		<div style="display:flex; gap:10px;">
+		  <div style="flex:1;">
+			<label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
+			<!-- OPTIONAL: list="airlineList" hinzugefügt -->
+			<input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" list="airlineList" autocomplete="off" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+		  </div>
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Klasse</label>
             <select id="planClass" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
@@ -6735,6 +6802,135 @@ function updateAppTitle() {
     headerTitleEl.innerHTML = `<span class="icon">✈️</span> ${titleText}`;
   }
 }                              
+
+function initAirportDatalist() {
+  const datalist = document.getElementById("airportList");
+  if (!datalist || typeof AIRPORTS === "undefined") return;
+
+  // DOM-Zugriffe durch DocumentFragment auf 1x reduzieren
+  const fragment = document.createDocumentFragment();
+
+  // Falls AIRPORTS ein Objekt ist: { ZRH: { name: "Zurich", country: "CH" }, ... }
+  if (!Array.isArray(AIRPORTS)) {
+    Object.entries(AIRPORTS).forEach(([code, data]) => {
+      const option = document.createElement("option");
+      option.value = code; // Wird beim Auswählen im Input eingetragen
+      const name = typeof data === "object" ? (data.name || "") : data;
+      const country = (data && data.country) ? ` (${data.country})` : "";
+      option.label = `${code} - ${name}${country}`;
+      fragment.appendChild(option);
+    });
+  } 
+  // Falls AIRPORTS ein Array ist: [["ZRH", "Zurich Airport", 47.46, 8.54, "CH"], ...]
+  else {
+    AIRPORTS.forEach(ap => {
+      const code = ap[0];
+      const name = ap[1];
+      const country = ap[4] ? ` (${ap[4]})` : "";
+
+      if (code && code !== "0") {
+        const option = document.createElement("option");
+        option.value = code;
+        option.label = `${code} - ${name}${country}`;
+        fragment.appendChild(option);
+      }
+    });
+  }
+
+  datalist.appendChild(fragment);
+}
+
+// Beim Aufruf der Seite automatisch die Liste laden:
+document.addEventListener("DOMContentLoaded", initAirportDatalist);
+
+function updateAirportDatalist(filterText = "") {
+  const datalist = document.getElementById("airportList");
+  if (!datalist || typeof AIRPORTS === "undefined") return;
+
+  datalist.innerHTML = ""; // Aktuelle Optionen leeren
+  const fragment = document.createDocumentFragment();
+  const search = filterText.trim().toUpperCase();
+
+  // Objekteigenschaften durchlaufen (Code ist Key, z.B. "ZRH")
+  Object.keys(AIRPORTS).forEach(code => {
+    const ap = AIRPORTS[code];
+    const name = Array.isArray(ap) ? ap[1] : (ap.name || "");
+    const country = Array.isArray(ap) ? (ap[4] ? ` (${ap[4]})` : "") : (ap.country ? ` (${ap.country})` : "");
+    const upperCode = code.toUpperCase();
+    const upperName = (name || "").toUpperCase();
+
+    // MATCH-PRÜFUNG: Beginnt der Code ODER der Name mit der Eingabe?
+    const matchesCode = upperCode.startsWith(search);
+    const matchesName = upperName.startsWith(search);
+
+    if (search === "" || matchesCode || matchesName) {
+      if (code && code !== "0") {
+        const option = document.createElement("option");
+        option.value = code;
+        option.label = `${code} - ${name}${country}`;
+        fragment.appendChild(option);
+      }
+    }
+  });
+
+  datalist.appendChild(fragment);
+}
+
+function setupAirportAutocomplete() {
+  // Input-Felder an das Tipp-Event koppeln
+  const inputs = ["fromIata", "toIata", "planFrom", "planTo"];
+
+  inputs.forEach(id => {
+    const inputEl = document.getElementById(id);
+    if (inputEl) {
+      inputEl.addEventListener("input", (e) => {
+        updateAirportDatalist(e.target.value);
+      });
+      // Beim Erhalten des Fokus alle anzeigen oder nach aktuellem Wert filtern
+      inputEl.addEventListener("focus", (e) => {
+        updateAirportDatalist(e.target.value);
+      });
+    }
+  });
+
+  // Initial einmalig komplett befüllen
+  updateAirportDatalist("");
+}
+
+// Nach dem Laden der Seite ausführen:
+document.addEventListener("DOMContentLoaded", setupAirportAutocomplete);
+
+// --- ABMELDEN LOGIK ---
+async function handleLogout() {
+  const { error } = await db.auth.signOut();
+  
+  if (error) {
+    alert("Fehler beim Abmelden: " + error.message);
+    return;
+  }
+
+  // Header-Button wieder ausblenden
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.style.display = "none";
+
+  // Login-Modal wieder anzeigen
+  const modal = document.getElementById("authModal");
+  if (modal) modal.style.display = "flex";
+
+  // Formularfelder zur Sicherheit leeren
+  const emailInput = document.getElementById("authEmail");
+  const passInput = document.getElementById("authPassword");
+  if (emailInput) emailInput.value = "";
+  if (passInput) passInput.value = "";
+}
+
+// Hilfsfunktion zur Steuerung des Logout-Buttons
+function updateLogoutButtonVisibility(isLoggedIn) {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.style.display = isLoggedIn ? "inline-flex" : "none";
+  }
+}
 
 </script>
 
