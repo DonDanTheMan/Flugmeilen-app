@@ -2248,6 +2248,22 @@ body.map-in-fullscreen #mapFullscreenBtn {
     <div id="flightError" class="error"></div>
   </section>
 
+	<div style="grid-column: 1 / -1; background: rgba(56, 189, 248, 0.05); padding: 12px; border-radius: 6px; border: 1px dashed #38bdf8; margin-bottom: 10px;">
+	  <label style="color: #38bdf8; font-weight: bold; display: block; margin-bottom: 6px;">✈️ Flug-AutoFill</label>
+	  
+	  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+		<div style="flex: 1; min-width: 120px;">
+		  <input type="text" id="autoFlightNumber" placeholder="Flugnr. (z. B. OS148)" style="text-transform: uppercase; width: 100%;" />
+		</div>
+		<div style="flex: 1; min-width: 130px;">
+		  <input type="date" id="autoFlightDate" onchange="syncDateFields(this.value)" style="width: 100%;" />
+		</div>
+		<button type="button" class="btn btn-secondary" onclick="fetchAndFillFlightData()">Daten laden</button>
+	  </div>
+	  
+	  <small id="autoFillStatus" style="display: block; margin-top: 6px; color: #94a3b8; font-size: 0.75rem;"></small>
+	</div>
+
   <section class="card">
     <div class="toolbar flights-toolbar">
       <div class="flex-row">
@@ -6929,6 +6945,155 @@ function updateLogoutButtonVisibility(isLoggedIn) {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
     logoutBtn.style.display = isLoggedIn ? "inline-flex" : "none";
+  }
+}
+
+const RAPIDAPI_KEY = "9b5b5159d9mshf9da425980cfd12p18dcf2jsnda5262d7e3ab";
+
+async function fetchAndFillFlightData() {
+  const flightNumInput = document.getElementById("autoFlightNumber");
+  const autoDateInput = document.getElementById("autoFlightDate");
+  const mainDateInput = document.getElementById("flightDate");
+  const statusEl = document.getElementById("autoFillStatus");
+
+  const flightNum = flightNumInput?.value.trim().toUpperCase().replace(/\s+/g, '');
+  const flightDate = autoDateInput?.value || mainDateInput?.value;
+
+  if (!flightNum || !flightDate) {
+    if (statusEl) {
+      statusEl.style.color = "#f87171";
+      statusEl.textContent = "Bitte gib Flugnummer UND Datum ein.";
+    }
+    return;
+  }
+
+  // Datum in beiden Feldern synchronisieren
+  if (autoDateInput) autoDateInput.value = flightDate;
+  if (mainDateInput) mainDateInput.value = flightDate;
+
+  if (statusEl) {
+    statusEl.style.color = "#94a3b8";
+    statusEl.textContent = "🔍 Suche Flugdaten über AeroDataBox...";
+  }
+
+  try {
+    // Endpunkt für spezifische Flugnummer an einem bestimmten Datum
+    const url = `https://aerodatabox.p.rapidapi.com/flights/number/${flightNum}/${flightDate}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'aerodatabox.p.rapidapi.com'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Flug nicht gefunden (Status Code ${response.status})`);
+    }
+
+    const result = await response.json();
+
+    if (!result || result.length === 0) {
+      if (statusEl) {
+        statusEl.style.color = "#f87171";
+        statusEl.textContent = "❌ Kein Flug für dieses Datum gefunden.";
+      }
+      return;
+    }
+
+    const flight = result[0];
+
+    // 1. Von / Nach IATA-Codes
+    if (flight.departure?.airport?.iata) document.getElementById("fromIata").value = flight.departure.airport.iata;
+    if (flight.arrival?.airport?.iata) document.getElementById("toIata").value = flight.arrival.airport.iata;
+
+    // 2. Airline & Flugzeugtyp
+    if (flight.airline?.name) document.getElementById("airline").value = flight.airline.name;
+    if (flight.aircraft?.model) document.getElementById("aircraft").value = flight.aircraft.model;
+
+	// Hilfsfunktion zum Auslesen der Zeitstempel aus AeroDataBox-Objekten
+	function extractFlightTime(obj) {
+	  if (!obj) return null;
+
+	  // 1. Echte Take-off / Landing Zeiten (rot umrandete Felder im Bild)
+	  if (obj.actualTime) {
+		return obj.actualTime.utc || obj.actualTime.local || null;
+	  }
+	  
+	  if (obj.runwayTime) {
+		return obj.runwayTime.utc || obj.runwayTime.local || null;
+	  }
+
+	  // 2. Falls noch nicht gestartet/gelandet: Revised (geänderte/geschätzte Zeit)
+	  if (obj.revisedTime) {
+		return obj.revisedTime.utc || obj.revisedTime.local || null;
+	  }
+
+	  // 3. Fallback: Geplante Zeit (Scheduled)
+	  if (obj.scheduledTime) {
+		return obj.scheduledTime.utc || obj.scheduledTime.local || null;
+	  }
+
+	  // Flache Ausweich-Pfade (falls API-Format variiert)
+	  return obj.actualTimeUtc || obj.actualTimeLocal || obj.scheduledTimeUtc || obj.scheduledTimeLocal || null;
+	}
+
+	// 3. Echte Flugzeit & Ø-Geschwindigkeit berechnen
+	const depObj = flight.departure;
+	const arrObj = flight.arrival;
+
+	const depTimeStr = extractFlightTime(depObj);
+	const arrTimeStr = extractFlightTime(arrObj);
+
+	const fromCode = depObj?.airport?.iata;
+	const toCode = arrObj?.airport?.iata;
+
+	console.log("AutoFill Debug Gefixt:", { fromCode, toCode, depTimeStr, arrTimeStr });
+
+	if (depTimeStr && arrTimeStr && fromCode && toCode) {
+	  const depTime = new Date(depTimeStr);
+	  const arrTime = new Date(arrTimeStr);
+
+	  // Zeitdifferenz in Netto-Stunden
+	  const durationHours = (arrTime - depTime) / (1000 * 60 * 60);
+
+	  if (typeof calcDistanceKm === "function") {
+		const distKm = calcDistanceKm(fromCode, toCode);
+
+		if (distKm && durationHours > 0) {
+		  const actualSpeed = Math.round(distKm / durationHours);
+
+		  const speedInput = document.getElementById("speed");
+
+		  if (speedInput) {
+			speedInput.value = actualSpeed;
+			
+			// Events triggern für UI-Aktualisierung
+			speedInput.dispatchEvent(new Event("input", { bubbles: true }));
+			speedInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+			console.log(`✅ Speed erfolgreich auf ${actualSpeed} km/h gesetzt! (Dauer: ${durationHours.toFixed(2)}h, Distanz: ${Math.round(distKm)}km)`);
+		  }
+		}
+	  }
+	}
+
+    if (typeof updateAirportDatalist === "function") {
+      updateAirportDatalist("");
+    }
+
+    if (statusEl) {
+      statusEl.style.color = "#4ade80";
+      statusEl.textContent = `✅ Flugdaten geladen: ${flight.departure?.airport?.iata} ➔ ${flight.arrival?.airport?.iata} (${flight.airline?.name || ''})`;
+    }
+
+  } catch (err) {
+    console.error("API Fehler:", err);
+    if (statusEl) {
+      statusEl.style.color = "#f87171";
+      statusEl.textContent = "Fehler: Flugdaten konnten nicht abgerufen werden.";
+    }
   }
 }
 
