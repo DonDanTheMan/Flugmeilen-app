@@ -3,6 +3,7 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Flugmeilen Tracker</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#020617" />
@@ -2149,6 +2150,29 @@ body.map-in-fullscreen #mapFullscreenBtn {
   object-fit: contain;
   max-height: 26px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Erzwingt Klickbarkeit auf iOS PWA */
+button, 
+a, 
+select, 
+input, 
+.action-btn, 
+.holo-card, 
+[onclick] {
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(56, 189, 248, 0.2);
+  touch-action: manipulation;
+}
+
+/* Verhindert, dass unsichtbare Container Klicks auf iOS blockieren */
+.modal:not([style*="display: flex"]) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+input, select, textarea {
+  font-size: 16px !important; /* Verhindert Auto-Zoom & Fokus-Sperre auf iOS */
 }
 
 
