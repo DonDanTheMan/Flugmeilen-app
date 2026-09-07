@@ -4491,7 +4491,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
       return;
     }
 
-    // 1. WIDGET: Nächster Flug (Geplante Reisen & Countdown)
+// 1. WIDGET: Nächster Flug (Geplante Reisen & Countdown)
     const plannedFlights = (typeof plannedFlightsAll !== "undefined") ? plannedFlightsAll : [];
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -4508,6 +4508,9 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     if (upcomingPlan) {
       const flightDate = parseFlightDateAny(upcomingPlan.date);
       const diffDays = Math.ceil((flightDate - now) / (1000 * 60 * 60 * 24));
+      
+      // Flugnummer aus allen möglichen Datenbank-Feldern auslesen
+      const flightNum = upcomingPlan.flight_number || upcomingPlan.flightNumber || upcomingPlan.flight_no || "";
 
       nextFlightHTML = `
         <div class="stat-card holo-card tile-full" style="border-color: #38bdf8 !important;">
@@ -4524,7 +4527,10 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
               <div class="stat-value" style="color:#ffffff; font-size:1.25rem;">
                 ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.from_iata || upcomingPlan.from) : (upcomingPlan.from_iata || upcomingPlan.from)} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.to_iata || upcomingPlan.to) : (upcomingPlan.to_iata || upcomingPlan.to)}
               </div>
-              <div class="stat-note">${formatDate(upcomingPlan.date)} · ${upcomingPlan.airline || "Airline tbd"} ${upcomingPlan.flight_class || upcomingPlan.flightClass ? `(${upcomingPlan.flight_class || upcomingPlan.flightClass})` : ""}</div>
+              <div class="stat-note" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
+                ${flightNum ? `<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; padding:1px 5px; border-radius:4px; font-weight:bold; font-family:monospace;">${flightNum}</span>` : ""}
+                <span>${formatDate(upcomingPlan.date)} · ${upcomingPlan.airline || "Airline tbd"} ${upcomingPlan.flight_class || upcomingPlan.flightClass ? `(${upcomingPlan.flight_class || upcomingPlan.flightClass})` : ""}</span>
+              </div>
             </div>
             <div style="text-align:right;">
               <div style="font-size: 1.7rem; font-weight: bold; color: #6ee7b7; font-family: monospace;">in ${diffDays}d</div>
@@ -4964,28 +4970,34 @@ function openPlanFlightModal(editItem = null) {
       <h3 style="margin-top:0; color:#38bdf8;">${isEdit ? "✏️ Geplanten Flug bearbeiten" : "⏳ Geplanten Flug erfassen"}</h3>
       <form id="planFlightForm" style="display:flex; flex-direction:column; gap:10px;">
         <input type="hidden" id="planEditId" value="${isEdit ? editItem.id : ""}">
-        <div>
-          <label style="font-size:0.75rem; color:#94a3b8;">Flugdatum</label>
-          <input type="date" id="planDate" value="${isEdit ? editItem.date : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+        
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Flugdatum</label>
+            <input type="date" id="planDate" value="${isEdit ? editItem.date : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Flugnummer</label>
+            <input type="text" id="planFlightNumber" value="${isEdit ? (editItem.flight_number || editItem.flightNumber || "") : ""}" placeholder="z. B. OS148" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+          </div>
         </div>
-		<div style="display:flex; gap:10px;">
-		  <div style="flex:1;">
-			<label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
-			<!-- HIER: list="airportList" hinzugefügt -->
-			<input type="text" id="planFrom" value="${isEdit ? (editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
-		  </div>
-		  <div style="flex:1;">
-			<label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
-			<!-- HIER: list="airportList" hinzugefügt -->
-			<input type="text" id="planTo" value="${isEdit ? (editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
-		  </div>
-		</div>
-		<div style="display:flex; gap:10px;">
-		  <div style="flex:1;">
-			<label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
-			<!-- OPTIONAL: list="airlineList" hinzugefügt -->
-			<input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" list="airlineList" autocomplete="off" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
-		  </div>
+
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
+            <input type="text" id="planFrom" value="${isEdit ? (editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
+            <input type="text" id="planTo" value="${isEdit ? (editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
+            <input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" list="airlineList" autocomplete="off" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+          </div>
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Klasse</label>
             <select id="planClass" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
@@ -4995,6 +5007,7 @@ function openPlanFlightModal(editItem = null) {
             </select>
           </div>
         </div>
+
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
           <button type="button" class="btn btn-secondary btn-sm" onclick="closePlanFlightModal()">Abbrechen</button>
           <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
@@ -5011,6 +5024,7 @@ function openPlanFlightModal(editItem = null) {
 
     const payload = {
       date: document.getElementById("planDate").value,
+      flight_number: document.getElementById("planFlightNumber").value.trim().toUpperCase(),
       from_iata: document.getElementById("planFrom").value.trim().toUpperCase(),
       to_iata: document.getElementById("planTo").value.trim().toUpperCase(),
       airline: document.getElementById("planAirline").value.trim(),
@@ -5037,50 +5051,36 @@ function closePlanFlightModal() {
 }
 
 async function completePlannedFlight(planId) {
-  const { data: plannedFlight, error: fetchErr } = await db
-    .from('planned_flights')
-    .select('*')
-    .eq('id', planId)
-    .single();
+  // Geplanten Flug aus dem Array suchen
+  const plan = plannedFlights.find(p => p.id === planId);
+  if (!plan) return;
 
-  if (fetchErr || !plannedFlight) return;
+  const flightNum = plan.flight_number || plan.flightNumber || plan.flight_no || "";
+  const planDate = plan.date || "";
 
-  const fromIata = (plannedFlight.from_iata || "").trim().toUpperCase();
-  const toIata   = (plannedFlight.to_iata || "").trim().toUpperCase();
+  // 1. Felder im Hauptformular & AutoFill-Bereich befüllen
+  const autoFlightNumEl = document.getElementById("autoFlightNumber");
+  const autoDateEl = document.getElementById("autoFlightDate");
+  const mainDateEl = document.getElementById("flightDate");
+  const fromIataEl = document.getElementById("fromIata");
+  const toIataEl = document.getElementById("toIata");
 
-  const speedEl = document.getElementById("speed");
-  const speed = (speedEl && Number(speedEl.value) > 0) ? Number(speedEl.value) : 800;
+  if (autoFlightNumEl) autoFlightNumEl.value = flightNum;
+  if (autoDateEl) autoDateEl.value = planDate;
+  if (mainDateEl) mainDateEl.value = planDate;
+  if (fromIataEl) fromIataEl.value = plan.from_iata || plan.from || "";
+  if (toIataEl) toIataEl.value = plan.to_iata || plan.to || "";
 
-  const distanceKm = (typeof calcDistanceKm === "function") 
-    ? calcDistanceKm(fromIata, toIata) 
-    : 0;
-
-  const durationHours = (typeof calcDurationHours === "function") 
-    ? calcDurationHours(distanceKm, speed) 
-    : 0;
-
-  const { error: insertErr } = await db.from('flights').insert([{
-    date: plannedFlight.date,
-    from_iata: fromIata,
-    to_iata: toIata,
-    airline: plannedFlight.airline || "",
-    aircraft: "",
-    trip_type: "p",
-    flight_class: plannedFlight.flight_class || "Economy",
-    speed_kmh: speed,
-    distance_km: distanceKm,
-    duration_hours: durationHours
-  }]);
-
-  if (insertErr) {
-    alert("Fehler beim Verschieben des Flugs: " + insertErr.message);
-    return;
+  // 2. Falls eine Flugnummer existiert -> Automatisch AeroDataBox abfragen
+  if (flightNum && typeof fetchAndFillFlightData === "function") {
+    await fetchAndFillFlightData();
   }
 
-  await db.from('planned_flights').delete().eq('id', planId);
-
-  if (typeof triggerSuccessFeedback === "function") triggerSuccessFeedback();
-  if (typeof initAppFromCloud === "function") await initAppFromCloud();
+  // 3. Weich zum Formular scrollen
+  const formCard = document.getElementById("flightFormCard") || document.getElementById("autoFillCard");
+  if (formCard) {
+    formCard.scrollIntoView({ behavior: "smooth" });
+  }
 }
 
 function openPlannedFlightsListModal() {
