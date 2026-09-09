@@ -277,66 +277,6 @@
       gap: 0.4rem;
       margin-top: 0.4rem;
     }
-	
-	.highlight-title {
-	  font-size: 0.85rem;
-	  color: #e5e7eb;
-	  display: flex;
-	  align-items: center;
-	  gap: 0.4rem;
-	  margin-bottom: 0.35rem;
-	}
-
-	.highlight-title .icon {
-	  font-size: 1.1rem;
-	}
-
-	.highlight-main {
-	  font-size: 1rem;
-	  font-weight: 600;
-	  margin-bottom: 0.15rem;
-	}
-
-	.highlight-sub {
-	  font-size: 0.78rem;
-	  color: #9ca3af;
-	}
-
-
-	.dashboard-card {
-	  background: rgba(255, 255, 255, 0.08);
-	  backdrop-filter: blur(12px);
-	  border-radius: 16px;
-	  padding: 1rem 1.2rem;
-	  margin-bottom: 1rem;
-	  border: 1px solid rgba(255,255,255,0.12);
-	  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-	  transition: transform 0.2s ease, box-shadow 0.2s ease;
-	}
-
-	.dashboard-card:hover {
-	  transform: translateY(-3px);
-	  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-	}
-
-	.dashboard-title {
-	  font-size: 1.1rem;
-	  font-weight: 600;
-	  margin-bottom: 0.4rem;
-	  display: flex;
-	  align-items: center;
-	  gap: 0.45rem;
-	}
-
-	.dashboard-title .icon {
-	  font-size: 1.3rem;
-	}
-
-	.dashboard-value {
-	  font-size: 1.8rem;
-	  font-weight: 700;
-	  margin-top: 0.4rem;
-	}
 
 	/* Untere Detailkarten im gleichen Stil wie der Rest (neon / radar) */
 	#dashboardPage .detail-card {
@@ -377,13 +317,6 @@
 	#dashboardPage #dashMostRouteCount {
 	  font-size: 0.78rem;
 	  color: #cbd5f5;
-	}
-
-	/* Die Städte-Zeile etwas dezenter */
-	#dashboardPage .city-line {
-	  font-size: 0.8rem;
-	  color: #9ca3af;
-	  margin-bottom: 2px;
 	}
 
     .stat-card {
@@ -537,18 +470,6 @@
       font-size: 0.85rem;
     }
 
-    .trip-privat {
-      border-color: rgba(34,197,94,0.9);
-      background: radial-gradient(circle at top left, rgba(22,163,74,0.8), rgba(5,46,22,0.9));
-      color: #ecfdf5;
-    }
-
-    .trip-geschaeft {
-      border-color: rgba(234,179,8,0.9);
-      background: radial-gradient(circle at top left, rgba(133,77,14,0.9), rgba(30,64,175,0.9));
-      color: #fefce8;
-    }
-
     .error {
       color: #fecaca;
       font-size: 0.78rem;
@@ -564,34 +485,6 @@
       gap: 0.4rem;
       align-items: center;
       flex-wrap: wrap;
-    }
-
-    .nav-bar {
-      display:flex;
-      gap:0.6rem;
-      padding:0.3rem 1rem 0.7rem;
-      max-width:900px;
-      margin:0 auto 0.4rem;
-    }
-
-    .nav-btn {
-      flex:1;
-      justify-content:center;
-      background: radial-gradient(circle at top left, #020617, #020617);
-      border:1px solid rgba(55,65,81,1);
-      color:#e5e7eb;
-      border-radius:999px;
-      padding:0.35rem 0.5rem;
-      font-size:0.8rem;
-      display:inline-flex;
-      align-items:center;
-      gap:0.35rem;
-      text-transform:uppercase;
-      letter-spacing:0.08em;
-    }
-
-    .nav-btn span.icon {
-      font-size:0.95rem;
     }
 
     .nav-active {
@@ -619,7 +512,6 @@
     @media (max-width: 480px) {
       header { flex-direction: column; align-items: flex-start; }
       .table-wrapper { max-height: 300px; }
-      .nav-bar { padding:0.4rem 0.6rem 0.8rem; }
     }
 /* =========================
    Bottom Nav – App Style
@@ -778,12 +670,6 @@ main[id$="Page"].page-active {
   pointer-events: auto;
 }
 
-.city-line {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  margin-bottom: 4px;
-}
-
 /* ✅ Global: Emojis als normalen Text behandeln – kein Glow, keine Filter */
 .icon,
 .nav-icon,
@@ -838,25 +724,6 @@ label span,
   gap: 0.25rem;
 }
 
-/* Hauptzeile (wie Route-Text) */
-#dashboardPage #highlightTopAirline .highlight-main,
-#dashboardPage #highlightLastFlight .highlight-main {
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: #e5e7eb;
-  line-height: 1.1;
-  margin: 0;
-}
-
-/* Subtext (wie city-line/desc) */
-#dashboardPage #highlightTopAirline .highlight-sub,
-#dashboardPage #highlightLastFlight .highlight-sub {
-  font-size: 0.78rem;
-  color: #cbd5f5;
-  line-height: 1.25;
-  margin: 0;
-}
-
 /* ============================= */
 /* Dashboard Detail Cards – Typo */
 /* ============================= */
@@ -883,19 +750,6 @@ label span,
   line-height: 1.3;
 }
 
-/* Meistgeflogene Airline – großes Logo */
-#dashboardPage .airline-hero {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-#dashboardPage .airline-hero img {
-  height: 38px;        /* 🔥 deutlich größer */
-  width: auto;
-  object-fit: contain;
-}
-
 /* 🔥 Dashboard: ALLE Detailkarten-Titel identisch */
 #dashboardPage .detail-card > h2 {
   font-size: 0.8rem !important;      /* exakt wie Längster Flug */
@@ -908,14 +762,6 @@ label span,
   gap: 0.45rem;
   margin-bottom: 0.4rem;
   text-shadow: none !important;
-}
-
-/* 🛫 Meistgeflogene Airline – HERO Logo */
-#dashboardPage .detail-card .airline-hero img {
-  height: 42px !important;   /* deutlich größer */
-  width: auto !important;
-  max-height: none !important;
-  object-fit: contain;
 }
 
 /* Dashboard: alle Detailcard-Titel absolut identisch */
@@ -994,18 +840,6 @@ label span,
   border: 1px dashed rgba(148,163,184,0.35);
   background: rgba(15,23,42,0.55);
   color: #cbd5f5;
-}
-
-#flightsPage .empty-title {
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
-
-#flightsPage .empty-actions {
-  margin-top: 0.6rem;
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
 }
 
 @media (min-width: 1100px){
@@ -1169,9 +1003,6 @@ label span,
   vertical-align: -2px;
   margin-right: 4px;
 }
-.airport-code{
-  font-weight: 600;
-}
 
 .leaflet-container { border-radius: 12px; }
 
@@ -1235,11 +1066,6 @@ label span,
   text-overflow: ellipsis;
 }
 
-.logo-tile .airline-meta {
-  font-size: .7rem;
-  color: #9ca3af;
-}
-
 .airline-logo{
   height: 30px;
   max-width: 100px;
@@ -1255,48 +1081,12 @@ label span,
   font-size: .9rem;
 }
 
-.logo-left{
-  display:flex;
-  align-items:center;
-  gap:.6rem;
-  min-width:0;
-}
-
-.logo-preview{
-  width:56px;
-  height:28px;
-  object-fit:contain;
-  border-radius:.35rem;
-  background: rgba(2,6,23,0.35);
-  border: 1px solid rgba(148,163,184,0.18);
-}
-
-.logo-airline{
-  font-weight:700;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.logo-meta{
-  font-size:.75rem;
-  color:#9ca3af;
-  margin-top:.15rem;
-}
-
 .logo-status{
   display:flex;
   align-items:center;
   gap:.4rem;
   color:#9ca3af;
   font-size:.78rem;
-}
-
-.logo-pill{
-  border-radius:999px;
-  padding:.15rem .5rem;
-  border:1px solid rgba(148,163,184,0.35);
-  background: rgba(2,6,23,0.25);
 }
 
 .logo-tile {
@@ -1376,12 +1166,6 @@ label span,
   gap:.5rem;
   margin-top:.35rem;
 }
-.recent-card{
-  border:1px solid rgba(148,163,184,0.22);
-  background: rgba(15,23,42,0.55);
-  border-radius: .9rem;
-  padding:.55rem .6rem;
-}
 .recent-top{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
 .recent-route{ font-weight:800; }
 .recent-sub{ margin-top:.2rem; color:#9ca3af; font-size:.78rem; }
@@ -1412,10 +1196,6 @@ label span,
   /* NEU */
   transition: height .28s ease, filter .15s ease, transform .18s ease;
   transform-origin: bottom;
-}
-
-.dash-bars.animating .dash-bar{
-  transform: translateY(-1px);
 }
 
 .dash-bar:hover{ filter: brightness(1.15); }
@@ -1484,19 +1264,6 @@ label span,
 
 .card-collapsible.collapsed .collapse-btn .icon{
   transform: rotate(-90deg);
-}
-
-.rank-name-inline{
-  display:inline-flex;
-  align-items:center;
-  gap:.45rem;
-}
-
-.rank-name-inline img.airline-logo{
-  height: 20px;      /* wie du willst */
-  max-width: 80px;
-  object-fit: contain;
-  vertical-align: middle;
 }
 
 .mb-tooltip{
@@ -1577,50 +1344,6 @@ body.no-year header > .flex-row{
   #top5Stack{
     grid-template-columns: 1fr;
   }
-}
-
-.top5-block{
-  border: 1px solid rgba(148,163,184,0.18);
-  background: rgba(15,23,42,0.35);
-  border-radius: .9rem;
-  padding: .75rem .8rem;
-}
-
-.top5-title{
-  font-weight: 800;
-  color: #e5e7eb;
-  margin-bottom: .55rem;
-}
-
-.top5-table{
-  display:flex;
-  flex-direction:column;
-  gap: .35rem;
-}
-
-.top5-row{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  gap:.75rem;
-  align-items:center;
-  padding: .35rem .45rem;
-  border-radius: .65rem;
-  background: rgba(2,6,23,0.25);
-  border: 1px solid rgba(148,163,184,0.12);
-}
-
-.top5-name{
-  color:#e5e7eb;
-  font-size: .85rem;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-.top5-val{
-  color:#9ca3af;
-  font-size: .82rem;
-  white-space:nowrap;
 }
 
 .stat-card .stat-note {
@@ -1839,24 +1562,6 @@ body.no-year header > .flex-row{
     margin-bottom: 15px;
 }
 
-/* Top 5 Blöcke unten */
-.top5-block {
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    padding: 15px;
-    border-radius: 12px;
-    font-family: 'Courier New', monospace;
-}
-
-.top5-title {
-    color: #38bdf8;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.3);
-}
-
 /* Spezielles Styling für die Statistik-Karten */
 .holo-card {
     background: rgba(15, 23, 42, 0.7) !important;
@@ -1964,22 +1669,6 @@ body.no-year header > .flex-row{
     background-size: 20px 20px !important;
     border: 1px solid rgba(56, 189, 248, 0.2) !important;
     border-radius: 12px;
-}
-
-.map-full-card {
-    background: rgba(15, 23, 42, 0.6) !important;
-    border: 1px solid rgba(56, 189, 248, 0.3) !important;
-    padding: 15px !important;
-    height: calc(100vh - 120px); /* Passt sich der Bildschirmhöhe an */
-}
-
-.map-stats-bar {
-    margin-top: 15px;
-    display: flex;
-    gap: 20px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    color: #38bdf8;
 }
 
 /* Styling für die automatischen Flughafen-Labels */
@@ -2604,9 +2293,7 @@ function loadFlights() {
   return flightsAll;
 }
 
-function loadPlannedFlights() {
-  return plannedFlightsAll;
-}
+
 
 // --- CLOUD LOAD FUNCTIONS ---
 
@@ -3096,27 +2783,7 @@ function renderAviatikAchievements() {
   }).join("");
 }
 
-function showTab(tabName) {
-  const pages = ["profilePage", "statsPage", "logbookPage", "mapPage"];
-  pages.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
 
-  const activePageId = tabName + "Page";
-  const activePage = document.getElementById(activePageId);
-  
-  if (activePage) {
-    activePage.style.display = "block";
-  } else {
-    const profile = document.getElementById("profilePage");
-    if (profile) profile.style.display = "block";
-  }
-
-  if (tabName === "map") {
-    renderGlobalMap(); 
-  }
-}
 
 function renderGlobalMap(flights) {
   setTimeout(() => {
@@ -3133,16 +2800,7 @@ function updateOnlineStatus() {
   }
 }
 
-function prefillNextFlight() {
-  const flights = loadFlights();
-  if (flights.length > 0) {
-    const lastFlight = flights[0];
-    const fromEl = document.getElementById("fromIata");
-    const dateEl = document.getElementById("flightDate");
-    if (fromEl) fromEl.value = lastFlight.to;
-    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-  }
-}
+
 
 function triggerSuccessFeedback() {
   if ("vibrate" in navigator) {
@@ -3182,27 +2840,7 @@ function parseFlightDateAny(s) {
   return isNaN(d) ? null : d;
 }
 
-function getMostFrequentRoute(allFlights) {
-  const map = new Map();
 
-  allFlights.forEach(f => {
-    if (!f.from || !f.to) return;
-    const key = `${f.from}→${f.to}`;
-    map.set(key, (map.get(key) || 0) + 1);
-  });
-
-  let best = null;
-  let max = 0;
-
-  for (const [route, count] of map.entries()) {
-    if (count > max) {
-      max = count;
-      best = { route, count };
-    }
-  }
-
-  return best;
-}
 
 function parseFlightDateToTs(dateStr) {
   const s = String(dateStr || "").trim();
@@ -3220,14 +2858,7 @@ function parseFlightDateToTs(dateStr) {
   return NaN;
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+
 
 function uniqueSorted(values) {
   return Array.from(new Set(
@@ -3241,11 +2872,7 @@ function fillDatalist(datalistId, items) {
   dl.innerHTML = items.map(v => `<option value="${escapeHtml(v)}"></option>`).join("");
 }
 
-function refreshFlightFormDatalists() {
-  const flights = loadFlights();
-  fillDatalist("airlineList", uniqueSorted(flights.map(f => f.airline)));
-  fillDatalist("aircraftList", uniqueSorted(flights.map(f => f.aircraft)));
-}
+
 
 function rebuildYearSelect() {
   const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
@@ -3296,16 +2923,7 @@ function getHomeAirportIata() {
   }
 }
 
-function logAllAirlinesFromData() {
-  const flights = loadFlights();
-  const set = new Set(
-    flights
-      .map(f => (f.airline || "").trim())
-      .filter(Boolean)
-      .map(a => a.toUpperCase())
-  );
-  console.log("Distinct airlines in deinen Flugdaten:", Array.from(set));
-}
+
 
 let AIRPORTS = loadAirportsFromStorage();
 let leafletMap = null;
@@ -3470,14 +3088,7 @@ function renderFlagImg(iso2, size = 18) {
   `;
 }
 
-function countryToFlagEmoji(countryCode) {
-  if (!countryCode || countryCode.length !== 2) return "";
-  const codePoints = countryCode
-    .toUpperCase()
-    .split("")
-    .map(c => 127397 + c.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
-}
+
 
 function renderAirportWithFlag(iata) {
   const code = String(iata || "").trim().toUpperCase();
@@ -3493,11 +3104,7 @@ function renderAirportWithFlag(iata) {
 // Alias für bestehende Aufrufe
 const airportCodeWithFlag = renderAirportWithFlag;
 
-function flagImgHtml(iso2) {
-  const cc = (iso2 || "").toLowerCase();
-  if (!cc || cc.length !== 2) return "";
-  return `<img class="flag-img inline" src="https://flagcdn.com/w20/${cc}.png" alt="">`;
-}
+
 
 function countryFlagImg(iso2) {
   const c = String(iso2 || "").trim().toLowerCase();
@@ -4192,15 +3799,7 @@ function sortedEntries(obj) {
   return Object.entries(obj).sort((a,b) => b[1] - a[1]);
 }
 
-function buildStatsTable(entries) {
-  if (!entries.length) return "<span class=\"muted\">Keine Daten</span>";
-  let html = "<table><tbody>";
-  entries.forEach(([name, count]) => {
-    html += "<tr><td>" + name + "</td><td style=\"text-align:right;\">" + count + "</td></tr>";
-  });
-  html += "</tbody></table>";
-  return html;
-}
+
 
 function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const {
@@ -5706,52 +5305,9 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
   if (vc) vc.innerHTML = `<span style="color:#38bdf8; font-family:monospace;">[RECORDS_FOUND: ${visibleFlights.length}]</span>`;
 }
 
-function renderSummary(flights, visibleFlights) {
-  const year = typeof getSelectedYear === "function" ? getSelectedYear() : null;
-  const labelEl = document.getElementById("summaryYearLabel");
-  if (labelEl) labelEl.textContent = year ? year : "Alle Jahre";
 
-  const statMilesEl = document.getElementById("statMiles");
-  const statKmEl = document.getElementById("statKm");
-  const statHoursEl = document.getElementById("statHours");
-  const statHoursTextEl = document.getElementById("statHoursText");
-  const statPgEl = document.getElementById("statPg");
-  const statAirlinesEl = document.getElementById("statAirlines");
-  const statAircraftsEl = document.getElementById("statAircrafts");
-  const flightCountLabel = document.getElementById("flightCountLabel");
 
-  const totalKm = visibleFlights.reduce((s, f) => s + (f.distanceKm || 0), 0);
-  const totalHours = visibleFlights.reduce((s, f) => s + (f.durationHours || 0), 0);
-  const totalFlights = visibleFlights.length;
-  const priv = visibleFlights.filter(f => f.tripType === "p" || f.trip_type === "p").length;
-  const gesch = visibleFlights.filter(f => f.tripType === "g" || f.trip_type === "g").length;
 
-  const airlines = new Set(visibleFlights.map(f => (f.airline || "").trim()).filter(Boolean));
-  const aircrafts = new Set(visibleFlights.map(f => (f.aircraft || "").trim()).filter(Boolean));
-
-  if (statKmEl) statKmEl.textContent = totalKm ? formatKm(totalKm) : "–";
-  if (statMilesEl) statMilesEl.textContent = totalKm ? formatMiles(totalKm) : "–";
-  if (statHoursEl) statHoursEl.textContent = totalHours ? formatHours(totalHours) : "–";
-  if (statHoursTextEl) statHoursTextEl.textContent = totalHours ? hoursToText(totalHours) : "";
-  if (statPgEl) statPgEl.innerHTML = totalFlights ? totalFlights + " (🌴 " + priv + " / 💼 " + gesch + ")" : "–";
-  if (statAirlinesEl) statAirlinesEl.textContent = airlines.size ? ("" + airlines.size) : "–";
-  if (statAircraftsEl) statAircraftsEl.textContent = aircrafts.size ? ("" + aircrafts.size) : "–";
-  if (flightCountLabel) {
-    flightCountLabel.innerHTML = "<span class=\"icon\">🧮</span>" + totalFlights + (totalFlights === 1 ? " Flug" : " Flüge");
-  }
-}
-
-function renderMiniStats(visibleFlights) {
-  const miniKm = visibleFlights.reduce((s, f) => s + (f.distanceKm || 0), 0);
-  const miniHours = visibleFlights.reduce((s, f) => s + (f.durationHours || 0), 0);
-  const el = document.getElementById("miniStats");
-  if (el) {
-    el.innerHTML =
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">📏</span>Km</div><div class=\"stat-value\">" + miniKm.toLocaleString() + "</div></div>" +
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">🛣</span>Meilen</div><div class=\"stat-value\">" + Math.round(miniKm * 0.621371).toLocaleString() + "</div></div>" +
-      "<div class=\"stat-card\"><div class=\"stat-label\"><span class=\"icon\">⏰</span>Zeit</div><div class=\"stat-value\">" + formatHours(miniHours) + "</div></div>";
-  }
-}
 
 function renderAll() {
   if (typeof updateAirportCount === "function") updateAirportCount();
@@ -6122,22 +5678,7 @@ function getAllAircraftFromFlights(flights) {
   return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
-function getAircraftMeta(aircraftName) {
-  const clean = String(aircraftName || "").trim().toLowerCase();
-  
-  if (typeof AIRCRAFT_DATABASE !== "undefined") {
-    const found = Object.values(AIRCRAFT_DATABASE).find(db => db.name.toLowerCase() === clean);
-    if (found) {
-      return { family: found.family, manufacturer: found.manufacturer, type: found.type };
-    }
-  }
-  
-  if (clean.includes("airbus")) return { family: aircraftName, manufacturer: "Airbus", type: "Jet" };
-  if (clean.includes("boeing")) return { family: aircraftName, manufacturer: "Boeing", type: "Jet" };
-  if (clean.includes("embraer")) return { family: aircraftName, manufacturer: "Embraer", type: "Jet" };
-  
-  return { family: aircraftName, manufacturer: "Unbekannt", type: "Unbekannt" };
-}
+
 
 const STORAGE_KEY_LOGO_OVERRIDES = "flugmeilen_airline_logo_overrides_v1";
 
@@ -6750,42 +6291,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Robuster CSV-Parser für Kommas und Anführungszeichen
-function parseAirportCsvContent(csvText) {
-  if (!csvText) return [];
-  const lines = csvText.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
 
-  // Header analysieren
-  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toUpperCase());
-  const iataIdx = headers.indexOf("IATA");
-  const stadtIdx = headers.indexOf("STADT");
-  const breiteIdx = headers.indexOf("BREITE");
-  const laengeIdx = headers.indexOf("LÄNGE");
-  const isoIdx = headers.indexOf("ISO2");
-
-  const airports = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Regex zur korrekten Handhabung von Kommas innerhalb von Anführungszeichen
-    const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(",");
-    
-    const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : "";
-
-    const iata = clean(row[iataIdx]).toUpperCase();
-    const city = clean(row[stadtIdx]) || iata;
-    const lat = parseFloat(clean(row[breiteIdx]));
-    const lon = parseFloat(clean(row[laengeIdx]));
-    const country = clean(row[isoIdx]);
-
-    if (iata && iata.length === 3 && !isNaN(lat) && !isNaN(lon)) {
-      airports.push({ iata, city, lat, lon, country });
-    }
-  }
-  return airports;
-}
 
 function ensureDefaultAirportsLoaded() {
   try {
@@ -6981,8 +6487,6 @@ function updateLogoutButtonVisibility(isLoggedIn) {
   }
 }
 
-const RAPIDAPI_KEY = "9b5b5159d9mshf9da425980cfd12p18dcf2jsnda5262d7e3ab";
-
 async function fetchAndFillFlightData() {
   const flightNumInput = document.getElementById("autoFlightNumber");
   const autoDateInput = document.getElementById("autoFlightDate");
@@ -7010,14 +6514,15 @@ async function fetchAndFillFlightData() {
   }
 
   try {
-    // Endpunkt für spezifische Flugnummer an einem bestimmten Datum
-    const url = `https://aerodatabox.p.rapidapi.com/flights/number/${flightNum}/${flightDate}`;
+    // Ruft unsere eigene Supabase Edge Function auf statt RapidAPI direkt -
+    // der RapidAPI-Key liegt nur noch serverseitig als Secret, nie im Browser.
+    const { data: { session } } = await db.auth.getSession();
+    const url = `${SUPABASE_URL}/functions/v1/flight-lookup?flightNum=${encodeURIComponent(flightNum)}&flightDate=${encodeURIComponent(flightDate)}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': 'aerodatabox.p.rapidapi.com'
+        'Authorization': `Bearer ${session?.access_token || ''}`
       }
     });
 
