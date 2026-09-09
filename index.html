@@ -4958,6 +4958,18 @@ function renderFullStatistics() {
       }
     });
 
+    // Privat vs. Geschäft
+    let privTripCount = 0;
+    let bizTripCount = 0;
+    flightsScope.forEach(f => {
+      const tt = String(f.tripType || f.trip_type || "p").trim().toLowerCase();
+      if (tt === "g") {
+        bizTripCount++;
+      } else {
+        privTripCount++;
+      }
+    });
+
     const totalCo2Tons = (totalKm * 0.115) / 1000;
     const treesToOffset = Math.round(totalCo2Tons * 80);
 
@@ -5022,10 +5034,15 @@ function renderFullStatistics() {
       <div class="stat-card holo-card">
         <div class="stat-label terminal-label">✈️ FLÜGE</div>
         <div class="stat-value" style="color: #ffffff;">${flightsScope.length}</div>
-        <div class="stat-note" style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; justify-content: left;">
+		        <div class="stat-note" style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; justify-content: left;">
+          <span>🌴 ${privTripCount} Privat</span>
+          ${bizTripCount > 0 ? `<span style="color: #eab308;">💼 ${bizTripCount} Geschäft</span>` : ""}
+        </div>
+        <div class="stat-note" style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8; display: flex; gap: 20px; justify-content: left;">
           <span>🥫 ${ecoCount} Eco</span>
           ${bizCount > 0 ? `<span style="color: #eab308;">🥂 ${bizCount} Biz</span>` : ""}
         </div>
+
       </div>
 
       <!-- Row 2: Flugdistanz & Zeit -->
