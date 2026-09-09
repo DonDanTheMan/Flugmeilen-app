@@ -4631,6 +4631,15 @@ function openPlanFlightModal(editItem = null) {
           </div>
         </div>
 
+        <!-- NEU: Privat / Geschäft Wahlfeld -->
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8;">Privat / Geschäft</label>
+          <select id="planTripType" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+            <option value="p" ${isEdit && (editItem.trip_type || editItem.tripType) === "p" ? "selected" : ""}>Privat (🌴)</option>
+            <option value="g" ${isEdit && (editItem.trip_type || editItem.tripType) === "g" ? "selected" : ""}>Geschäft (💼)</option>
+          </select>
+        </div>
+
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
           <button type="button" class="btn btn-secondary btn-sm" onclick="closePlanFlightModal()">Abbrechen</button>
           <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
@@ -4641,7 +4650,7 @@ function openPlanFlightModal(editItem = null) {
 
   modal.style.display = "flex";
 
-  document.getElementById("planFlightForm").onsubmit = async function(e) {
+document.getElementById("planFlightForm").onsubmit = async function(e) {
     e.preventDefault();
     const editId = document.getElementById("planEditId").value;
 
@@ -4651,7 +4660,8 @@ function openPlanFlightModal(editItem = null) {
       from_iata: document.getElementById("planFrom").value.trim().toUpperCase(),
       to_iata: document.getElementById("planTo").value.trim().toUpperCase(),
       airline: document.getElementById("planAirline").value.trim(),
-      flight_class: document.getElementById("planClass").value
+      flight_class: document.getElementById("planClass").value,
+      trip_type: document.getElementById("planTripType").value
     };
 
     if (editId) {
@@ -4665,6 +4675,11 @@ function openPlanFlightModal(editItem = null) {
     closePlanFlightModal();
     await loadPlannedFlightsFromCloud();
     renderDashboardTiles();
+
+    // Wenn es ein Bearbeiten-Vorgang war (editId vorhanden), Liste wieder öffnen
+    if (editId && typeof openPlannedFlightsListModal === "function") {
+      openPlannedFlightsListModal();
+    }
   };
 }
 
@@ -4674,7 +4689,6 @@ function closePlanFlightModal() {
 }
 
 async function completePlannedFlight(planId) {
-  // Geplanten Flug aus dem Array suchen
   const plan = plannedFlights.find(p => p.id === planId);
   if (!plan) return;
 
@@ -4687,12 +4701,20 @@ async function completePlannedFlight(planId) {
   const mainDateEl = document.getElementById("flightDate");
   const fromIataEl = document.getElementById("fromIata");
   const toIataEl = document.getElementById("toIata");
+  const airlineEl = document.getElementById("airline");
+  const tripTypeEl = document.getElementById("tripType");
+  const flightClassEl = document.getElementById("f_flightClass");
 
   if (autoFlightNumEl) autoFlightNumEl.value = flightNum;
   if (autoDateEl) autoDateEl.value = planDate;
   if (mainDateEl) mainDateEl.value = planDate;
   if (fromIataEl) fromIataEl.value = plan.from_iata || plan.from || "";
   if (toIataEl) toIataEl.value = plan.to_iata || plan.to || "";
+  if (airlineEl && plan.airline) airlineEl.value = plan.airline;
+  
+  // Privat / Geschäft & Klasse übernehmen
+  if (tripTypeEl) tripTypeEl.value = plan.trip_type || plan.tripType || "p";
+  if (flightClassEl) flightClassEl.value = plan.flight_class || plan.flightClass || "Economy";
 
   // 2. Falls eine Flugnummer existiert -> Automatisch AeroDataBox abfragen
   if (flightNum && typeof fetchAndFillFlightData === "function") {
