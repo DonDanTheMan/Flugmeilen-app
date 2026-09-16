@@ -1,0 +1,26 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Läuft automatisch jeden Tag um 04:00 Uhr UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Erlaubt manuelles Ausführen im GitHub Actions Tab
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database REST API
+        run: |
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET 'https://uluqbxlrjakvmeptbphs.supabase.co/rest/v1/flights?select=id&limit=1' \
+            -H 'apikey: ${{ secrets.SUPABASE_ANON_KEY }}' \
+            -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}')
+          
+          echo "Supabase API Response Status Code: $STATUS_CODE"
+          
+          if [ "$STATUS_CODE" -eq 200 ]; then
+            echo "✅ Supabase erfolgreich angerufen und aktiv gehalten!"
+          else
+            echo "⚠️ Unerwarteter Status Code: $STATUS_CODE"
+            exit 1
+          fi
