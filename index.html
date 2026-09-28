@@ -1897,12 +1897,12 @@ input, select, textarea {
 <main id="flightsPage" style="display:none;">
   
 		<section class="card" id="autoFillCard">
-	  <h2><span class="icon">✈️</span>Flug-AutoFill</h2>
+	  <h2><span class="icon">✈️</span>Flug erfassen (Automatisch)</h2>
 	  
 	  <div class="form-grid">
 		<div>
 		  <label for="autoFlightNumber">Flugnummer</label>
-		  <input type="text" id="autoFlightNumber" placeholder="z. B. OS148" style="text-transform: uppercase;" />
+		  <input type="text" id="autoFlightNumber" placeholder="z.B. LX18" style="text-transform: uppercase;" />
 		</div>
 		
 		<div>
@@ -1922,7 +1922,7 @@ input, select, textarea {
 	</section>
   
 	<section class="card" id="flightFormCard">
-	  <h2><span class="icon">📝</span>Flug erfassen / bearbeiten</h2>
+	  <h2><span class="icon">📝</span>Flug manuell erfassen / bearbeiten</h2>
 	  <div class="form-grid">
 		<div>
 		  <label for="flightDate">Datum</label>
@@ -2281,6 +2281,7 @@ input, select, textarea {
 
 let flightsAll = [];         
 let plannedFlightsAll = [];
+let pendingPlannedFlightId = null; // geplanter Flug, der beim nächsten Speichern ins Logbuch übernommen wird
 
 // --- SUPABASE INITIALISIERUNG ---
 const SUPABASE_URL = "https://uluqbxlrjakvmeptbphs.supabase.co"; 
@@ -3453,6 +3454,17 @@ async function addFlight() {
     if (editingFlightId === null) {
       const { error } = await db.from('flights').insert([payload]);
       if (error) throw error;
+
+      // Übernommenen geplanten Flug aus der Planungsliste entfernen
+      if (pendingPlannedFlightId !== null) {
+        const { error: delErr } = await db.from('planned_flights').delete().eq('id', pendingPlannedFlightId);
+        if (delErr) {
+          console.warn("Geplanter Flug konnte nicht entfernt werden:", delErr);
+        } else {
+          await loadPlannedFlightsFromCloud();
+        }
+        pendingPlannedFlightId = null;
+      }
     } else {
       const { error } = await db.from('flights').update(payload).eq('id', editingFlightId);
       if (error) throw error;
@@ -3544,6 +3556,7 @@ function startEditFlight(id) {
 
 function cancelEdit() {
   editingFlightId = null;
+  pendingPlannedFlightId = null;
   document.getElementById("flightDate").value = "";
   document.getElementById("fromIata").value = "";
   document.getElementById("toIata").value = "";
@@ -4689,8 +4702,19 @@ function closePlanFlightModal() {
 }
 
 async function completePlannedFlight(planId) {
-  const plan = plannedFlights.find(p => p.id === planId);
-  if (!plan) return;
+  const planList = (typeof plannedFlightsAll !== "undefined") ? plannedFlightsAll : [];
+  const plan = planList.find(p => String(p.id) === String(planId));
+  if (!plan) {
+    console.warn("completePlannedFlight: geplanter Flug nicht gefunden:", planId);
+    return;
+  }
+
+  // Merken, welcher geplante Flug übernommen wird (wird nach erfolgreichem Speichern gelöscht)
+  pendingPlannedFlightId = plan.id;
+
+  // Zuerst auf die Seite "Flüge" wechseln, da dort das Formular liegt
+  const flightsNavBtn = document.querySelector('.bottom-nav .nav-item[data-target="flightsPage"]');
+  if (flightsNavBtn) flightsNavBtn.click();
 
   const flightNum = plan.flight_number || plan.flightNumber || plan.flight_no || "";
   const planDate = plan.date || "";
