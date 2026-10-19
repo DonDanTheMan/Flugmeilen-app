@@ -10,16 +10,25 @@ jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase Database REST API
+      - name: Write keep-alive entry to Supabase
         run: |
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET 'https://uluqbxlrjakvmeptbphs.supabase.co/rest/v1/flights?select=id&limit=1' \
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          STATUS_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
+            'https://uluqbxlrjakvmeptbphs.supabase.co/rest/v1/keepalive' \
             -H 'apikey: ${{ secrets.SUPABASE_ANON_KEY }}' \
-            -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}')
-          
-          echo "Supabase API Response Status Code: $STATUS_CODE"
-          
-          if [ "$STATUS_CODE" -eq 200 ]; then
-            echo "✅ Supabase erfolgreich angerufen und aktiv gehalten!"
+            -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -H 'Prefer: resolution=merge-duplicates' \
+            -d "{\"id\": 1, \"pinged_at\": \"$NOW\"}")
+
+          echo "Response Body:"
+          cat /tmp/response.json
+          echo ""
+          echo "Status Code: $STATUS_CODE"
+
+          if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 201 ]; then
+            echo "✅ Eintrag erfolgreich geschrieben, Supabase aktiv gehalten!"
           else
             echo "⚠️ Unerwarteter Status Code: $STATUS_CODE"
             exit 1
