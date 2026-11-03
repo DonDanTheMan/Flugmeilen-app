@@ -2215,6 +2215,11 @@ input, select, textarea {
       </div>
 
       <div>
+        <label for="progressTheme">Dashboard-Fortschritt</label>
+        <select id="progressTheme"></select>
+      </div>
+
+      <div>
         <label>&nbsp;</label>
         <button id="saveProfileBtn" class="btn btn-primary" type="button">
           <span class="icon">💾</span> Speichern
@@ -5974,6 +5979,15 @@ function renderProfile() {
   if (homeEl) homeEl.value = p.homeIata || "";
   if (speedEl) speedEl.value = p.defaultSpeedKmh || "";
 
+  const themeEl = document.getElementById("progressTheme");
+  if (themeEl) {
+    const themes = getProgressThemes();
+    themeEl.innerHTML = Object.keys(themes)
+      .map(id => `<option value="${id}">${themes[id].label}</option>`)
+      .join("");
+    themeEl.value = themes[p.progressTheme] ? p.progressTheme : "space";
+  }
+
   if (noteEl) noteEl.textContent = "";
 
   // --- Logos list ---
@@ -6156,9 +6170,10 @@ function renderProfile() {
 	  const obj = {
 		name: (nameEl?.value || "").trim(),
 		homeIata: (homeEl?.value || "").trim().toUpperCase(),
-		defaultSpeedKmh: Number(speedEl?.value || 0) || 0
+		defaultSpeedKmh: Number(speedEl?.value || 0) || 0,
+		progressTheme: document.getElementById("progressTheme")?.value || "space"
 	  };
-	  if (typeof saveProfile === "function") saveProfile(obj);
+	  if (typeof saveProfile === "function") saveProfile({ ...loadProfile(), ...obj });
 
 	  updateAppTitle(); // <-- Aktualisiert den Header sofort ohne Reload!
 
@@ -6184,28 +6199,112 @@ function renderProfile() {
   if (typeof wireProfileLogoTooltips === "function") wireProfileLogoTooltips();
 }
 
+// ============================================================
+// Fortschritts-Themen für das Dashboard-Widget ganz unten.
+// Auswahl erfolgt im Profil (profile.progressTheme).
+// Pro Meilenstein: name, dist (km), icon, color
+//   always: true  -> wird auch angezeigt, wenn nicht das aktuelle Ziel (Fernziel)
+//   glow:   CSS-Klasse für den pulsierenden Balken (nur wenn aktuelles Ziel)
+//   precision: Nachkommastellen beim Prozentwert (Standard 1)
+// ============================================================
+function getProgressThemes() {
+  if (getProgressThemes._cache) return getProgressThemes._cache;
+
+  getProgressThemes._cache = {
+    space: {
+      label: "🚀 Weltraum",
+      title: "Deep Space Progress",
+      icon: "🏆",
+      current: "🚀",
+      milestones: [
+        { name: "die ISS", dist: 400, icon: "🛰️", color: "#94a3b8" },
+        { name: "den Erdradius", dist: 6371, icon: "📍", color: "#22c55e" },
+        { name: "den Mond", dist: 384400, icon: "🌙", color: "#cbd5e1" },
+        { name: "den Umfang des Jupiters", dist: 439264, icon: "🪐", color: "#fb923c" },
+        { name: "die 1. Million km", dist: 1000000, icon: "💎", color: "#e2e8f0" },
+        { name: "die 2. Million km", dist: 2000000, icon: "💠", color: "#94a3b8" },
+        { name: "den Umfang der Sonne", dist: 4379000, icon: "🔥", color: "#f59e0b", always: true, glow: "sun-glow" },
+        { name: "den Mars", dist: 54600000, icon: "🔴", color: "#ef4444", always: true, glow: "mars-glow", precision: 4 }
+      ]
+    },
+
+    aviation: {
+      label: "✈️ Aviatik",
+      title: "Aviation Milestones",
+      icon: "🏆",
+      current: "✈️",
+      milestones: [
+        { name: "Blériots Ärmelkanal-Flug (1909)", dist: 38, icon: "🛩️", color: "#94a3b8" },
+        { name: "Lindberghs Atlantikflug (New York–Paris)", dist: 5810, icon: "🌊", color: "#38bdf8" },
+        { name: "den längsten Linienflug (Singapur–New York)", dist: 15349, icon: "🛫", color: "#22c55e" },
+        { name: "den Rekordflug der Boeing 777 «Worldliner»", dist: 21602, icon: "🛬", color: "#a78bfa" },
+        { name: "Rutan Voyager: Weltumrundung ohne Tanken", dist: 42432, icon: "🌍", color: "#f59e0b" },
+        { name: "1 Million Meilen", dist: 1609344, icon: "💎", color: "#e2e8f0" },
+        { name: "2 Millionen Meilen", dist: 3218688, icon: "👑", color: "#eab308", always: true, glow: "ms-glow" }
+      ]
+    },
+
+    global: {
+      label: "🌍 Erde & Geografie",
+      title: "Erde & Geografie",
+      icon: "🏆",
+      current: "🧭",
+      milestones: [
+        { name: "die Schweiz von West nach Ost", dist: 348, icon: "🇨🇭", color: "#ef4444" },
+        { name: "den Rhein (Quelle bis Mündung)", dist: 1233, icon: "🌊", color: "#38bdf8" },
+        { name: "die Donau", dist: 2850, icon: "🏞️", color: "#22c55e" },
+        { name: "den Nil", dist: 6650, icon: "🏜️", color: "#eab308" },
+        { name: "die Transsibirische Eisenbahn", dist: 9289, icon: "🚂", color: "#a78bfa" },
+        { name: "die Chinesische Mauer", dist: 21196, icon: "🧱", color: "#f59e0b" },
+        { name: "den Erdumfang am Äquator", dist: 40075, icon: "🌍", color: "#22c55e" },
+        { name: "Kanadas Küstenlinie", dist: 202080, icon: "🍁", color: "#ef4444" },
+        { name: "die Entfernung zum Mond", dist: 384400, icon: "🌙", color: "#cbd5e1", always: true, glow: "ms-glow" }
+      ]
+    },
+
+    animals: {
+      label: "🦅 Tierwanderungen",
+      title: "Tiere auf Wanderschaft",
+      icon: "🏆",
+      current: "🦅",
+      milestones: [
+        { name: "den Herbstzug des Monarchfalters (ca.)", dist: 4000, icon: "🦋", color: "#fb923c" },
+        { name: "die Rekordwanderung des Buckelwals (Brasilien–Madagaskar)", dist: 9800, icon: "🐋", color: "#38bdf8" },
+        { name: "den Nonstop-Flug der Pfuhlschnepfe (Alaska–Tasmanien)", dist: 13560, icon: "🐦", color: "#22c55e" },
+        { name: "die Pazifik-Reise der Lederschildkröte", dist: 20558, icon: "🐢", color: "#14b8a6" },
+        { name: "ein Jahr Zugroute der Küstenseeschwalbe (ca.)", dist: 70000, icon: "🕊️", color: "#e2e8f0" },
+        { name: "ein ganzes Küstenseeschwalben-Leben (ca.)", dist: 2400000, icon: "🏅", color: "#eab308", always: true, glow: "ms-glow" }
+      ]
+    }
+  };
+
+  return getProgressThemes._cache;
+}
+
+function getProgressThemeId() {
+  const themes = getProgressThemes();
+  const p = (typeof loadProfile === "function") ? loadProfile() : {};
+  return themes[p.progressTheme] ? p.progressTheme : "space";
+}
+
 function getMilestoneHTML(totalKm) {
   const earthCircumference = 40075;
   const flights = (typeof loadFlights === "function") ? loadFlights() : [];
-  
+
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   const kmLastYear = flights
     .filter(f => f.date && new Date(f.date) >= oneYearAgo)
     .reduce((s, f) => s + Number(f.distanceKm || 0), 0);
-  
+
   const kmPerDay = kmLastYear / 365;
 
-  const milestones = [
-    { name: "die ISS", dist: 400, icon: "🛰️", color: "#94a3b8" },
-    { name: "den Erdradius", dist: 6371, icon: "📍", color: "#22c55e" },
-    { name: "den Mond", dist: 384400, icon: "🌙", color: "#cbd5e1" },
-    { name: "den Umfang des Jupiters", dist: 439264, icon: "🪐", color: "#fb923c" },
-    { name: "die 1. Million km", dist: 1000000, icon: "💎", color: "#e2e8f0" },
-    { name: "die 2. Million km", dist: 2000000, icon: "💠", color: "#94a3b8" },
-    { name: "den Umfang der Sonne", dist: 4379000, icon: "🔥", color: "#f59e0b" },
-    { name: "den Mars", dist: 54600000, icon: "🔴", color: "#ef4444" }
-  ];
+  const theme = getProgressThemes()[getProgressThemeId()];
+  const milestones = theme.milestones;
+
+  const fmtKm = (km) => km >= 1000000
+    ? `${Math.round(km / 1000000 * 10) / 10} Mio. km`
+    : `${km.toLocaleString()} km`;
 
   const rounds = Math.floor(totalKm / earthCircumference);
 
@@ -6221,8 +6320,14 @@ function getMilestoneHTML(totalKm) {
         50% { box-shadow: 0 0 15px #ef4444; opacity: 1; }
         100% { box-shadow: 0 0 2px #ef4444; opacity: 0.8; }
       }
+      @keyframes pulse-generic {
+        0% { box-shadow: 0 0 4px var(--glow); }
+        50% { box-shadow: 0 0 18px var(--glow); }
+        100% { box-shadow: 0 0 4px var(--glow); }
+      }
       .sun-glow { animation: pulse-sun 3s infinite ease-in-out; border: 1px solid #f59e0b !important; }
       .mars-glow { animation: pulse-mars 4s infinite ease-in-out; border: 1px solid #ef4444 !important; }
+      .ms-glow { animation: pulse-generic 3s infinite ease-in-out; border: 1px solid var(--glow) !important; }
       .milestone-container { transition: all 0.3s ease; }
     </style>
   `;
@@ -6232,29 +6337,24 @@ function getMilestoneHTML(totalKm) {
 
   milestones.forEach((m) => {
     const isReached = totalKm >= m.dist;
-    const isSun = m.name.includes("Sonne");
-    const isMars = m.name.includes("Mars");
-    
+    const isFar = !!m.always;
+
     const isCurrent = !isReached && !currentTargetFound;
     if (isCurrent) currentTargetFound = true;
 
     if (isReached) {
-      const distLabel = m.dist >= 1000000 
-        ? `${Math.round(m.dist / 1000000 * 10) / 10} Mio. km` 
-        : `${m.dist.toLocaleString()} km`;
-
       milestonesHTML += `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; opacity: 0.4; width: 100%;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="color: #22c55e; font-size: 0.8rem;">✅</span>
             <span style="font-size: 0.8rem; text-decoration: line-through; color: ${m.color};">${m.icon} ${m.name}</span>
           </div>
-          <span style="font-family: monospace; font-size: 0.75rem; color: #475569; padding-right: 4px;">(${distLabel})</span>
+          <span style="font-family: monospace; font-size: 0.75rem; color: #475569; padding-right: 4px;">(${fmtKm(m.dist)})</span>
         </div>`;
-    } else if (isCurrent || isSun || isMars) {
-      const percent = Math.min(((totalKm / m.dist) * 100), 100).toFixed(isMars ? 4 : 1);
+    } else if (isCurrent || isFar) {
+      const percent = Math.min(((totalKm / m.dist) * 100), 100).toFixed(m.precision ?? 1);
       const remainingKm = m.dist - totalKm;
-      
+
       let etaInfo = "";
       if (isCurrent && kmPerDay > 0) {
         const daysToGoal = remainingKm / kmPerDay;
@@ -6263,21 +6363,21 @@ function getMilestoneHTML(totalKm) {
         etaInfo = daysToGoal > 3650 ? `⏳ ca. ${Math.round(daysToGoal/365)} Jahre` : `✨ Ziel voraussichtlich erreicht: ${etaDate.getFullYear()}`;
       }
 
-      const glowClass = (isSun && isCurrent) ? "sun-glow" : (isMars && isCurrent) ? "mars-glow" : "";
+      const glowClass = (isCurrent && m.glow) ? m.glow : "";
       const opacity = isCurrent ? "1" : "0.5";
 
       milestonesHTML += `
         <div class="milestone-container" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid ${m.color}22; opacity: ${opacity};">
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px;">
-            <span style="color: ${m.color}; font-weight: 600;">${isCurrent ? '🚀 Aktuell: ' : ''}${m.icon} ${m.name}</span>
-            <span style="color: #6ee7b7; font-size: 0.75rem;">${etaInfo}</span>
+          <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.85rem; margin-bottom: 8px;">
+            <span style="color: ${m.color}; font-weight: 600;">${isCurrent ? theme.current + ' Aktuell: ' : ''}${m.icon} ${m.name}</span>
+            <span style="color: #6ee7b7; font-size: 0.75rem; text-align: right;">${etaInfo}</span>
           </div>
           <div style="width: 100%; background: rgba(0,0,0,0.4); height: 8px; border-radius: 4px; overflow: hidden;">
-            <div class="${glowClass}" style="width: ${percent}%; background: ${m.color}; height: 100%; transition: width 2s ease-out;"></div>
+            <div class="${glowClass}" style="--glow: ${m.color}; width: ${percent}%; background: ${m.color}; height: 100%; transition: width 2s ease-out;"></div>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.65rem; color: #94a3b8;">
             <span>${percent}%</span>
-            <span>Ziel: ${Math.round(m.dist/1000000 * 10) / 10} Mio. km</span>
+            <span>Ziel: ${fmtKm(m.dist)}</span>
           </div>
         </div>`;
     } else {
@@ -6292,12 +6392,12 @@ function getMilestoneHTML(totalKm) {
     ${animations}
     <div class="stat-card tile-full" style="grid-column: 1 / -1; background: linear-gradient(160deg, #0f172a 0%, #020617 100%); border: 1px solid rgba(56,189,248,0.15); padding: 1.25rem; border-radius: 1.5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <div class="stat-label" style="color: #38bdf8; margin: 0;">🏆 Deep Space Progress</div>
+        <div class="stat-label" style="color: #38bdf8; margin: 0;">${theme.icon} ${theme.title}</div>
         <div style="font-size: 0.7rem; color: #475569; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 20px;">
           ${Math.round(kmPerDay).toLocaleString()} km/Tag
         </div>
       </div>
-      
+
       <div style="margin-bottom: 15px;">
         <div style="font-size: 1.4rem; font-weight: 700; color: #f8fafc;">🌍 ${rounds} Weltumrundungen</div>
         <div style="font-size: 0.8rem; color: #22c55e;"> ${Math.round(totalKm).toLocaleString()} km Gesamtdistanz</div>
