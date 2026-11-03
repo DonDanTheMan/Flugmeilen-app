@@ -1865,7 +1865,76 @@ input, select, textarea {
 }
 
 
-  </style>
+  
+/* ===== Jahresrückblick & Sammlung ===== */
+.yr-chips-row{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;}
+.yr-hero{text-align:center;background:linear-gradient(160deg,#0f172a,#020617);border:1px solid rgba(56,189,248,.25);}
+.yr-hero-year{font-size:2.6rem;font-weight:800;color:#38bdf8;letter-spacing:.05em;}
+.yr-hero-line{font-size:1.1rem;color:#f8fafc;margin-top:.2rem;}
+.yr-hero-sub{font-size:.85rem;color:#94a3b8;margin-top:.3rem;}
+.yr-compare{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;font-size:.8rem;margin-top:.5rem;}
+.yr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.7rem;margin-bottom:1rem;}
+.yr-card{padding:.9rem;}
+.yr-wide{grid-column:1/-1;}
+.yr-big{font-size:1.25rem;word-break:break-word;}
+.yr-chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem;}
+.yr-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.25);font-size:.78rem;color:#e5e7eb;}
+.yr-split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(0,0,0,.4);}
+.yr-bars{display:flex;gap:4px;align-items:flex-end;height:140px;}
+.yr-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;}
+.yr-bar-track{flex:1;width:100%;display:flex;align-items:flex-end;}
+.yr-bar{width:100%;background:#38bdf8;border-radius:4px 4px 0 0;opacity:.7;}
+.yr-bar-top{background:#22c55e;opacity:1;}
+.yr-bar-label{font-size:.62rem;color:#94a3b8;margin-top:3px;}
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.4rem;}
+.col-chip{display:flex;align-items:center;gap:.45rem;padding:.4rem .55rem;border-radius:.7rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4);min-width:0;}
+.col-chip.missing{opacity:.45;filter:grayscale(1);background:rgba(255,255,255,.03);border-color:rgba(148,163,184,.25);}
+.col-chip-text{min-width:0;}
+.col-chip-name{font-size:.8rem;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.col-chip-sub{font-size:.65rem;color:#94a3b8;}
+.col-code{font-family:monospace;font-weight:700;font-size:.85rem;color:#38bdf8;}
+#collectionPage .rank-search input,#collectionPage input[type=search]{width:100%;padding:.5rem .7rem;border-radius:.7rem;border:1px solid rgba(148,163,184,.3);background:rgba(15,23,42,.8);color:#e5e7eb;}
+
+.feature-teasers{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.8rem;grid-column:1/-1;}
+.feature-tile{display:flex;gap:.9rem;align-items:center;text-align:left;width:100%;padding:1.1rem 1.2rem;border-radius:1.2rem;cursor:pointer;color:#f8fafc;font:inherit;border:1px solid rgba(56,189,248,.35);transition:transform .15s ease,box-shadow .15s ease;}
+.feature-tile:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(56,189,248,.25);}
+.ft-year{background:linear-gradient(135deg,#1e3a8a 0%,#0f172a 70%);}
+.ft-collect{background:linear-gradient(135deg,#065f46 0%,#0f172a 70%);border-color:rgba(34,197,94,.4);}
+.ft-icon{font-size:2.6rem;line-height:1;}
+.ft-body{flex:1;min-width:0;}
+.ft-title{font-size:1.1rem;font-weight:700;}
+.ft-sub{font-size:.85rem;color:#cbd5e1;margin-top:.2rem;}
+.ft-cta{font-size:.75rem;color:#7dd3fc;margin-top:.5rem;font-weight:600;}
+/* ===== Toasts, Dialog, Reminder, Share ===== */
+#toastHost{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:100000;display:flex;flex-direction:column;gap:.5rem;width:min(92vw,460px);pointer-events:none;}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border-radius:.9rem;background:#0f172a;color:#f1f5f9;border:1px solid rgba(148,163,184,.35);box-shadow:0 10px 30px rgba(0,0,0,.55);font-size:.85rem;}
+.toast-success{border-color:rgba(34,197,94,.6);}
+.toast-error{border-color:rgba(248,113,113,.7);}
+.toast-text{flex:1;word-break:break-word;}
+.toast-action{background:#38bdf8;color:#020617;border:0;border-radius:.6rem;padding:.3rem .7rem;font-weight:700;cursor:pointer;}
+.toast-x{background:transparent;border:0;color:#94a3b8;cursor:pointer;font-size:.9rem;}
+.confirm-overlay{position:fixed;inset:0;background:rgba(2,6,23,.8);z-index:99990;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);}
+.confirm-box{background:#0f172a;border:1px solid rgba(56,189,248,.4);border-radius:1.2rem;padding:1.2rem;max-width:420px;width:100%;}
+.confirm-text{color:#f1f5f9;margin-bottom:1rem;white-space:pre-line;}
+.confirm-row{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;}
+.btn-danger-solid{background:#dc2626;color:#fff;border:1px solid #ef4444;}
+.share-box{max-width:min(94vw,900px);}
+.share-preview{width:100%;height:auto;border-radius:.8rem;margin-bottom:.8rem;display:block;}
+.reminder-banner{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;padding:.8rem 1rem;border-radius:1rem;grid-column:1/-1;border:1px solid rgba(250,204,21,.5);background:linear-gradient(135deg,rgba(250,204,21,.12),rgba(15,23,42,.9));}
+.rb-flight{border-color:rgba(56,189,248,.6);background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(15,23,42,.9));}
+.rb-icon{font-size:1.8rem;}
+.rb-body{flex:1;min-width:180px;}
+.rb-title{font-weight:700;color:#f8fafc;}
+.rb-sub{font-size:.8rem;color:#cbd5e1;}
+.rb-actions{display:flex;gap:.4rem;flex-wrap:wrap;}
+.rb-actions a.btn{text-decoration:none;display:inline-block;}
+
+/* ===== Dropdowns: dunkles Listen-Design ===== */
+:root{color-scheme:dark;}
+select{color-scheme:dark;}
+select option,select optgroup{background-color:#0f172a;color:#e5e7eb;}
+select option:checked{background-color:#0369a1;color:#fff;}
+</style>
 </head>
 <body>
 <header>
@@ -2027,6 +2096,8 @@ input, select, textarea {
 <!-- Seite: Statistik -->
 <main id="statsPage" style="display:none;">
 
+  <div id="statsTeasers" style="margin-bottom:1rem;"></div>
+
   <!-- 2) KPI-Leiste (gewählter Bereich) -->
   <section class="card">
     <div class="toolbar">
@@ -2081,7 +2152,10 @@ input, select, textarea {
   <section class="card" style="height: 85vh; display: flex; flex-direction: column; padding: 15px; position: relative;">
     <div class="toolbar" style="margin-bottom: 15px;">
       <h2 style="margin:0;"><span class="icon">🛰️</span> Global Network Tracker</h2>
-      <div class="muted">Live Status: Connected</div>
+      <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+        <button type="button" id="mapShareBtn" class="btn btn-secondary btn-sm" onclick="openMapShare()">📤 Karte teilen</button>
+        <div class="muted">Live Status: Connected</div>
+      </div>
     </div>
 
     <button id="mapFullscreenBtn" title="Vollbild umschalten" type="button" style="
@@ -2373,7 +2447,7 @@ async function checkLocalDataMigration() {
   const parsed = JSON.parse(localData);
   if (!Array.isArray(parsed) || parsed.length === 0) return;
 
-  if (confirm(`Es wurden ${parsed.length} alte Flüge im Browser gefunden. Möchtest du diese jetzt in deinen Supabase-Cloud-Account übertragen?`)) {
+  if (await confirmDialog(`Es wurden ${parsed.length} alte Flüge im Browser gefunden. Möchtest du diese jetzt in deinen Supabase-Cloud-Account übertragen?`, "Übertragen")) {
     const payload = parsed.map(f => ({
       date: f.date,
       from_iata: f.from || f.from_iata,
@@ -2387,12 +2461,15 @@ async function checkLocalDataMigration() {
       duration_hours: f.durationHours || f.duration_hours || 0
     }));
 
+    const migUid = await getCurrentUserId();
+    if (migUid) payload.forEach(item => { item.user_id = migUid; });
+
     const { error } = await db.from('flights').insert(payload);
 
     if (error) {
-      alert("Fehler bei der Migration: " + error.message);
+      showToast("Fehler bei der Migration: " + error.message);
     } else {
-      alert("Erfolgreich migriert! Deine Flüge sind jetzt in der Cloud.");
+      showToast("Erfolgreich migriert! Deine Flüge sind jetzt in der Cloud.");
       localStorage.removeItem("flights"); // Lokalen Speicher nach Erfolg leeren
       await loadFlightsFromCloud();
     }
@@ -2474,7 +2551,7 @@ async function handleSignUp() {
     // Flag für Neuregistrierung setzen
     isNewUserSignUp = true;
 
-    alert("Konto erfolgreich erstellt! Du bist jetzt eingeloggt.");
+    showToast("Konto erfolgreich erstellt! Du bist jetzt eingeloggt.");
     const modal = document.getElementById("authModal");
     if (modal) modal.style.display = "none";
     
@@ -2712,7 +2789,7 @@ function renderAviatikAchievements() {
     { name: "Airbus-König", iso: "eu", desc: "Flüge in einer Maschine aus Toulouse.", current: airbusCount, tiers: [100, 250, 450] },
     { name: "Boeing-König", iso: "us", desc: "Flüge in einer Maschine aus Seattle.", current: boeingCount, tiers: [20, 50, 120] },
     { name: "Regional-Spezialist", iso: "br", desc: "Flüge mit Embraer-Jets.", current: embraerCount, tiers: [25, 60, 120] },
-    { name: "Insel-Hopper", emoji: "🏝️", desc: "Lande auf verschiedenen Urlaubs- und Inselflughäfen.", current: uniqueIslandsVisited.size, tiers: [5, 12, 22], meta: `Besucht: ${Array.from(uniqueIslandsVisited).sort().join(", ") || "Keine"}` },
+    { name: "Insel-Hopper", emoji: "🏝️", desc: "Lande auf verschiedenen Urlaubs- und Inselflughäfen.", current: uniqueIslandsVisited.size, tiers: [5, 12, 22], meta: `Besucht: ${escapeHtml(Array.from(uniqueIslandsVisited).sort().join(", ") || "Keine")}` },
     { name: "Drehkreuz-Dauergast", emoji: "🗺️", desc: "Besuche die Hubs ZRH, FRA, LHR, CDG, AMS jeweils X-mal.", current: hubs, tiers: [3, 6, 12], isHub: true },
     { name: "Äquator-Taufe", emoji: "🌍", desc: "Flüge über den Äquator nach Süden.", current: equatorCount, tiers: [2, 6, 12] }
   ];
@@ -3008,7 +3085,7 @@ function hoursToText(hours) {
 function formatDate(dateStr) {
   if (!dateStr) return "–";
   const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
+  if (isNaN(d)) return escapeHtml(dateStr);
   return d.toLocaleDateString();
 }
 
@@ -3079,7 +3156,7 @@ function iso2ToCountryName(code) {
 }
 
 function renderFlagImg(iso2, size = 18) {
-  if (!iso2 || iso2.length !== 2) return "";
+  if (!iso2 || !/^[A-Za-z]{2}$/.test(iso2)) return "";
   const code = iso2.toLowerCase();
   return `
     <img
@@ -3099,12 +3176,12 @@ function renderFlagImg(iso2, size = 18) {
 function renderAirportWithFlag(iata) {
   const code = String(iata || "").trim().toUpperCase();
   const a = (typeof AIRPORTS !== "undefined") ? AIRPORTS[code] : null;
-  if (!a) return code;
+  if (!a) return escapeHtml(code);
 
   const flag = (typeof renderFlagImg === "function") ? renderFlagImg(a.country) : "";
   
   // Nur Flagge + IATA-Code (ohne Stadtname in der Hauptzeile)
-  return `${flag} ${code}`.trim();
+  return `${flag} ${escapeHtml(code)}`.trim();
 }
 
 // Alias für bestehende Aufrufe
@@ -3114,7 +3191,7 @@ const airportCodeWithFlag = renderAirportWithFlag;
 
 function countryFlagImg(iso2) {
   const c = String(iso2 || "").trim().toLowerCase();
-  if (!c || c.length !== 2) return "";
+  if (!/^[a-z]{2}$/.test(c)) return "";
   return `<img class="flag-img" src="https://flagcdn.com/w20/${c}.png" alt="${c}">`;
 }
 
@@ -3127,7 +3204,7 @@ function renderCountryWithFlag(iso2) {
 
 function airportCityLabel(iata) {
   const a = AIRPORTS[iata];
-  return a ? (a.city || iata) : iata;
+  return escapeHtml(a ? (a.city || iata) : iata);
 }
 
 function computeCountryCounts(flights) {
@@ -3253,6 +3330,7 @@ exportBtn.onclick = async (e) => {
 
       if (backupMsg) backupMsg.textContent = "⬇️ Backup heruntergeladen.";
     }
+    noteBackupDone();
   } catch (err) {
     console.error("Export Fehler:", err);
     if (backupMsg) backupMsg.textContent = "❌ Export-Fehler: " + err.message;
@@ -3270,7 +3348,7 @@ importFile.onchange = async () => {
     const flightsArray = Array.isArray(data) ? data : (data.flights || []);
 
     if (!flightsArray.length) {
-      alert("Import fehlgeschlagen: Keine Flüge in der Datei gefunden.");
+      showToast("Import fehlgeschlagen: Keine Flüge in der Datei gefunden.");
       return;
     }
 
@@ -3524,6 +3602,12 @@ async function addFlight() {
     duration_hours: durationHours
   };
 
+  // Besitzer explizit setzen (nur bei neuen Flügen, nicht beim Bearbeiten)
+  if (editingFlightId === null) {
+    const uid = await getCurrentUserId();
+    if (uid) payload.user_id = uid;
+  }
+
   // Button deaktivieren um doppelte Abfragen zu verhindern
   const submitBtn = document.getElementById("saveFlightBtn"); // Anpassen an deine ID
   if (submitBtn) submitBtn.disabled = true;
@@ -3563,7 +3647,7 @@ async function addFlight() {
     if (typeof renderDashboardTiles === "function") renderDashboardTiles();
 
   } catch (error) {
-    alert("Fehler beim Speichern in Supabase: " + error.message);
+    showToast("Fehler beim Speichern in Supabase: " + error.message);
   } finally {
     if (submitBtn) submitBtn.disabled = false;
   }
@@ -3586,9 +3670,25 @@ function refreshAirlineAircraftDatalists() {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[m]));
+}
+
+// IDs, die in onclick="..('ID')"-Attribute geschrieben werden: nur harmlose Zeichen zulassen
+function safeId(v) {
+  return String(v ?? "").replace(/[^A-Za-z0-9_-]/g, "");
+}
+
+// Aktuelle Supabase-User-ID aus der lokalen Session (kein Netzwerkaufruf)
+async function getCurrentUserId() {
+  try {
+    if (typeof db === "undefined" || !db || !db.auth) return null;
+    const { data: { session } } = await db.auth.getSession();
+    return (session && session.user && session.user.id) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function startEditFlight(id) {
@@ -3648,21 +3748,23 @@ function cancelEdit() {
 }
 
 async function deleteFlight(id) {
-  if (!confirm("Möchtest du diesen Flug wirklich löschen?")) return;
-
+  const { data: rows } = await db.from('flights').select('*').eq('id', id);
   const { error } = await db.from('flights').delete().eq('id', id);
 
   if (error) {
-    alert("Fehler beim Löschen: " + error.message);
+    showToast("Fehler beim Löschen: " + error.message, { type: "error" });
   } else {
     await loadFlightsFromCloud();
+    showToast("Flug gelöscht", { actionLabel: "Rückgängig", duration: 12000, onAction: () => undoFlightDelete(rows || []) });
   }
 }
 
 async function clearAllFlights() {
-  if (!confirm("Möchtest du wirklich ALLE Flüge löschen?")) return;
+  const total = (typeof flightsAll !== "undefined") ? flightsAll.length : 0;
+  if (!(await confirmDialog(`Wirklich ALLE ${total} Flüge löschen?\n\nDanach kannst du es 30 Sekunden lang rückgängig machen. Exportiere vorher am besten ein Backup.`, "Alle löschen", true))) return;
 
   try {
+    let snapshot = [];
     // 1. In Supabase löschen
     if (typeof db !== "undefined" && db) {
       let currentUserId = null;
@@ -3670,6 +3772,12 @@ async function clearAllFlights() {
         const { data: { user } } = await db.auth.getUser();
         currentUserId = user ? user.id : null;
       }
+
+      // Sicherung für „Rückgängig“
+      const snapQ = db.from('flights').select('*');
+      const snap = currentUserId ? await snapQ.eq('user_id', currentUserId) : await snapQ;
+      if (snap.error) throw snap.error;
+      snapshot = snap.data || [];
 
       const query = db.from('flights').delete();
       const { error } = currentUserId 
@@ -3687,10 +3795,10 @@ async function clearAllFlights() {
     renderAll();
     if (typeof renderDashboardTiles === "function") renderDashboardTiles();
 
-    alert("✅ Alle Flüge wurden in der Cloud und lokal gelöscht.");
+    showToast("✅ Alle Flüge gelöscht", { actionLabel: "Rückgängig", duration: 30000, onAction: () => undoFlightDelete(snapshot) });
   } catch (err) {
     console.error("Fehler beim Löschen:", err);
-    alert("❌ Fehler beim Löschen: " + err.message);
+    showToast("❌ Fehler beim Löschen: " + err.message);
   }
 }
 
@@ -3806,6 +3914,9 @@ function handleFlightsCsvLoad() {
         duration_hours: f.durationHours || 0
       }));
 
+      const csvUid = await getCurrentUserId();
+      if (csvUid) payload.forEach(item => { item.user_id = csvUid; });
+
       const { error } = await db.from('flights').insert(payload);
       if (error) {
         if (errBox) errBox.textContent = "Fehler beim Cloud-Upload: " + error.message;
@@ -3825,6 +3936,13 @@ function getSelectedYear() {
   if (!sel) return null;
   const val = sel.value;
   return (!val || val === "ALL") ? null : Number(val);
+}
+
+function getYearFilteredFlights() {
+  const all = (typeof flightsAll !== "undefined") ? flightsAll : [];
+  const y = getSelectedYear();
+  if (!y) return all;
+  return all.filter(f => { const d = parseFlightDateAny(f.date); return d && d.getFullYear() === y; });
 }
 
 function buildYearOptions(flights) {
@@ -3896,7 +4014,7 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
   const {
     withSearch = true,
     searchPlaceholder = "Suchen...",
-    renderNameHtml = (name) => name,
+    renderNameHtml = (name) => escapeHtml(name),
     renderNameText = (name) => name
   } = options;
 
@@ -3912,8 +4030,8 @@ function buildRankBarsExpandable(entries, topN = 10, options = {}) {
 
         return `
         <div class="rank-row"
-             data-name="${String(name).toLowerCase()}"
-             data-search="${String(renderNameText(name)).toLowerCase()}">
+             data-name="${escapeHtml(String(name).toLowerCase())}"
+             data-search="${escapeHtml(String(renderNameText(name)).toLowerCase())}">
           <div style="flex-grow: 1;">
             <div class="rank-name">${renderNameHtml(name)}</div>
             <div class="rank-bar">
@@ -4072,7 +4190,7 @@ function airportPopupHtml(iata, visitCounts) {
   if (!a) return iata;
 
   const iso2 = (a.country || "").toLowerCase();
-  const flag = iso2
+  const flag = /^[a-z]{2}$/.test(iso2)
     ? `<img class="flag-img" src="https://flagcdn.com/w20/${iso2}.png">`
     : "";
 
@@ -4083,7 +4201,7 @@ function airportPopupHtml(iata, visitCounts) {
       ${flag}
       <div>
         <div style="font-weight:700;">
-          ${a.city || iata} (${iata})
+          ${escapeHtml(a.city || iata)} (${escapeHtml(iata)})
         </div>
         <div class="muted">Besuche: <b>${visits}</b></div>
       </div>
@@ -4242,8 +4360,8 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
                 ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.from_iata || upcomingPlan.from) : (upcomingPlan.from_iata || upcomingPlan.from)} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(upcomingPlan.to_iata || upcomingPlan.to) : (upcomingPlan.to_iata || upcomingPlan.to)}
               </div>
               <div class="stat-note" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
-                ${flightNum ? `<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; padding:1px 5px; border-radius:4px; font-weight:bold; font-family:monospace;">${flightNum}</span>` : ""}
-                <span>${formatDate(upcomingPlan.date)} · ${upcomingPlan.airline || "Airline tbd"} ${upcomingPlan.flight_class || upcomingPlan.flightClass ? `(${upcomingPlan.flight_class || upcomingPlan.flightClass})` : ""}</span>
+                ${flightNum ? `<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; padding:1px 5px; border-radius:4px; font-weight:bold; font-family:monospace;">${escapeHtml(flightNum)}</span>` : ""}
+                <span>${formatDate(upcomingPlan.date)} · ${escapeHtml(upcomingPlan.airline || "Airline tbd")} ${upcomingPlan.flight_class || upcomingPlan.flightClass ? `(${escapeHtml(upcomingPlan.flight_class || upcomingPlan.flightClass)})` : ""}</span>
               </div>
             </div>
             <div style="text-align:right;">
@@ -4253,10 +4371,10 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
 
           <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(56, 189, 248, 0.15); display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; gap:6px;">
-              <button class="action-btn" title="Bearbeiten" onclick="editPlannedFlight('${upcomingPlan.id}')">✏️</button>
-              <button class="action-btn danger" title="Löschen" onclick="deletePlannedFlight('${upcomingPlan.id}')">🗑️</button>
+              <button class="action-btn" title="Bearbeiten" onclick="editPlannedFlight('${safeId(upcomingPlan.id)}')">✏️</button>
+              <button class="action-btn danger" title="Löschen" onclick="deletePlannedFlight('${safeId(upcomingPlan.id)}')">🗑️</button>
             </div>
-            <button class="btn btn-primary btn-xs" onclick="completePlannedFlight('${upcomingPlan.id}')">
+            <button class="btn btn-primary btn-xs" onclick="completePlannedFlight('${safeId(upcomingPlan.id)}')">
               🛫 Bereits geflogen? Ins Logbuch übernehmen
             </button>
           </div>
@@ -4386,7 +4504,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
         <div class="stat-label terminal-label" style="display:flex; justify-content:space-between; align-items:center;">
           <span>💳 Miles & More Status-Tracker (${currentYear})</span>
           <div style="display:flex; gap:10px; align-items:center;">
-            <span style="color:#eab308; font-size:0.78rem;">Status: ${currentStatus}</span>
+            <span style="color:#eab308; font-size:0.78rem;">Status: ${escapeHtml(currentStatus)}</span>
             <button class="btn btn-secondary btn-xs" style="padding: 1px 6px; font-size:0.65rem;" onclick="promptMMUpdate()">✏️ Sync</button>
           </div>
         </div>
@@ -4418,7 +4536,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
           </div>
 
           <div style="font-size: 0.65rem; color: #64748b; text-align: right; margin-top: 2px;">
-            ${lastSyncTime ? `Zuletzt synchronisiert: ${lastSyncTime}` : 'Noch nicht synchronisiert'}
+            ${lastSyncTime ? `Zuletzt synchronisiert: ${escapeHtml(lastSyncTime)}` : 'Noch nicht synchronisiert'}
           </div>
         </div>
       </div>
@@ -4477,7 +4595,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(randFlight.from) : randFlight.from} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(randFlight.to) : randFlight.to}
           </div>
           <div class="stat-note" style="margin-top: 4px;">
-            Am ${formatDate(randFlight.date)} mit ${randFlight.airline || "unbekannter Airline"} ${randFlight.aircraft ? `(${randFlight.aircraft})` : ""}
+            Am ${formatDate(randFlight.date)} mit ${escapeHtml(randFlight.airline || "unbekannter Airline")} ${randFlight.aircraft ? `(${escapeHtml(randFlight.aircraft)})` : ""}
           </div>
         </div>
       `;
@@ -4519,7 +4637,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     const yMid = Math.round(max * 0.5);
 
     const airportCity = (code) => AIRPORTS?.[code]?.city || "";
-    const airportLabel = (code) => AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code;
+    const airportLabel = (code) => escapeHtml(AIRPORTS?.[code] ? `${airportCity(code)} (${code})` : code);
 
 	// --- 4. WIDGET: Deep Space Progress ---
     const totalKmAllTime = allFlights.reduce((sum, f) => sum + Number(f.distanceKm || f.distance_km || 0), 0);
@@ -4527,6 +4645,9 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
 
     // --- FINAL COCKPIT ASSEMBLY ---
     wrap.innerHTML = `
+      <!-- 0. ERINNERUNGEN -->
+      ${(typeof getReminderBannersHTML === "function") ? getReminderBannersHTML() : ""}
+
       <!-- 1. QUICK ACTIONS -->
       <div class="stat-card holo-card tile-full">
         <div class="stat-label terminal-label">⚡ Quick Actions</div>
@@ -4538,6 +4659,9 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
           <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
         </div>
       </div>
+
+      <!-- 1b. FEATURE-KACHELN -->
+      ${(typeof getFeatureTeasersHTML === "function") ? getFeatureTeasersHTML() : ""}
 
       <!-- 2. COUNTDOWN NÄCHSTER FLUG -->
       ${nextFlightHTML}
@@ -4558,7 +4682,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
             return `
               <div class="stat-card holo-card">
                 <div class="recent-top">
-                  <div class="recent-route">${f.from} → ${f.to}</div>
+                  <div class="recent-route">${escapeHtml(f.from)} → ${escapeHtml(f.to)}</div>
                   <div style="display:flex;align-items:center;gap:.35rem;">${logo}<span>${typ}</span></div>
                 </div>
                 <div class="recent-sub">${formatDate(f.date)} · ${airportLabel(f.from)} → ${airportLabel(f.to)}</div>
@@ -4640,7 +4764,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
     wrap.innerHTML = `
       <div class="stat-card tile tile-full">
         <div class="stat-label">⚠️ Dashboard-Fehler</div>
-        <div class="stat-note">${String(err && err.message ? err.message : err)}</div>
+        <div class="stat-note">${escapeHtml(String(err && err.message ? err.message : err))}</div>
       </div>
     `;
   }
@@ -4649,14 +4773,14 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
 // --- TRIP PLANNER & GEPLANTE FLÜGE CLOUD-LOGIK ---
 
 async function deletePlannedFlight(planId) {
-  if (!confirm("Möchtest du diesen geplanten Flug wirklich löschen?")) return;
-  
+  const { data: rows } = await db.from('planned_flights').select('*').eq('id', planId);
   const { error } = await db.from('planned_flights').delete().eq('id', planId);
   if (error) {
-    alert("Fehler beim Löschen: " + error.message);
+    showToast("Fehler beim Löschen: " + error.message, { type: "error" });
   } else {
     await loadPlannedFlightsFromCloud();
     renderDashboardTiles();
+    showToast("Geplanter Flug gelöscht", { actionLabel: "Rückgängig", duration: 12000, onAction: () => undoPlannedDelete(rows || []) });
   }
 }
 
@@ -4683,34 +4807,34 @@ function openPlanFlightModal(editItem = null) {
     <div class="stat-card holo-card" style="width: 90%; max-width: 450px; background:#0f172a; border:1px solid #38bdf8; padding:1.5rem;">
       <h3 style="margin-top:0; color:#38bdf8;">${isEdit ? "✏️ Geplanten Flug bearbeiten" : "⏳ Geplanten Flug erfassen"}</h3>
       <form id="planFlightForm" style="display:flex; flex-direction:column; gap:10px;">
-        <input type="hidden" id="planEditId" value="${isEdit ? editItem.id : ""}">
+        <input type="hidden" id="planEditId" value="${isEdit ? safeId(editItem.id) : ""}">
         
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Flugdatum</label>
-            <input type="date" id="planDate" value="${isEdit ? editItem.date : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+            <input type="date" id="planDate" value="${isEdit ? escapeHtml(editItem.date) : ""}" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
           </div>
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Flugnummer</label>
-            <input type="text" id="planFlightNumber" value="${isEdit ? (editItem.flight_number || editItem.flightNumber || "") : ""}" placeholder="z. B. OS148" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+            <input type="text" id="planFlightNumber" value="${isEdit ? escapeHtml(editItem.flight_number || editItem.flightNumber || "") : ""}" placeholder="z. B. OS148" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
           </div>
         </div>
 
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Von (IATA)</label>
-            <input type="text" id="planFrom" value="${isEdit ? (editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+            <input type="text" id="planFrom" value="${isEdit ? escapeHtml(editItem.from_iata || editItem.from) : ""}" placeholder="ZRH" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
           </div>
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Nach (IATA)</label>
-            <input type="text" id="planTo" value="${isEdit ? (editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
+            <input type="text" id="planTo" value="${isEdit ? escapeHtml(editItem.to_iata || editItem.to) : ""}" placeholder="JFK" maxlength="3" list="airportList" autocomplete="off" required style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px; text-transform:uppercase;">
           </div>
         </div>
 
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Airline</label>
-            <input type="text" id="planAirline" value="${isEdit ? (editItem.airline || "") : ""}" placeholder="Swiss" list="airlineList" autocomplete="off" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
+            <input type="text" id="planAirline" value="${isEdit ? escapeHtml(editItem.airline || "") : ""}" placeholder="Swiss" list="airlineList" autocomplete="off" style="width:100%; padding:6px; background:#020617; border:1px solid #334155; color:#fff; border-radius:4px;">
           </div>
           <div style="flex:1;">
             <label style="font-size:0.75rem; color:#94a3b8;">Klasse</label>
@@ -4757,10 +4881,10 @@ document.getElementById("planFlightForm").onsubmit = async function(e) {
 
     if (editId) {
       const { error } = await db.from('planned_flights').update(payload).eq('id', editId);
-      if (error) alert("Fehler beim Aktualisieren: " + error.message);
+      if (error) showToast("Fehler beim Aktualisieren: " + error.message);
     } else {
       const { error } = await db.from('planned_flights').insert([payload]);
-      if (error) alert("Fehler beim Erfassen: " + error.message);
+      if (error) showToast("Fehler beim Erfassen: " + error.message);
     }
 
     closePlanFlightModal();
@@ -4858,7 +4982,7 @@ function openPlannedFlightsListModal() {
               ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(item.from_iata || item.from) : (item.from_iata || item.from)} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(item.to_iata || item.to) : (item.to_iata || item.to)}
             </div>
             <div class="stat-note" style="font-size:0.75rem; color:#94a3b8;">
-              ${formatDate(item.date)} · ${item.airline || "Airline tbd"} (${item.flight_class || item.flightClass || "Economy"})
+              ${formatDate(item.date)} · ${escapeHtml(item.airline || "Airline tbd")} (${escapeHtml(item.flight_class || item.flightClass || "Economy")})
             </div>
           </div>
           <div style="text-align:right;">
@@ -4868,10 +4992,10 @@ function openPlannedFlightsListModal() {
 
         <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
           <div style="display:flex; gap:6px;">
-            <button class="action-btn" title="Bearbeiten" onclick="closePlannedListModal(); editPlannedFlight('${item.id}')">✏️</button>
-            <button class="action-btn danger" title="Löschen" onclick="deletePlannedFlightFromList('${item.id}')">🗑️</button>
+            <button class="action-btn" title="Bearbeiten" onclick="closePlannedListModal(); editPlannedFlight('${safeId(item.id)}')">✏️</button>
+            <button class="action-btn danger" title="Löschen" onclick="deletePlannedFlightFromList('${safeId(item.id)}')">🗑️</button>
           </div>
-          <button class="btn btn-primary btn-xs" style="font-size:0.7rem;" onclick="closePlannedListModal(); completePlannedFlight('${item.id}')">
+          <button class="btn btn-primary btn-xs" style="font-size:0.7rem;" onclick="closePlannedListModal(); completePlannedFlight('${safeId(item.id)}')">
             🛫 Ins Logbuch
           </button>
         </div>
@@ -4906,12 +5030,15 @@ function closePlannedListModal() {
 }
 
 async function deletePlannedFlightFromList(planId) {
-  if (!confirm("Möchtest du diesen geplanten Flug löschen?")) return;
+  const { data: rows } = await db.from('planned_flights').select('*').eq('id', planId);
   const { error } = await db.from('planned_flights').delete().eq('id', planId);
-  if (!error) {
+  if (error) {
+    showToast("Fehler beim Löschen: " + error.message, { type: "error" });
+  } else {
     await loadPlannedFlightsFromCloud();
     openPlannedFlightsListModal();
     renderDashboardTiles();
+    showToast("Geplanter Flug gelöscht", { actionLabel: "Rückgängig", duration: 12000, onAction: async () => { await undoPlannedDelete(rows || []); if (document.getElementById("plannedListModal") && document.getElementById("plannedListModal").style.display !== "none") openPlannedFlightsListModal(); } });
   }
 }
 
@@ -5146,7 +5273,7 @@ function renderFullStatistics() {
     };
 
     const airportCity = (code) => (typeof AIRPORTS !== "undefined" && AIRPORTS?.[code]?.city) || "";
-    const airportCityLabel = (code) => (typeof AIRPORTS !== "undefined" && AIRPORTS?.[code]) ? airportCity(code) : code;
+    const airportCityLabel = (code) => escapeHtml((typeof AIRPORTS !== "undefined" && AIRPORTS?.[code]) ? airportCity(code) : code);
 
     statsSelectedYearEl.innerHTML = `
       <!-- Row 1: Bereich & Flüge -->
@@ -5303,7 +5430,7 @@ const airportsEl = document.getElementById("statsAirports");
         // Verhindert doppelte Stadtnamen, falls 'name' bereits die Stadt enthält
         const cityName = ap?.city || name.replace(/\s*\([A-Z]{3}\)\s*$/, "").trim();
 
-        return `${flag} ${cityName} (${iata})`.trim();
+        return `${flag} ${escapeHtml(cityName)} (${escapeHtml(iata)})`.trim();
       }
     });
   }
@@ -5323,7 +5450,7 @@ const airportsEl = document.getElementById("statsAirports");
       withSearch: true,
       searchPlaceholder: "Airline suchen…",
       renderNameHtml: (name) =>
-        `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(name) : ""} <span style="margin-left:8px">${name}</span>`
+        `${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(name) : ""} <span style="margin-left:8px">${escapeHtml(name)}</span>`
     });
   }
 
@@ -5394,15 +5521,15 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
       <td style="color: #475569; font-family: monospace;">${seqMap[String(f.id)] ?? (idx + 1)}</td>
       <td style="font-weight:bold; color:#cbd5e1;">${formatDate(f.date)}</td>
       <td>
-        <div><span class="tag-terminal">🛫 ${f.from}</span></div>
-        <div class="city-subtitle">${fromA.city || ""}</div>
+        <div><span class="tag-terminal">🛫 ${escapeHtml(f.from)}</span></div>
+        <div class="city-subtitle">${escapeHtml(fromA.city || "")}</div>
       </td>
       <td>
-        <div><span class="tag-terminal" style="border-color:#a855f7; color:#d8b4fe;">🛬 ${f.to}</span></div>
-        <div class="city-subtitle">${toA.city || ""}</div>
+        <div><span class="tag-terminal" style="border-color:#a855f7; color:#d8b4fe;">🛬 ${escapeHtml(f.to)}</span></div>
+        <div class="city-subtitle">${escapeHtml(toA.city || "")}</div>
       </td>
-      <td>${(typeof renderAirlineLogo === "function" ? renderAirlineLogo(f.airline) : f.airline)}</td>
-      <td style="font-size:0.85rem; color:#94a3b8;">${f.aircraft || "–"}</td>
+      <td>${(typeof renderAirlineLogo === "function" ? renderAirlineLogo(f.airline) : escapeHtml(f.airline))}</td>
+      <td style="font-size:0.85rem; color:#94a3b8;">${escapeHtml(f.aircraft || "–")}</td>
       <td>
         <div class="dist-val">${formatKm(f.distanceKm)}</div>
         <div style="font-size:0.7rem; color:#475569;">${formatMiles(f.distanceKm)}</div>
@@ -5411,8 +5538,8 @@ function renderFlightsTable(visibleFlights, seqMap = {}) {
       <td>${tripLabel}</td>
       <td style="text-align:center; font-size: 1.1rem;">${classMarkup}</td>
       <td class="row-actions">
-        <button class="action-btn" title="Bearbeiten" data-edit-id="${f.id}">✏️</button>
-        <button class="action-btn danger" title="Löschen" data-id="${f.id}">🗑️</button>
+        <button class="action-btn" title="Bearbeiten" data-edit-id="${escapeHtml(f.id)}">✏️</button>
+        <button class="action-btn danger" title="Löschen" data-id="${escapeHtml(f.id)}">🗑️</button>
       </td>
     `;
 
@@ -5477,6 +5604,12 @@ function renderAll() {
   const statsPage = document.getElementById("statsPage");
   if (statsPage && statsPage.style.display !== "none") {
     renderFullStatistics();
+  }
+
+  // Karte neu zeichnen, wenn sie gerade sichtbar ist (z. B. nach Jahreswechsel)
+  const mapPageEl = document.getElementById("mapPage");
+  if (mapPageEl && mapPageEl.style.display !== "none" && typeof renderMap === "function") {
+    renderMap(getYearFilteredFlights());
   }
 }
 
@@ -5593,6 +5726,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     flightsPage:   document.getElementById("flightsPage"),
     mapPage:       document.getElementById("mapPage"),
     statsPage:     document.getElementById("statsPage"),
+    yearReviewPage: document.getElementById("yearReviewPage"),
+    collectionPage: document.getElementById("collectionPage"),
     dataPage:      document.getElementById("dataPage"),
     profilePage:   document.getElementById("profilePage")
   };
@@ -5616,8 +5751,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (yearWrap) yearWrap.style.display = showYear ? "" : "none";
 
     document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
-      btn.classList.toggle("nav-active", btn.getAttribute("data-target") === targetId);
+      btn.classList.toggle("nav-active", btn.getAttribute("data-target") === (targetId === "yearReviewPage" || targetId === "collectionPage" ? "statsPage" : targetId));
     });
+    if (targetId === "yearReviewPage" || targetId === "collectionPage") window.scrollTo(0, 0);
 
     if (targetId === "dashboardPage") {
       setTimeout(() => { if (typeof renderDashboardTiles === "function") renderDashboardTiles(); }, 0);
@@ -5630,14 +5766,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     else if (targetId === "statsPage") {
       setTimeout(() => {
+        const st = document.getElementById("statsTeasers");
+        if (st && typeof getFeatureTeasersHTML === "function") st.innerHTML = getFeatureTeasersHTML();
         renderFullStatistics();
         if (typeof renderClassStats === "function") renderClassStats();
         if (typeof renderAviatikAchievements === "function") renderAviatikAchievements();
       }, 0);
     }
+    else if (targetId === "yearReviewPage") {
+      setTimeout(() => { if (typeof renderYearReviewPage === "function") renderYearReviewPage(); }, 0);
+    }
+    else if (targetId === "collectionPage") {
+      setTimeout(() => { if (typeof renderCollectionPage === "function") renderCollectionPage(); }, 0);
+    }
     else if (targetId === "mapPage") {
       setTimeout(() => {
-        const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
+        const flights = getYearFilteredFlights();
         if (typeof renderMap === "function") renderMap(flights);
       }, 50);
     }
@@ -5987,16 +6131,18 @@ function renderAirlineLogo(name) {
 
   const key = raw.toUpperCase();
   const url = getLogoUrlForAirline(raw);
-  const safeAlt = raw.replace(/"/g, "&quot;");
+  const safeAlt = escapeHtml(raw);
 
   const code = (typeof AIRLINE_ICAO_MAP !== "undefined" && AIRLINE_ICAO_MAP[key]) 
     ? AIRLINE_ICAO_MAP[key] 
     : key;
 
   // Pfad aus deiner lokalen AIRLINE_LOGOS-Liste (falls vorhanden)
-  const localUrl = (typeof AIRLINE_LOGOS !== "undefined" && AIRLINE_LOGOS[key]) 
+  const localUrl = String((typeof AIRLINE_LOGOS !== "undefined" && AIRLINE_LOGOS[key]) 
     ? AIRLINE_LOGOS[key] 
-    : "";
+    : "").replace(/['"\\<>\s]/g, "");
+  // Airline-Code wird in einen JS-String im onerror-Attribut geschrieben: nur A-Z/0-9
+  const safeCode = String(code).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   /* 
      3-Stufen-Kaskade im onerror-Handler:
@@ -6005,14 +6151,14 @@ function renderAirlineLogo(name) {
      3. Versuch: Lokales Bild aus AIRLINE_LOGOS (z. B. für Air Berlin)
      Ende: Falls gar nichts vorhanden -> Bild sauber ausblenden
   */
-  return `<img src="${url}" 
+  return `<img src="${escapeHtml(url)}" 
                alt="${safeAlt}" 
                title="${safeAlt}" 
                class="airline-logo" 
                onerror="
                  if(!this.dataset.fail) {
                    this.dataset.fail = '1';
-                   this.src = 'https://cdn.radarbox.com/airlines/${code.toUpperCase()}.png';
+                   this.src = 'https://cdn.radarbox.com/airlines/${safeCode}.png';
                  } else if(this.dataset.fail === '1' && '${localUrl}') {
                    this.dataset.fail = '2';
                    this.src = '${localUrl}';
@@ -6114,10 +6260,10 @@ function renderProfile() {
       const gCount = airlineBiz[a] || 0;
 
       return `
-        <div class="logo-tile ${ok ? "" : "missing"}" title="${a}" data-airline="${a}">
+        <div class="logo-tile ${ok ? "" : "missing"}" title="${escapeHtml(a)}" data-airline="${escapeHtml(a)}">
           <div class="logo-status">${ok ? "✅" : "❌"}</div>
           ${(typeof renderAirlineLogo === "function" ? renderAirlineLogo(a) : "") || `<div class="airline-logo placeholder" style="height:30px; width:60px; background:rgba(255,255,255,0.05); border-radius:4px; display:inline-block;"></div>`}
-          <div class="airline-name">${a}</div>
+          <div class="airline-name">${escapeHtml(a)}</div>
           <div class="logo-tooltip">
             <div><b>✈️ ${cCount}</b> Flüge</div>
             <div class="muted">🌴 ${pCount} &nbsp;&nbsp; 💼 ${gCount}</div>
@@ -6139,7 +6285,7 @@ function renderProfile() {
       
       buildRows(); 
       if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
-      alert(`✅ Airline "${cleanName}" registriert! Du kannst ihr jetzt direkt unten ein Logo zuweisen.`);
+      showToast(`✅ Airline "${cleanName}" registriert! Du kannst ihr jetzt direkt unten ein Logo zuweisen.`);
     };
   }
 
@@ -6154,7 +6300,7 @@ function renderProfile() {
       if (typeof saveCustomAircraft === "function") saveCustomAircraft(cleanName);
       
       if (typeof refreshAirlineAircraftDatalists === "function") refreshAirlineAircraftDatalists();
-      alert(`✅ Flugzeugtyp "${cleanName}" registriert!`);
+      showToast(`✅ Flugzeugtyp "${cleanName}" registriert!`);
     };
   }
 
@@ -6482,6 +6628,1110 @@ function getMilestoneHTML(totalKm) {
     </div>`;
 }
 
+function getGeoData() {
+  if (getGeoData._c) return getGeoData._c;
+
+  // Länderkorrekturen: Flughäfen, bei denen der mitgelieferte Datensatz kein (oder ein falsches) Land hat
+  const FIX_STR = "AG:ANU;AI:AXA;AR:RGA SST VLG;AS:FTI PPG;AU:BME BNK BRT CFS CVQ ELC GPN GTE HID HTI HVB KGC KNS PTJ RTS SNB;AW:AUA;AX:MHQ;BB:BGI;BD:CXB;BH:BAH;BL:SBH;BM:BDA;BQ:BON EUX;BR:FEN FLN SLZ;BS:ATC AXP BIM CAT CCZ CRI DCT ELH GGT GHB GHC IGA LGI MYG NAS NMC RSD SML TYM ZSA;BZ:CUK CYC DGA SJX SPR TZA;CA:AKV YAL YBC YBL YCD YCY YGB YGR YGT YHK YHR YIK YME YNC YPH YQQ YQY YRI YSK YTE YVM YXK YXN YYJ YYY YZP YZT YZV;CC:CCK;CK:RAR;CL:ANF CCP IPC IQQ PUQ;CN:CNI DLC ZUH;CO:ADZ BSC PVA TCO;CU:CYO GER SZJ VRO;CV:BVC MMO RAI SID SNE VXE;CX:XCH;CY:ECN GEC;DE:GWT HDF;DJ:JIB;DK:MRW ODE RNN;DM:DCF DOM;EC:MEC SNC;EE:KDL URE;EG:AAC PSD SSH;ER:ASA;ES:ACE FUE IBZ LPA MAH MLN SPC TFN TFS VDE;FK:PSY;FM:KSA PNI TKK YAP;FO:FAE;FR:AGF AJA ANE ANG AUF AUR AVN BES BIA BIQ BOD BOU BVA BVE BZR CCF CEQ CER CET CFE CFR CHR CLY CMF CMR CNG CQF CSF CTT DCM DIJ DLE DNR DOL EBU EDM EGC ENC EPL ETZ EVX FNI FSC GFR GNB HZB IDY LAI LBG LBI LBY LDE LDV LEH LIG LIL LME LPY LRH LRT LTQ LVA LYN MCU MEN MPL MRS MXN MZM NCE NCY NIT NVS OBS ORE ORY PGF PGX PIS POX PUF QAM QIE QNJ QNX QYR RCO RDZ RHE RNE RNS RYN SBK SNR SOZ SXB SYT TLN TNF TUF UIP URO VAF VHY VIY VNE XAB XAC XAS XBQ XBV XCB XCR XCZ XLR XMJ XMW XOG XSJ XSU XVN XVO XVS ZAO;GA:POG;GB:BEB BLK BRR BWF CAL EOI FIE FSS ILY ISC KOI LEQ LMO LSI LYX OUK SCS SYY TRE WIC;GD:GND;GF:CAY;GG:ACI GCI;GL:JEG;GP:GBJ PTP;GQ:SSG;GR:AOK CFU CHQ EFL JKH JMK JSI JTR KGS MJT RHO SMI ZTH;GU:GUM UAM;HK:HKG;HN:GJA RTB;HR:BWK;HT:JEE PAX;ID:AMQ BIK BTH BTJ DPS GNS KNG KTG LOP LUV LUW MDC MKW NAH NTX OTI TRK TTE;IE:CFN;IM:IOM;IN:AGX CBD GOI IXZ TRV;IO:NKW;IR:AEU BDH KHK KIH LVP SXI YEH;IS:PFJ VEY;IT:BDS CRV EBA LMP OLB PMO PNL REG TPS;JE:JER;JP:ASJ DNA FUJ HAC IEJ IKI ISG IWO KKX KTD KUM MMD MMY MYE MYJ NTQ OGN OIM OIR OIT OKA OKE OKI RIS RNJ SDS SHI SHM TKN TNE TRA TSJ UEO WKJ;KE:KWY LAU;KI:CIS CXI TBF TRW;KM:AJN HAH NWA;KN:NEV SKB;KR:CJU MWX;KY:CYB GCM LYB;LC:SLU UVF;LK:JAF KCT;LU:LUX;LY:LAQ MJI;MF:SFG;MG:FTU MJN MNJ NOS SMS SVB TMM VOH WVK;MH:KWA MAJ;MM:KAW KYP;MO:MFM;MP:ROP SPN TIQ;MQ:FDF;MR:NDB;MS:MNI;MU:MRU RRG;MV:GAN HAQ KDM KDO MLE VAM;MX:CZM LTO PPE;MY:KBR KTE LGK MYY SDK TGG TOD;MZ:BCW BEW BZB IBL;NA:ADI ERS GFY KMP LUD NDU OND TSB WDH WVB;NC:BMY ILP KOC LIF MEE TGJ UVE;NF:NLK;NO:AES ALF ANX BDU BGO BJF BNN BOO BVG EVE FRO HAU HFT HOV HVG KKN KRS KSU LKL LKN MEH MOL MQN NTB NVK OLA OSL RRS RVK RYG SKE SKN SOJ SRP SSJ SVG SVJ TOS TRD TRF VAW VDB VDS;NR:INU;NU:IUE;NZ:CHT WSZ;OM:MSH;PA:BOC ONX;PF:AAA AHE AUQ AXR BOB FAV FGU GMR HOI HUH KKR MAU MKP MOZ MVT NHV PKP PPT REA RFP RGI RUR TIH TKP TKX TUB XMH;PG:DAU HKN KVG MAS RAB VAI;PH:BSO CGM CGY CYP DPL EUQ JOL KLO LAO LBX MBT MPH MRQ RXS SFE SGS SJI SUG TAC TAG TBH USU VRC ZAM;PM:FSP MQC;PR:BQN FAJ;PT:FLW GRW HOR PIX PXO SJZ SMA TER;PW:ROR;RE:RUN ZSE;RU:AMV DKS MCX TGK;SB:MUA;SC:PRI SEZ;SD:PZU;SE:KLR LLA UME VBY;SH:ASI;SI:POW;SJ:LYR;SN:CSK;SO:BBO HGA;ST:PCP TMS;SX:SXM;TC:GDT NCA PLS XSC;TH:TDX;TN:DJE SFA TUN;TO:HPA TBU VAV;TR:CKZ;TT:TAB;TV:FUN;TW:KHH KYD LZN MFK MZG TPE;TZ:PMA TGT ZNZ;UA:ODS;UM:AWK MDY;US:ACK ADK AKW ANN BKH CEC CZF DUT EHM EYW GLS HNM HPB JHM KTN LNY MYU NZY OME PBV PIZ PSG PWT SDP SHH SIT SNP SYA TOG;UY:MVD;VC:BQU CIW MQS SVD UNI;VE:PMV;VG:EIS;VI:STT STX;VN:PQC TBB VCS;VU:TAH VLI ZGU;WF:FUT WLS;WS:APW;XK:PRN;YE:SCT;YT:DZA;ZA:ELS GRJ MGH PBZ PLZ VIR";
+  // Souveräne Staaten je Kontinent (UN-Mitglieder + Taiwan + Kosovo; Palästina/Vatikan ohne Flughafen fehlen)
+  const COUNTRIES = {"EU": "AL AD AT BY BE BA BG HR CY CZ DK EE FI FR DE GR HU IS IE IT XK LV LI LT LU MT MD MC ME NL MK NO PL PT RO RU SM RS SK SI ES SE CH UA GB", "AS": "AF AM AZ BH BD BT BN KH CN GE IN ID IR IQ IL JP JO KZ KW KG LA LB MY MV MN MM NP KP OM PK PH QA SA SG KR LK SY TW TJ TH TL TR TM AE UZ VN YE", "AF": "DZ AO BJ BW BF BI CV CM CF TD KM CG CD CI DJ EG GQ ER SZ ET GA GM GH GN GW KE LS LR LY MG MW ML MR MU MA MZ NA NE NG RW ST SN SC SL SO ZA SS SD TZ TG TN UG ZM ZW", "NA": "AG BS BB BZ CA CR CU DM DO SV GD GT HT HN JM MX NI PA KN LC VC TT US", "SA": "AR BO BR CL CO EC GY PY PE SR UY VE", "OC": "AU FJ KI MH FM NR NZ PW PG WS SB TO TV VU"};
+  // Auswahl grosser Flughäfen je Kontinent (hier einfach anpassbar)
+  const TOP = {"EU": "LHR CDG AMS FRA MAD IST FCO BCN MUC LGW ZRH VIE CPH DUB OSL ARN LIS MAN ATH BRU MXP HEL DUS WAW PRG BUD PMI GVA EDI BER KEF ORY STN NCE VCE", "AS": "HND NRT KIX PEK PVG CAN SZX CTU HKG ICN TPE SIN BKK KUL CGK DPS MNL SGN HAN DEL BOM BLR MAA CCU DXB AUH DOH RUH JED TLV KWI MCT CMB MLE KHI SAW HKT", "NA": "ATL LAX ORD DFW DEN JFK SFO SEA LAS MCO EWR CLT PHX MIA IAH BOS MSP FLL DTW PHL LGA BWI SLC IAD SAN TPA HNL YYZ YVR YUL YYC MEX CUN SJO PTY SJU HAV NAS MBJ PUJ", "SA": "GRU GIG BSB EZE SCL BOG LIM UIO MDE MVD CUZ", "AF": "JNB CPT CAI ADD NBO LOS CMN RAK ALG TUN ACC DAR ZNZ MRU SEZ SSH HRG", "OC": "SYD MEL BNE PER AKL CHC WLG NAN PPT CNS ADL"};
+
+  const fix = {};
+  FIX_STR.split(";").forEach(g => {
+    const [cc, list] = g.split(":");
+    list.split(" ").forEach(code => { fix[code] = cc; });
+  });
+
+  const countriesByCont = {};
+  const continentOf = {};
+  Object.keys(COUNTRIES).forEach(cont => {
+    countriesByCont[cont] = COUNTRIES[cont].split(" ");
+    countriesByCont[cont].forEach(cc => { continentOf[cc] = cont; });
+  });
+
+  const topByCont = {};
+  const topContinentOf = {};
+  Object.keys(TOP).forEach(cont => {
+    topByCont[cont] = TOP[cont].split(" ");
+    topByCont[cont].forEach(code => { topContinentOf[code] = cont; });
+  });
+
+  getGeoData._c = { fix, countriesByCont, continentOf, topByCont, topContinentOf, nn: {} };
+  return getGeoData._c;
+}
+
+
+const CONTINENT_META = [
+  { id: "EU", name: "Europa", icon: "🏰" },
+  { id: "AS", name: "Asien", icon: "🏯" },
+  { id: "AF", name: "Afrika", icon: "🦁" },
+  { id: "NA", name: "Nordamerika", icon: "🗽" },
+  { id: "SA", name: "Südamerika", icon: "🌎" },
+  { id: "OC", name: "Ozeanien", icon: "🏝️" }
+];
+
+// Land eines Flughafens: erst Korrekturliste, dann Datensatz, zuletzt nächster Nachbar
+function getAirportCountry(iata) {
+  const code = String(iata || "").trim().toUpperCase();
+  if (!code) return "";
+  const geo = getGeoData();
+  if (geo.fix[code]) return geo.fix[code];
+
+  const a = (typeof AIRPORTS !== "undefined" && AIRPORTS) ? AIRPORTS[code] : null;
+  if (!a) return "";
+  const own = String(a.country || "").trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(own)) return own;
+
+  if (code in geo.nn) return geo.nn[code];
+
+  const lat = Number(a.lat), lon = Number(a.lon !== undefined ? a.lon : a.lng);
+  let result = "";
+  if (isFinite(lat) && isFinite(lon)) {
+    const cosLat = Math.cos(lat * Math.PI / 180);
+    const near = [];
+    for (const k in AIRPORTS) {
+      if (k === code) continue;
+      const b = AIRPORTS[k];
+      const bc = geo.fix[k] || String((b && b.country) || "").trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(bc)) continue;
+      const dx = (Number(b.lon !== undefined ? b.lon : b.lng) - lon) * cosLat;
+      const dy = Number(b.lat) - lat;
+      const d = Math.sqrt(dx * dx + dy * dy) * 111.2;
+      if (!isFinite(d)) continue;
+      near.push([d, bc]);
+      near.sort((x, y) => x[0] - y[0]);
+      if (near.length > 3) near.pop();
+    }
+    if (near.length) {
+      if (near[0][0] <= 80) result = near[0][1];
+      else if (near.length === 3 && near[2][0] <= 300 && near[0][1] === near[1][1] && near[1][1] === near[2][1]) result = near[0][1];
+    }
+  }
+  geo.nn[code] = result;
+  return result;
+}
+
+function getCountryNameDe(cc) {
+  const code = String(cc || "").toUpperCase();
+  if (code === "XK") return "Kosovo";
+  try {
+    if (!getCountryNameDe._dn) getCountryNameDe._dn = new Intl.DisplayNames(["de"], { type: "region" });
+    return getCountryNameDe._dn.of(code) || code;
+  } catch (e) {
+    return code;
+  }
+}
+
+function fmtNum(n) {
+  return Math.round(Number(n) || 0).toLocaleString("de-CH");
+}
+
+// Grobe CO2-Schätzung pro Passagier (kg): Distanzband x Klasse
+function estimateCo2Kg(f) {
+  const km = Number(f.distanceKm || 0);
+  if (!km) return 0;
+  const cls = String(f.flightClass || "Economy").toLowerCase();
+  const perKm = km < 1500 ? 0.15 : (km < 4000 ? 0.12 : 0.11);
+  const mult = cls.includes("first") ? 2.0 : (cls.includes("business") ? 1.5 : (cls.includes("premium") ? 1.3 : 1.0));
+  return km * perKm * mult;
+}
+
+// Alle Flüge mit Datum, Flughafen- und Länderstatistik (nie nach Jahr gefiltert)
+function analyzeFlightsGeo(flights) {
+  const airports = new Map();   // IATA -> { count, first }
+  const countries = new Map();  // ISO2 -> { flights, first, airports:Set }
+  const unknown = new Set();
+
+  flights.forEach(f => {
+    const d = parseFlightDateAny(f.date);
+    const codes = [String(f.from || "").trim().toUpperCase(), String(f.to || "").trim().toUpperCase()].filter(Boolean);
+    const ccs = new Set();
+
+    codes.forEach(code => {
+      const ap = airports.get(code) || { count: 0, first: null };
+      ap.count++;
+      if (d && (!ap.first || d < ap.first)) ap.first = d;
+      airports.set(code, ap);
+
+      const cc = getAirportCountry(code);
+      if (cc) {
+        ccs.add(cc);
+        const c = countries.get(cc) || { flights: 0, first: null, airports: new Set() };
+        c.airports.add(code);
+        countries.set(cc, c);
+      } else {
+        unknown.add(code);
+      }
+    });
+
+    ccs.forEach(cc => {
+      const c = countries.get(cc);
+      c.flights++;
+      if (d && (!c.first || d < c.first)) c.first = d;
+    });
+  });
+
+  return { airports, countries, unknown };
+}
+
+// ============================================================
+// JAHRESRÜCKBLICK
+// ============================================================
+let yearReviewYear;   // undefined = noch nicht gewählt, "ALL" = gesamt, sonst Jahreszahl
+
+function setYearReview(v) {
+  yearReviewYear = (v === "ALL") ? "ALL" : Number(v);
+  renderYearReviewPage();
+}
+
+function topEntry(map) {
+  let best = null;
+  map.forEach((v, k) => { if (!best || v > best[1]) best = [k, v]; });
+  return best;
+}
+
+function buildYearReviewText(ctx) {
+  const lines = [];
+  lines.push(`✈️ Mein Flugjahr ${ctx.label}`);
+  lines.push(`${ctx.count} Flüge · ${fmtNum(ctx.km)} km · ${fmtNum(ctx.hours)} h in der Luft`);
+  lines.push(`🌍 ${ctx.rounds.toFixed(1)} Weltumrundungen`);
+  if (ctx.longest) lines.push(`Längster Flug: ${ctx.longest.f.from} → ${ctx.longest.f.to} (${fmtNum(ctx.longest.f.distanceKm)} km)`);
+  if (ctx.topAirline) lines.push(`Lieblings-Airline: ${ctx.topAirline[0]} (${ctx.topAirline[1]}×)`);
+  lines.push(`Neue Länder: ${ctx.newCountries.length} · Neue Flughäfen: ${ctx.newAirports.length}`);
+  lines.push(`CO₂ (grob geschätzt): ca. ${(ctx.co2Kg / 1000).toFixed(1)} t`);
+  return lines.join("\n");
+}
+
+function copyYearReviewText() {
+  const text = window.__yearReviewText || "";
+  const note = document.getElementById("yearReviewCopyNote");
+  const done = (ok) => { if (note) { note.textContent = ok ? "✅ Kopiert" : "❌ Kopieren nicht möglich"; setTimeout(() => { note.textContent = ""; }, 2000); } };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
+      return;
+    }
+  } catch (e) { /* weiter mit Fallback */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    done(ok);
+  } catch (e) { done(false); }
+}
+
+function renderYearReviewPage() {
+  const root = document.getElementById("yearReviewContent");
+  if (!root) return;
+
+  const all = (typeof flightsAll !== "undefined" ? flightsAll : [])
+    .map(f => ({ f, d: parseFlightDateAny(f.date) }))
+    .filter(x => x.d);
+
+  if (!all.length) {
+    root.innerHTML = `<div class="card"><div class="muted">Noch keine Flüge erfasst – sobald du Flüge im Logbuch hast, erscheint hier dein Rückblick.</div></div>`;
+    return;
+  }
+
+  const years = [...new Set(all.map(x => x.d.getFullYear()))].sort((a, b) => b - a);
+  if (yearReviewYear === undefined || (yearReviewYear !== "ALL" && !years.includes(yearReviewYear))) {
+    yearReviewYear = years[0];
+  }
+  const isAll = yearReviewYear === "ALL";
+  const label = isAll ? "Gesamt" : String(yearReviewYear);
+
+  const sel = isAll ? all : all.filter(x => x.d.getFullYear() === yearReviewYear);
+  const prev = (!isAll && years.includes(yearReviewYear - 1)) ? all.filter(x => x.d.getFullYear() === yearReviewYear - 1) : null;
+
+  const sumKm = arr => arr.reduce((s, x) => s + Number(x.f.distanceKm || 0), 0);
+  const sumH = arr => arr.reduce((s, x) => s + Number(x.f.durationHours || 0), 0);
+
+  const count = sel.length;
+  const km = sumKm(sel);
+  const hours = sumH(sel);
+  const rounds = km / 40075;
+  const co2Kg = sel.reduce((s, x) => s + estimateCo2Kg(x.f), 0);
+
+  // Highlights
+  const withKm = sel.filter(x => Number(x.f.distanceKm) > 0);
+  const longest = withKm.length ? withKm.reduce((a, b) => (Number(b.f.distanceKm) > Number(a.f.distanceKm) ? b : a)) : null;
+  const shortest = withKm.length ? withKm.reduce((a, b) => (Number(b.f.distanceKm) < Number(a.f.distanceKm) ? b : a)) : null;
+
+  const routeCounts = new Map(), airlineCounts = new Map(), aircraftCounts = new Map(), airportCounts = new Map();
+  const monthKm = new Array(12).fill(0), monthCnt = new Array(12).fill(0);
+  let priv = 0, biz = 0;
+  const cls = { Economy: 0, Business: 0, First: 0 };
+
+  sel.forEach(({ f, d }) => {
+    const a = String(f.from || "").toUpperCase(), b = String(f.to || "").toUpperCase();
+    const rk = [a, b].sort().join(" ↔ ");
+    routeCounts.set(rk, (routeCounts.get(rk) || 0) + 1);
+    const air = String(f.airline || "").trim();
+    if (air) airlineCounts.set(air, (airlineCounts.get(air) || 0) + 1);
+    const ac = String(f.aircraft || "").trim();
+    if (ac) aircraftCounts.set(ac, (aircraftCounts.get(ac) || 0) + 1);
+    [a, b].forEach(c => { if (c) airportCounts.set(c, (airportCounts.get(c) || 0) + 1); });
+    monthKm[d.getMonth()] += Number(f.distanceKm || 0);
+    monthCnt[d.getMonth()]++;
+    if (String(f.tripType || "p").toLowerCase() === "g") biz++; else priv++;
+    const c = String(f.flightClass || "Economy").toLowerCase();
+    if (c.includes("first")) cls.First++; else if (c.includes("business")) cls.Business++; else cls.Economy++;
+  });
+
+  const topRoute = topEntry(routeCounts);
+  const topAirline = topEntry(airlineCounts);
+  const topAircraft = topEntry(aircraftCounts);
+  const topAirport = topEntry(airportCounts);
+  let busiestMonth = -1;
+  monthCnt.forEach((c, i) => { if (c > 0 && (busiestMonth < 0 || monthKm[i] > monthKm[busiestMonth])) busiestMonth = i; });
+  const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const monthShort = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+  // Neu in diesem Jahr (Erstbesuch im gewählten Jahr)
+  const geoAll = analyzeFlightsGeo(all.map(x => x.f));
+  const inSel = (dt) => dt && (isAll || dt.getFullYear() === yearReviewYear);
+  const newCountries = [];
+  geoAll.countries.forEach((v, cc) => { if (inSel(v.first)) newCountries.push(cc); });
+  const newAirports = [];
+  geoAll.airports.forEach((v, code) => { if (inSel(v.first)) newAirports.push(code); });
+  newCountries.sort((a, b) => getCountryNameDe(a).localeCompare(getCountryNameDe(b), "de"));
+  newAirports.sort();
+
+  const airportCity = (code) => { const a = (typeof AIRPORTS !== "undefined") ? AIRPORTS[code] : null; return a && a.city ? a.city : code; };
+  const flag = (cc) => (typeof renderFlagImg === "function") ? renderFlagImg(cc, 18) : "";
+
+  // Vergleich zum Vorjahr
+  let compareHTML = "";
+  if (prev) {
+    const pk = sumKm(prev), pc = prev.length;
+    const dKm = km - pk, dC = count - pc;
+    const pct = pk > 0 ? Math.round((dKm / pk) * 100) : null;
+    const arrow = (v) => v > 0 ? "▲" : (v < 0 ? "▼" : "＝");
+    const col = (v) => v > 0 ? "#6ee7b7" : (v < 0 ? "#fca5a5" : "#94a3b8");
+    compareHTML = `
+      <div class="yr-compare">
+        <span style="color:${col(dC)}">${arrow(dC)} ${dC > 0 ? "+" : ""}${dC} Flüge</span>
+        <span style="color:${col(dKm)}">${arrow(dKm)} ${dKm > 0 ? "+" : ""}${fmtNum(dKm)} km${pct !== null ? ` (${pct > 0 ? "+" : ""}${pct}%)` : ""}</span>
+        <span class="muted">vs. ${yearReviewYear - 1}</span>
+      </div>`;
+  }
+
+  const pctOf = (n, total) => total ? Math.round((n / total) * 100) : 0;
+  const maxMonth = Math.max(...monthKm, 1);
+
+  const chip = (v, text) => `<button type="button" class="btn btn-secondary btn-sm ${String(yearReviewYear) === String(v) ? "nav-active" : ""}" onclick="setYearReview('${safeId(v)}')">${escapeHtml(text)}</button>`;
+  const chipsHTML = chip("ALL", "Gesamt") + years.map(y => chip(y, String(y))).join("");
+
+  const card = (title, body) => `<div class="stat-card holo-card yr-card"><div class="stat-label terminal-label">${title}</div>${body}</div>`;
+  const big = (t) => `<div class="stat-value yr-big">${t}</div>`;
+  const note = (t) => `<div class="stat-note">${t}</div>`;
+  const noData = `<div class="stat-note">–</div>`;
+
+  const routeStr = (f) => `${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(f.from) : escapeHtml(f.from)} → ${(typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(f.to) : escapeHtml(f.to)}`;
+
+  const cards = [];
+
+  cards.push(card("📏 LÄNGSTER FLUG", longest
+    ? big(routeStr(longest.f)) + note(`${escapeHtml(airportCity(longest.f.from))} → ${escapeHtml(airportCity(longest.f.to))}<br>${fmtNum(longest.f.distanceKm)} km · ${formatDate(longest.f.date)}`)
+    : noData));
+  cards.push(card("📐 KÜRZESTER FLUG", shortest
+    ? big(routeStr(shortest.f)) + note(`${escapeHtml(airportCity(shortest.f.from))} → ${escapeHtml(airportCity(shortest.f.to))}<br>${fmtNum(shortest.f.distanceKm)} km · ${formatDate(shortest.f.date)}`)
+    : noData));
+  cards.push(card("🔁 LIEBLINGSROUTE", topRoute
+    ? big(escapeHtml(topRoute[0])) + note(topRoute[1] > 1 ? `${topRoute[1]}× geflogen` : "Keine Route wiederholt")
+    : noData));
+  cards.push(card("🛫 LIEBLINGS-AIRLINE", topAirline
+    ? big(`${(typeof renderAirlineLogo === "function") ? renderAirlineLogo(topAirline[0]) : ""} ${escapeHtml(topAirline[0])}`) + note(`${topAirline[1]} Flüge · ${pctOf(topAirline[1], count)}% aller Flüge`)
+    : noData));
+  cards.push(card("🛩 FLUGZEUGTYP #1", topAircraft
+    ? big(escapeHtml(topAircraft[0])) + note(`${topAircraft[1]}× geflogen`)
+    : noData));
+  cards.push(card("🛬 MEISTBESUCHTER FLUGHAFEN", topAirport
+    ? big((typeof airportCodeWithFlag === "function") ? airportCodeWithFlag(topAirport[0]) : escapeHtml(topAirport[0])) + note(`${escapeHtml(airportCity(topAirport[0]))} · ${topAirport[1]} Besuche`)
+    : noData));
+  cards.push(card(isAll ? "📅 STÄRKSTER MONAT" : "📅 AKTIVSTER MONAT", busiestMonth >= 0
+    ? big(monthNames[busiestMonth]) + note(`${monthCnt[busiestMonth]} Flüge · ${fmtNum(monthKm[busiestMonth])} km`)
+    : noData));
+  cards.push(card("⏱ ZEIT IN DER LUFT", big(`${fmtNum(hours)} h`) + note(`≈ ${(hours / 24).toFixed(1)} Tage am Stück`)));
+
+  const newCountriesHTML = newCountries.length
+    ? `<div class="yr-chips">${newCountries.map(cc => `<span class="yr-chip">${flag(cc)}${escapeHtml(getCountryNameDe(cc))}</span>`).join("")}</div>`
+    : note(isAll ? "Noch keine Länder" : "Keine neuen Länder in diesem Jahr");
+  cards.push(`<div class="stat-card holo-card yr-card yr-wide"><div class="stat-label terminal-label">🌍 ${isAll ? "BESUCHTE LÄNDER" : "NEUE LÄNDER"} (${newCountries.length})</div>${newCountriesHTML}</div>`);
+
+  const shownAp = newAirports.slice(0, 40);
+  const newAirportsHTML = newAirports.length
+    ? `<div class="yr-chips">${shownAp.map(c => `<span class="yr-chip" title="${escapeHtml(airportCity(c))}">${escapeHtml(c)}</span>`).join("")}${newAirports.length > shownAp.length ? `<span class="yr-chip">+${newAirports.length - shownAp.length}</span>` : ""}</div>`
+    : note(isAll ? "Noch keine Flughäfen" : "Keine neuen Flughäfen in diesem Jahr");
+  cards.push(`<div class="stat-card holo-card yr-card yr-wide"><div class="stat-label terminal-label">🛰️ ${isAll ? "BESUCHTE FLUGHÄFEN" : "NEUE FLUGHÄFEN"} (${newAirports.length})</div>${newAirportsHTML}</div>`);
+
+  const total = priv + biz;
+  cards.push(card("🌴💼 PRIVAT / GESCHÄFT",
+    `<div class="yr-split"><div style="width:${pctOf(priv, total)}%; background:#22c55e;"></div><div style="width:${pctOf(biz, total)}%; background:#38bdf8;"></div></div>` +
+    note(`🌴 ${priv} privat · 💼 ${biz} geschäftlich`)));
+  cards.push(card("🥂 KLASSEN",
+    note(`🥫 Economy: <b>${cls.Economy}</b><br>🥂 Business: <b>${cls.Business}</b><br>👑 First: <b>${cls.First}</b>`)));
+  cards.push(card("🌱 CO₂ (GROB GESCHÄTZT)",
+    big(`ca. ${(co2Kg / 1000).toFixed(1)} t`) +
+    note(`Schätzung pro Passagier aus Distanz und Klasse, ohne Nicht-CO₂-Effekte – nur als Grössenordnung gedacht.`)));
+
+  const bars = monthKm.map((v, i) => {
+    const h = Math.max(v > 0 ? 6 : 0, Math.round((v / maxMonth) * 100));
+    return `<div class="yr-bar-col" title="${monthShort[i]}: ${fmtNum(v)} km · ${monthCnt[i]} Flüge">
+      <div class="yr-bar-track"><div class="yr-bar ${i === busiestMonth ? "yr-bar-top" : ""}" style="height:${h}%"></div></div>
+      <div class="yr-bar-label">${monthShort[i]}</div>
+    </div>`;
+  }).join("");
+
+  const ctx = { label, count, km, hours, rounds, longest, topAirline, newCountries, newAirports, co2Kg };
+  window.__yearReviewText = buildYearReviewText(ctx);
+
+  root.innerHTML = `
+    <section class="card">
+      <div class="yr-chips-row">${chipsHTML}</div>
+    </section>
+
+    <section class="card yr-hero">
+      <div class="yr-hero-year">${escapeHtml(label)}</div>
+      <div class="yr-hero-line"><b>${count}</b> Flüge · <b>${fmtNum(km)}</b> km · <b>${fmtNum(hours)}</b> h</div>
+      <div class="yr-hero-sub">🌍 ${rounds.toFixed(2)} Weltumrundungen · ${newCountries.length} ${isAll ? "Länder" : "neue Länder"} · ${newAirports.length} ${isAll ? "Flughäfen" : "neue Flughäfen"}</div>
+      ${compareHTML}
+      <div style="margin-top:.7rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="copyYearReviewText()">📋 Zusammenfassung kopieren</button>
+        <span id="yearReviewCopyNote" class="muted"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="icon">📊</span> Monatsverlauf (km)</h2>
+      <div class="yr-bars">${bars}</div>
+    </section>
+
+    <div class="yr-grid">${cards.join("")}</div>
+  `;
+  window.scrollTo(0, 0);
+}
+
+// ============================================================
+// LÄNDER & FLUGHÄFEN SAMMELN
+// ============================================================
+const collectionState = { tab: "countries", filter: "all", query: "", collapsed: {} };
+
+function setCollectionTab(t) { collectionState.tab = t; renderCollectionPage(); }
+function setCollectionFilter(f) { collectionState.filter = f; renderCollectionPage(); }
+function toggleCollectionContinent(id) {
+  const key = collectionState.tab + ":" + id;
+  collectionState.collapsed[key] = !collectionState.collapsed[key];
+  renderCollectionPage();
+}
+function onCollectionSearch(v) {
+  collectionState.query = String(v || "").trim().toLowerCase();
+  renderCollectionList();
+}
+
+function renderCollectionPage() {
+  const root = document.getElementById("collectionContent");
+  if (!root) return;
+
+  const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
+  const geo = getGeoData();
+  const stats = analyzeFlightsGeo(flights);
+  window.__collectionStats = stats;
+
+  // Länder: nur Staaten, für die es im Datensatz überhaupt einen Flughafen gibt
+  const airportCountries = new Set();
+  if (typeof AIRPORTS !== "undefined" && AIRPORTS) {
+    Object.keys(AIRPORTS).forEach(code => { const cc = getAirportCountry(code); if (cc) airportCountries.add(cc); });
+  }
+  let countryTotal = 0, countryVisited = 0;
+  const noAirport = [];
+  CONTINENT_META.forEach(c => {
+    (geo.countriesByCont[c.id] || []).forEach(cc => {
+      if (!airportCountries.has(cc)) { noAirport.push(cc); return; }
+      countryTotal++;
+      if (stats.countries.has(cc)) countryVisited++;
+    });
+  });
+  const territories = [];
+  stats.countries.forEach((v, cc) => { if (!geo.continentOf[cc]) territories.push(cc); });
+
+  let topTotal = 0, topVisited = 0;
+  CONTINENT_META.forEach(c => (geo.topByCont[c.id] || []).forEach(code => { topTotal++; if (stats.airports.has(code)) topVisited++; }));
+  const otherVisited = [...stats.airports.keys()].filter(code => !geo.topContinentOf[code]).length;
+
+  const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
+  const tile = (title, a, b, extra) => `
+    <div class="stat-card holo-card">
+      <div class="stat-label terminal-label">${title}</div>
+      <div class="stat-value" style="font-size:1.4rem;">${a}${b ? ` <span class="muted" style="font-size:.9rem;">/ ${b}</span>` : ""}</div>
+      ${b ? `<div class="yr-split" style="margin-top:.35rem;"><div style="width:${pct(a, b)}%; background:#22c55e;"></div></div>` : ""}
+      <div class="stat-note">${extra}</div>
+    </div>`;
+
+  const unknownNote = stats.unknown.size
+    ? `<div class="muted" style="margin-top:.5rem;">⚠️ ${stats.unknown.size} besuchte(r) Flughafen ohne Länderzuordnung: ${[...stats.unknown].slice(0, 15).map(escapeHtml).join(", ")}</div>`
+    : "";
+
+  root.innerHTML = `
+    <section class="card">
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:.6rem;">
+        ${tile("🌍 LÄNDER", countryVisited, countryTotal, `${pct(countryVisited, countryTotal)}% der Welt`)}
+        ${tile("🛬 GROSSE FLUGHÄFEN", topVisited, topTotal, `${pct(topVisited, topTotal)}% der Auswahl`)}
+        ${tile("🛰️ WEITERE FLUGHÄFEN", otherVisited, 0, "ausserhalb der Auswahl")}
+        ${tile("🏝️ GEBIETE", territories.length, 0, "Territorien &amp; Überseegebiete")}
+      </div>
+      ${unknownNote}
+    </section>
+
+    <section class="card">
+      <div class="yr-chips-row">
+        <button type="button" class="btn btn-secondary btn-sm ${collectionState.tab === "countries" ? "nav-active" : ""}" onclick="setCollectionTab('countries')">🌍 Länder</button>
+        <button type="button" class="btn btn-secondary btn-sm ${collectionState.tab === "airports" ? "nav-active" : ""}" onclick="setCollectionTab('airports')">🛬 Flughäfen</button>
+        <span style="flex:1"></span>
+        <button type="button" class="btn btn-secondary btn-sm ${collectionState.filter === "all" ? "nav-active" : ""}" onclick="setCollectionFilter('all')">Alle</button>
+        <button type="button" class="btn btn-secondary btn-sm ${collectionState.filter === "visited" ? "nav-active" : ""}" onclick="setCollectionFilter('visited')">✅ Besucht</button>
+        <button type="button" class="btn btn-secondary btn-sm ${collectionState.filter === "missing" ? "nav-active" : ""}" onclick="setCollectionFilter('missing')">⬜ Fehlt</button>
+      </div>
+      <div class="rank-search" style="margin-top:.6rem; margin-bottom:0;">
+        <input type="search" id="collectionSearch" placeholder="${collectionState.tab === "countries" ? "Land suchen…" : "Flughafen suchen (Code oder Stadt)…"}" value="${escapeHtml(collectionState.query)}" oninput="onCollectionSearch(this.value)">
+      </div>
+      ${collectionState.tab === "airports" ? `<div class="muted" style="margin-top:.5rem;">„Grosse Flughäfen“ ist eine kuratierte Auswahl der wichtigsten Drehkreuze je Kontinent. Alle anderen besuchten Flughäfen erscheinen unten als „Weitere“.</div>` : ""}
+      ${(collectionState.tab === "countries" && noAirport.length) ? `<div class="muted" style="margin-top:.5rem;">Nicht gezählt (kein Flughafen im Datensatz): ${noAirport.map(cc => escapeHtml(getCountryNameDe(cc))).join(", ")}.</div>` : ""}
+    </section>
+
+    <div id="collectionList"></div>
+  `;
+
+  window.__collectionAirportCountries = airportCountries;
+  renderCollectionList();
+  const search = document.getElementById("collectionSearch");
+  if (search && collectionState.query) { /* Fokus nicht erzwingen */ }
+}
+
+function renderCollectionList() {
+  const host = document.getElementById("collectionList");
+  if (!host) return;
+  const stats = window.__collectionStats || analyzeFlightsGeo([]);
+  const airportCountries = window.__collectionAirportCountries || new Set();
+  const geo = getGeoData();
+  const q = collectionState.query;
+  const f = collectionState.filter;
+
+  const flag = (cc) => (typeof renderFlagImg === "function") ? renderFlagImg(cc, 18) : "";
+  const yearOf = (d) => d ? d.getFullYear() : "";
+  const keep = (visited, hay) => {
+    if (f === "visited" && !visited) return false;
+    if (f === "missing" && visited) return false;
+    if (q && !hay.toLowerCase().includes(q)) return false;
+    return true;
+  };
+
+  let html = "";
+
+  CONTINENT_META.forEach(cont => {
+    let items = [];   // { visited, html, hay }
+    let vis = 0, tot = 0;
+
+    if (collectionState.tab === "countries") {
+      (geo.countriesByCont[cont.id] || []).forEach(cc => {
+        if (!airportCountries.has(cc)) return;
+        const name = getCountryNameDe(cc);
+        const info = stats.countries.get(cc);
+        const visited = !!info;
+        tot++; if (visited) vis++;
+        if (!keep(visited, name + " " + cc)) return;
+        items.push(`<div class="col-chip ${visited ? "visited" : "missing"}" title="${escapeHtml(name)}">
+          ${flag(cc)}<div class="col-chip-text"><div class="col-chip-name">${escapeHtml(name)}</div>
+          ${visited ? `<div class="col-chip-sub">seit ${yearOf(info.first)} · ${info.flights} Flüge</div>` : ""}</div></div>`);
+      });
+    } else {
+      (geo.topByCont[cont.id] || []).forEach(code => {
+        const a = (typeof AIRPORTS !== "undefined") ? AIRPORTS[code] : null;
+        const city = a && a.city ? a.city : code;
+        const info = stats.airports.get(code);
+        const visited = !!info;
+        tot++; if (visited) vis++;
+        if (!keep(visited, code + " " + city)) return;
+        items.push(`<div class="col-chip ${visited ? "visited" : "missing"}" title="${escapeHtml(city)}">
+          <span class="col-code">${escapeHtml(code)}</span><div class="col-chip-text"><div class="col-chip-name">${escapeHtml(city)}</div>
+          ${visited ? `<div class="col-chip-sub">seit ${yearOf(info.first)} · ${info.count}×</div>` : ""}</div></div>`);
+      });
+    }
+
+    if (!items.length && (q || f !== "all")) return;
+    const key = collectionState.tab + ":" + cont.id;
+    const collapsed = !!collectionState.collapsed[key];
+    html += `
+      <section class="card">
+        <div class="toolbar" style="cursor:pointer;" onclick="toggleCollectionContinent('${safeId(cont.id)}')">
+          <h2 style="margin:0;"><span class="icon">${cont.icon}</span> ${escapeHtml(cont.name)}</h2>
+          <span class="badge">${vis} / ${tot} ${collapsed ? "▸" : "▾"}</span>
+        </div>
+        <div class="yr-split" style="margin:.5rem 0;"><div style="width:${tot ? Math.round(vis / tot * 100) : 0}%; background:#22c55e;"></div></div>
+        ${collapsed ? "" : `<div class="col-grid">${items.join("") || `<div class="muted">Nichts zu zeigen.</div>`}</div>`}
+      </section>`;
+  });
+
+  // Weitere besuchte Flughäfen bzw. Gebiete
+  if (collectionState.tab === "airports") {
+    const others = [...stats.airports.entries()]
+      .filter(([code]) => !geo.topContinentOf[code])
+      .map(([code, info]) => {
+        const a = (typeof AIRPORTS !== "undefined") ? AIRPORTS[code] : null;
+        return { code, city: a && a.city ? a.city : code, cc: getAirportCountry(code), info };
+      })
+      .filter(o => f !== "missing" && (!q || (o.code + " " + o.city).toLowerCase().includes(q)))
+      .sort((x, y) => x.code.localeCompare(y.code));
+    if (others.length) {
+      html += `
+        <section class="card">
+          <h2><span class="icon">🛰️</span> Weitere besuchte Flughäfen (${others.length})</h2>
+          <div class="col-grid">${others.map(o => `
+            <div class="col-chip visited" title="${escapeHtml(o.city)}">
+              <span class="col-code">${escapeHtml(o.code)}</span>
+              <div class="col-chip-text"><div class="col-chip-name">${flag(o.cc)}${escapeHtml(o.city)}</div>
+              <div class="col-chip-sub">seit ${yearOf(o.info.first)} · ${o.info.count}×</div></div>
+            </div>`).join("")}</div>
+        </section>`;
+    }
+  } else {
+    const terr = [];
+    stats.countries.forEach((v, cc) => { if (!geo.continentOf[cc]) terr.push([cc, v]); });
+    const shown = terr
+      .filter(([cc]) => f !== "missing" && (!q || (getCountryNameDe(cc) + " " + cc).toLowerCase().includes(q)))
+      .sort((a, b) => getCountryNameDe(a[0]).localeCompare(getCountryNameDe(b[0]), "de"));
+    if (shown.length) {
+      html += `
+        <section class="card">
+          <h2><span class="icon">🏝️</span> Gebiete &amp; Territorien (${shown.length})</h2>
+          <div class="muted" style="margin-bottom:.5rem;">Zählen nicht zu den Ländern oben, sind aber ein schöner Bonus.</div>
+          <div class="col-grid">${shown.map(([cc, v]) => `
+            <div class="col-chip visited">
+              ${flag(cc)}<div class="col-chip-text"><div class="col-chip-name">${escapeHtml(getCountryNameDe(cc))}</div>
+              <div class="col-chip-sub">seit ${yearOf(v.first)} · ${v.flights} Flüge</div></div>
+            </div>`).join("")}</div>
+        </section>`;
+    }
+  }
+
+  host.innerHTML = html || `<div class="card"><div class="muted">Keine Treffer.</div></div>`;
+}
+
+
+
+// ============================================================
+// Grosse Einstiegskacheln (Dashboard + Stats)
+// ============================================================
+function getFeatureTeasersHTML() {
+  const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
+  const dated = flights.map(f => ({ f, d: parseFlightDateAny(f.date) })).filter(x => x.d);
+  const geo = getGeoData();
+
+  // Jahresrückblick: jüngstes Jahr mit Flügen
+  let yrTitle = "Jahresrückblick", yrLine = "Noch keine Flüge erfasst";
+  if (dated.length) {
+    const y = Math.max(...dated.map(x => x.d.getFullYear()));
+    const sel = dated.filter(x => x.d.getFullYear() === y);
+    const km = sel.reduce((s, x) => s + Number(x.f.distanceKm || 0), 0);
+    yrTitle = "Jahresrückblick " + y;
+    yrLine = `${sel.length} Flüge · ${fmtNum(km)} km · ${(km / 40075).toFixed(1)}× um die Erde`;
+  }
+
+  // Sammlung
+  const stats = analyzeFlightsGeo(flights);
+  if (!geo.apCountries) {
+    geo.apCountries = new Set();
+    if (typeof AIRPORTS !== "undefined" && AIRPORTS) Object.keys(AIRPORTS).forEach(c => { const cc = getAirportCountry(c); if (cc) geo.apCountries.add(cc); });
+  }
+  let cTot = 0, cVis = 0, aTot = 0, aVis = 0;
+  CONTINENT_META.forEach(c => {
+    (geo.countriesByCont[c.id] || []).forEach(cc => { if (!geo.apCountries.has(cc)) return; cTot++; if (stats.countries.has(cc)) cVis++; });
+    (geo.topByCont[c.id] || []).forEach(code => { aTot++; if (stats.airports.has(code)) aVis++; });
+  });
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+
+  const bar = (p, col) => `<div class="yr-split" style="margin-top:.5rem;"><div style="width:${p}%; background:${col};"></div></div>`;
+  return `
+    <div class="feature-teasers">
+      <button type="button" class="feature-tile ft-year" onclick="showPage('yearReviewPage')">
+        <div class="ft-icon">🎉</div>
+        <div class="ft-body">
+          <div class="ft-title">${escapeHtml(yrTitle)}</div>
+          <div class="ft-sub">${escapeHtml(yrLine)}</div>
+          <div class="ft-cta">Rückblick ansehen →</div>
+        </div>
+      </button>
+      <button type="button" class="feature-tile ft-collect" onclick="showPage('collectionPage')">
+        <div class="ft-icon">🧭</div>
+        <div class="ft-body">
+          <div class="ft-title">Länder &amp; Flughäfen sammeln</div>
+          <div class="ft-sub">🌍 ${cVis} / ${cTot} Länder · 🛬 ${aVis} / ${aTot} grosse Flughäfen</div>
+          ${bar(pct(cVis, cTot), "#22c55e")}
+          <div class="ft-cta">Sammlung öffnen →</div>
+        </div>
+      </button>
+    </div>`;
+}
+
+// ============================================================
+// TOASTS & BESTÄTIGUNGSDIALOG (ersetzen alert/confirm)
+// ============================================================
+function showToast(msg, opts) {
+  opts = opts || {};
+  const text = String(msg == null ? "" : msg);
+  let type = opts.type;
+  if (!type) type = /❌|fehl|error/i.test(text) ? "error" : (/✅|erfolg/i.test(text) ? "success" : "info");
+  let host = document.getElementById("toastHost");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "toastHost";
+    document.body.appendChild(host);
+  }
+  while (host.children.length >= 3) host.removeChild(host.firstChild);
+
+  const el = document.createElement("div");
+  el.className = "toast toast-" + type;
+  const span = document.createElement("span");
+  span.className = "toast-text";
+  span.textContent = text;
+  el.appendChild(span);
+
+  let timer = null;
+  const close = () => { clearTimeout(timer); if (el.parentNode) el.parentNode.removeChild(el); };
+
+  if (opts.actionLabel && typeof opts.onAction === "function") {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "toast-action";
+    b.textContent = opts.actionLabel;
+    b.onclick = () => { close(); try { opts.onAction(); } catch (e) { console.error(e); } };
+    el.appendChild(b);
+  }
+  const x = document.createElement("button");
+  x.type = "button";
+  x.className = "toast-x";
+  x.textContent = "✕";
+  x.setAttribute("aria-label", "Schliessen");
+  x.onclick = close;
+  el.appendChild(x);
+
+  host.appendChild(el);
+  const dur = opts.duration || (type === "error" ? 7000 : 4000);
+  timer = setTimeout(close, dur);
+  return close;
+}
+
+function confirmDialog(message, okLabel, danger) {
+  return new Promise((resolve) => {
+    const ov = document.createElement("div");
+    ov.className = "confirm-overlay";
+    const box = document.createElement("div");
+    box.className = "confirm-box";
+    const p = document.createElement("div");
+    p.className = "confirm-text";
+    p.textContent = String(message);
+    const row = document.createElement("div");
+    row.className = "confirm-row";
+    const no = document.createElement("button");
+    no.type = "button"; no.className = "btn btn-secondary btn-sm"; no.textContent = "Abbrechen";
+    const ok = document.createElement("button");
+    ok.type = "button"; ok.className = "btn btn-sm " + (danger ? "btn-danger-solid" : "btn-primary"); ok.textContent = okLabel || "OK";
+    const done = (v) => { document.removeEventListener("keydown", onKey); if (ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); };
+    const onKey = (e) => { if (e.key === "Escape") done(false); };
+    no.onclick = () => done(false);
+    ok.onclick = () => done(true);
+    ov.addEventListener("click", (e) => { if (e.target === ov) done(false); });
+    document.addEventListener("keydown", onKey);
+    row.appendChild(no); row.appendChild(ok);
+    box.appendChild(p); box.appendChild(row);
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+    ok.focus();
+  });
+}
+
+// ============================================================
+// RÜCKGÄNGIG NACH DEM LÖSCHEN
+// ============================================================
+async function restoreRows(table, rows) {
+  if (!rows || !rows.length) return false;
+  for (let i = 0; i < rows.length; i += 200) {
+    const chunk = rows.slice(i, i + 200);
+    let { error } = await db.from(table).insert(chunk);
+    if (error) {
+      // Falls die ID-Spalte kein explizites Setzen erlaubt: ohne ID erneut versuchen
+      const noId = chunk.map(r => { const { id, ...rest } = r; return rest; });
+      ({ error } = await db.from(table).insert(noId));
+    }
+    if (error) { showToast("Wiederherstellen fehlgeschlagen: " + error.message, { type: "error" }); return false; }
+  }
+  return true;
+}
+
+async function undoFlightDelete(rows) {
+  if (await restoreRows("flights", rows)) {
+    await loadFlightsFromCloud();
+    showToast("✅ " + (rows.length > 1 ? rows.length + " Flüge wiederhergestellt" : "Flug wiederhergestellt"));
+  }
+}
+
+async function undoPlannedDelete(rows) {
+  if (await restoreRows("planned_flights", rows)) {
+    await loadPlannedFlightsFromCloud();
+    if (typeof renderDashboardTiles === "function") renderDashboardTiles();
+    showToast("✅ Geplanter Flug wiederhergestellt");
+  }
+}
+
+// ============================================================
+// ERINNERUNGEN: geplante Flüge (<48 h) und Backup (30 Tage)
+// ============================================================
+const BACKUP_KEY = "flugmeilen_last_backup";
+const BACKUP_SEEN_KEY = "flugmeilen_backup_seen";
+const BACKUP_SNOOZE_KEY = "flugmeilen_backup_snooze";
+const BACKUP_INTERVAL_DAYS = 30;
+
+function lsGetSafe(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSetSafe(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignorieren */ } }
+
+function noteBackupDone() {
+  lsSetSafe(BACKUP_KEY, String(Date.now()));
+  lsSetSafe(BACKUP_SNOOZE_KEY, "");
+}
+
+function snoozeBackupReminder() {
+  lsSetSafe(BACKUP_SNOOZE_KEY, String(Date.now() + 7 * 86400000));
+  if (typeof renderDashboardTiles === "function") renderDashboardTiles();
+}
+
+function backupNowFromReminder() {
+  showPage("dataPage");
+  setTimeout(() => { const b = document.getElementById("exportBtn"); if (b) b.click(); }, 250);
+}
+
+function getBackupReminderHTML() {
+  const flights = (typeof flightsAll !== "undefined") ? flightsAll : [];
+  if (!flights.length) return "";
+  const now = Date.now();
+  let seen = Number(lsGetSafe(BACKUP_SEEN_KEY));
+  if (!seen) { seen = now; lsSetSafe(BACKUP_SEEN_KEY, String(now)); }
+  const last = Number(lsGetSafe(BACKUP_KEY)) || 0;
+  const ref = last || seen;
+  const days = Math.floor((now - ref) / 86400000);
+  if (days < BACKUP_INTERVAL_DAYS) return "";
+  const snooze = Number(lsGetSafe(BACKUP_SNOOZE_KEY)) || 0;
+  if (snooze > now) return "";
+  const text = last
+    ? `Dein letztes Backup ist ${days} Tage alt.`
+    : `Du hast noch nie ein Backup exportiert (seit ${days} Tagen).`;
+  return `
+    <div class="reminder-banner rb-backup tile-full">
+      <div class="rb-icon">💾</div>
+      <div class="rb-body">
+        <div class="rb-title">Zeit für ein Backup</div>
+        <div class="rb-sub">${escapeHtml(text)}</div>
+      </div>
+      <div class="rb-actions">
+        <button type="button" class="btn btn-primary btn-xs" onclick="backupNowFromReminder()">Jetzt sichern</button>
+        <button type="button" class="btn btn-secondary btn-xs" onclick="snoozeBackupReminder()">In 7 Tagen</button>
+      </div>
+    </div>`;
+}
+
+// Check-in-Seiten (Schlüsselwörter im Airline-Namen -> URL). Unbekannte Airlines: Suchlink.
+const CHECKIN_URLS = [
+  { keys: ["swiss"], url: "https://www.swiss.com/ch/de/manage/check-in" },
+  { keys: ["lufthansa"], url: "https://www.lufthansa.com/de/de/online-check-in" },
+  { keys: ["edelweiss"], url: "https://www.flyedelweiss.com/de/manage-booking/online-check-in" },
+  { keys: ["austrian"], url: "https://www.austrian.com/de/online-check-in" },
+  { keys: ["eurowings"], url: "https://www.eurowings.com/de/information/at-the-airport/check-in.html" },
+  { keys: ["klm"], url: "https://www.klm.ch/check-in" },
+  { keys: ["air france"], url: "https://wwws.airfrance.ch/check-in" },
+  { keys: ["british airways"], url: "https://www.britishairways.com/travel/olci/public/de_ch" },
+  { keys: ["emirates"], url: "https://www.emirates.com/ch/german/manage-booking/online-check-in/" },
+  { keys: ["qatar"], url: "https://www.qatarairways.com/de-ch/check-in.html" },
+  { keys: ["turkish"], url: "https://www.turkishairlines.com/de-int/flights/manage-booking/web-check-in/" },
+  { keys: ["ryanair"], url: "https://www.ryanair.com/de/de/trip/flights/checkin" },
+  { keys: ["easyjet"], url: "https://www.easyjet.com/de/buchung-verwalten/online-check-in" },
+  { keys: ["delta"], url: "https://www.delta.com/de/de/check-in/overview" },
+  { keys: ["united"], url: "https://www.united.com/de/ch/checkin" },
+  { keys: ["american"], url: "https://www.aa.com/check-in/views/individualCheckInSearch" },
+  { keys: ["condor"], url: "https://www.condor.com/de/online-check-in" },
+  { keys: ["discover"], url: "https://www.discover-airlines.com/de/de/manage-booking/online-check-in" }
+];
+
+function getCheckinUrl(airline) {
+  const a = String(airline || "").toLowerCase().trim();
+  if (!a) return "";
+  for (const e of CHECKIN_URLS) {
+    if (e.keys.some(k => a.includes(k))) return e.url;
+  }
+  return "https://www.google.com/search?q=" + encodeURIComponent(airline + " Online Check-in");
+}
+
+function getFlightReminderHTML() {
+  const planned = (typeof plannedFlightsAll !== "undefined") ? plannedFlightsAll : [];
+  if (!planned.length) return "";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const items = planned
+    .map(p => ({ p, d: parseFlightDateAny(p.date) }))
+    .filter(x => x.d)
+    .map(x => ({ ...x, days: Math.round((x.d - today) / 86400000) }))
+    .filter(x => x.days >= 0 && x.days <= 2)
+    .sort((a, b) => a.d - b.d);
+  if (!items.length) return "";
+
+  const when = ["heute", "morgen", "übermorgen"];
+  return items.map(({ p, days }) => {
+    const from = p.from_iata || p.from || "", to = p.to_iata || p.to || "";
+    const num = p.flight_number || p.flightNumber || "";
+    const airline = p.airline || "";
+    const url = getCheckinUrl(airline);
+    const isSearch = url.indexOf("google.com/search") >= 0;
+    return `
+      <div class="reminder-banner rb-flight tile-full">
+        <div class="rb-icon">🛫</div>
+        <div class="rb-body">
+          <div class="rb-title">Dein Flug ist ${when[days]}: ${escapeHtml(from)} → ${escapeHtml(to)}</div>
+          <div class="rb-sub">${num ? escapeHtml(num) + " · " : ""}${escapeHtml(airline || "Airline tbd")} · ${formatDate(p.date)}</div>
+        </div>
+        <div class="rb-actions">
+          ${url ? `<a class="btn btn-primary btn-xs" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${isSearch ? "🔎 Check-in suchen" : "✅ Zum Check-in"}</a>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function getReminderBannersHTML() {
+  try { return getFlightReminderHTML() + getBackupReminderHTML(); }
+  catch (e) { console.error("Reminder-Fehler", e); return ""; }
+}
+
+// ============================================================
+// FLUGKARTE ALS BILD TEILEN
+// ============================================================
+function loadTileImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+async function renderShareCanvas(flights, useTiles, label) {
+  const mercY = (lat) => {
+    const l = Math.max(-84, Math.min(84, lat)) * Math.PI / 180;
+    return 0.5 - Math.log(Math.tan(Math.PI / 4 + l / 2)) / (2 * Math.PI);   // 0..1
+  };
+  const mercX = (lon) => (lon + 180) / 360;
+
+  const pts = [];
+  const used = new Set();
+  flights.forEach(f => {
+    const a = AIRPORTS[f.from], b = AIRPORTS[f.to];
+    if (a && b) { used.add(f.from); used.add(f.to); }
+  });
+  used.forEach(c => pts.push(AIRPORTS[c]));
+  if (!pts.length) return null;
+
+  // Ausschnitt (Mercator, 0..1) mit Rand, Seitenverhältnis ~ 16:10, nie breiter als die Welt
+  let minX = 1, maxX = 0, minY = 1, maxY = 0;
+  pts.forEach(a => {
+    const x = mercX(Number(a.lon !== undefined ? a.lon : a.lng)), y = mercY(Number(a.lat));
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  });
+  const aspect = 1.6;
+  let w = Math.max((maxX - minX) * 1.2, 0.12), h = Math.max((maxY - minY) * 1.2, 0.07);
+  if (w / h < aspect) w = h * aspect; else h = w / aspect;
+  if (w > 1) { w = 1; h = w / aspect; }
+  if (h > 0.9) { h = 0.9; w = Math.min(1, h * aspect); }
+  let cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  let x0 = Math.min(Math.max(cx - w / 2, 0), 1 - w), y0 = Math.min(Math.max(cy - h / 2, 0), 1 - h);
+
+  // Zoomstufe: Kartenbild ca. 1800 px breit
+  let z = 2;
+  while (z < 7 && w * 256 * Math.pow(2, z + 1) <= 2200) z++;
+  const worldPx = 256 * Math.pow(2, z);
+  const W = Math.round(w * worldPx), H = Math.round(h * worldPx);
+  const FOOT = 150;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H + FOOT;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#0b1220";
+  ctx.fillRect(0, 0, W, H + FOOT);
+
+  const px = (lon) => (mercX(lon) - x0) * worldPx;
+  const py = (lat) => (mercY(lat) - y0) * worldPx;
+
+  let tilesOk = false;
+  if (useTiles) {
+    const n = Math.pow(2, z);
+    const tx0 = Math.floor(x0 * n), tx1 = Math.floor((x0 + w) * n);
+    const ty0 = Math.floor(y0 * n), ty1 = Math.floor((y0 + h) * n);
+    const jobs = [];
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      if (tx < 0 || ty < 0 || tx >= n || ty >= n) continue;
+      jobs.push(loadTileImage(`https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${ty}/${tx}`).then(img => ({ img, tx, ty })));
+    }
+    const res = await Promise.all(jobs);
+    const okCount = res.filter(r => r.img).length;
+    if (res.length && okCount === res.length) {
+      res.forEach(({ img, tx, ty }) => ctx.drawImage(img, tx * 256 - x0 * worldPx, ty * 256 - y0 * worldPx, 256, 256));
+      tilesOk = true;
+    }
+  }
+  if (!tilesOk && useTiles) return { canvas: null, needFallback: true };
+
+  if (!tilesOk) {
+    // Ersatz ohne Kartenkacheln: Gradnetz
+    ctx.strokeStyle = "rgba(148,163,184,.15)"; ctx.lineWidth = 1;
+    for (let lon = -180; lon <= 180; lon += 30) { const x = px(lon); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let lat = -60; lat <= 80; lat += 20) { const y = py(lat); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  }
+
+  // Routen als Grosskreis-Bögen
+  const toRad = Math.PI / 180;
+  const arc = (a, b) => {
+    const la1 = a.lat * toRad, lo1 = a.lon * toRad, la2 = b.lat * toRad, lo2 = b.lon * toRad;
+    const d = 2 * Math.asin(Math.sqrt(Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin((lo2 - lo1) / 2) ** 2));
+    if (!isFinite(d) || d < 1e-6) return [[a.lon, a.lat], [b.lon, b.lat]];
+    const steps = Math.max(8, Math.ceil(d * 40)), out = [];
+    for (let i = 0; i <= steps; i++) {
+      const f = i / steps, A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+      const x = A * Math.cos(la1) * Math.cos(lo1) + B * Math.cos(la2) * Math.cos(lo2);
+      const y = A * Math.cos(la1) * Math.sin(lo1) + B * Math.cos(la2) * Math.sin(lo2);
+      const zz = A * Math.sin(la1) + B * Math.sin(la2);
+      out.push([Math.atan2(y, x) / toRad, Math.atan2(zz, Math.sqrt(x * x + y * y)) / toRad]);
+    }
+    return out;
+  };
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+  ctx.lineCap = "round";
+  const lw = Math.max(1.6, W / 700);
+  const drawn = new Set();
+  flights.forEach(f => {
+    const A = AIRPORTS[f.from], B = AIRPORTS[f.to];
+    if (!A || !B) return;
+    const key = [f.from, f.to].sort().join("-");
+    if (drawn.has(key)) return;
+    drawn.add(key);
+    const line = arc({ lat: Number(A.lat), lon: Number(A.lon !== undefined ? A.lon : A.lng) }, { lat: Number(B.lat), lon: Number(B.lon !== undefined ? B.lon : B.lng) });
+    ctx.strokeStyle = "rgba(56,189,248,.8)"; ctx.lineWidth = lw;
+    ctx.beginPath();
+    let prevX = null;
+    line.forEach(([lo, la], i) => {
+      const x = px(lo), y = py(la);
+      if (i === 0 || (prevX !== null && Math.abs(x - prevX) > worldPx / 2)) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      prevX = x;
+    });
+    ctx.stroke();
+  });
+  // Flughäfen
+  used.forEach(code => {
+    const a = AIRPORTS[code];
+    const x = px(Number(a.lon !== undefined ? a.lon : a.lng)), y = py(Number(a.lat));
+    ctx.fillStyle = "rgba(34,197,94,.9)"; ctx.strokeStyle = "rgba(2,6,23,.9)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x, y, Math.max(4, W / 380), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+
+  // Fussleiste
+  const km = flights.reduce((s, f) => s + Number(f.distanceKm || 0), 0);
+  const cc = new Set(); used.forEach(c => { const k = getAirportCountry(c); if (k) cc.add(k); });
+  const grd = ctx.createLinearGradient(0, H, 0, H + FOOT);
+  grd.addColorStop(0, "#0f172a"); grd.addColorStop(1, "#020617");
+  ctx.fillStyle = grd; ctx.fillRect(0, H, W, FOOT);
+  ctx.fillStyle = "#38bdf8"; ctx.font = "700 " + Math.round(FOOT * 0.3) + "px system-ui, sans-serif"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("✈ Meine Flugrouten · " + label, 28, H + FOOT * 0.46);
+  ctx.fillStyle = "#e2e8f0"; ctx.font = Math.round(FOOT * 0.19) + "px system-ui, sans-serif";
+  ctx.fillText(`${flights.length} Flüge · ${Math.round(km).toLocaleString("de-CH")} km · ${used.size} Flughäfen · ${cc.size} Länder`, 28, H + FOOT * 0.78);
+  return { canvas, needFallback: false };
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve) => {
+    try { canvas.toBlob(b => resolve(b), "image/png"); } catch (e) { resolve(null); }
+  });
+}
+
+async function buildShareBlob() {
+  const flights = getYearFilteredFlights();
+  const sy = getSelectedYear();
+  const label = sy ? String(sy) : "alle Jahre";
+  let r = await renderShareCanvas(flights, true, label);
+  if (!r) return null;
+  if (r.needFallback) r = await renderShareCanvas(flights, false, label);
+  if (!r || !r.canvas) return null;
+  let blob = await canvasToBlob(r.canvas);
+  if (!blob) {   // Canvas „tainted“ -> ohne Kacheln neu
+    r = await renderShareCanvas(flights, false, label);
+    blob = r && r.canvas ? await canvasToBlob(r.canvas) : null;
+  }
+  return blob;
+}
+
+let shareMapBlobUrl = null;
+
+async function openMapShare() {
+  const close = showToast("Karte wird erstellt …", { duration: 15000 });
+  let blob = null;
+  try { blob = await buildShareBlob(); } catch (e) { console.error(e); }
+  close();
+  if (!blob) { showToast("Karte konnte nicht erstellt werden (keine Flüge mit bekannten Flughäfen?)", { type: "error" }); return; }
+  if (shareMapBlobUrl) URL.revokeObjectURL(shareMapBlobUrl);
+  shareMapBlobUrl = URL.createObjectURL(blob);
+  window.__shareMapBlob = blob;
+
+  const ov = document.createElement("div");
+  ov.className = "confirm-overlay";
+  const box = document.createElement("div");
+  box.className = "confirm-box share-box";
+  const img = document.createElement("img");
+  img.src = shareMapBlobUrl; img.alt = "Flugkarte"; img.className = "share-preview";
+  const row = document.createElement("div");
+  row.className = "confirm-row";
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button"; closeBtn.className = "btn btn-secondary btn-sm"; closeBtn.textContent = "Schliessen";
+  const dl = document.createElement("button");
+  dl.type = "button"; dl.className = "btn btn-secondary btn-sm"; dl.textContent = "⬇️ Speichern";
+  const sh = document.createElement("button");
+  sh.type = "button"; sh.className = "btn btn-primary btn-sm"; sh.textContent = "📤 Teilen";
+  const done = () => { if (ov.parentNode) ov.parentNode.removeChild(ov); };
+  closeBtn.onclick = done;
+  ov.addEventListener("click", (e) => { if (e.target === ov) done(); });
+  dl.onclick = () => {
+    const a = document.createElement("a");
+    a.href = shareMapBlobUrl; a.download = "flugkarte_" + new Date().toISOString().slice(0, 10) + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast("✅ Bild gespeichert");
+  };
+  sh.onclick = async () => {
+    try {
+      const file = new File([blob], "flugkarte.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Meine Flugkarte" });
+      } else {
+        dl.click();
+      }
+    } catch (e) { if (e && e.name !== "AbortError") showToast("Teilen nicht möglich – bitte „Speichern“ nutzen", { type: "error" }); }
+  };
+  row.appendChild(closeBtn); row.appendChild(dl); row.appendChild(sh);
+  box.appendChild(img); box.appendChild(row);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+}
+
+
 // Event Listener für Karten-Vollbild
 document.addEventListener("DOMContentLoaded", () => {
   const fsBtn = document.getElementById("mapFullscreenBtn");
@@ -6590,7 +7840,7 @@ function updateAppTitle() {
   // 2. Header-Überschrift in der App aktualisieren
   const headerTitleEl = document.getElementById("appHeaderTitle");
   if (headerTitleEl) {
-    headerTitleEl.innerHTML = `<span class="icon">✈️</span> ${titleText}`;
+    headerTitleEl.innerHTML = `<span class="icon">✈️</span> ${escapeHtml(titleText)}`;
   }
 }                              
 
@@ -6696,7 +7946,7 @@ async function handleLogout() {
   const { error } = await db.auth.signOut();
   
   if (error) {
-    alert("Fehler beim Abmelden: " + error.message);
+    showToast("Fehler beim Abmelden: " + error.message);
     return;
   }
 
@@ -6872,6 +8122,29 @@ async function fetchAndFillFlightData() {
 }
 
 </script>
+
+
+<!-- Seite: Jahresrückblick -->
+<main id="yearReviewPage" style="display:none;">
+  <section class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;"><span class="icon">🎉</span> Jahresrückblick</h2>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="showPage('statsPage')">← Zurück</button>
+    </div>
+  </section>
+  <div id="yearReviewContent"></div>
+</main>
+
+<!-- Seite: Länder & Flughäfen sammeln -->
+<main id="collectionPage" style="display:none;">
+  <section class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;"><span class="icon">🧭</span> Länder &amp; Flughäfen</h2>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="showPage('statsPage')">← Zurück</button>
+    </div>
+  </section>
+  <div id="collectionContent"></div>
+</main>
 
 <nav class="bottom-nav">
   <button class="nav-item nav-active" data-target="dashboardPage">
