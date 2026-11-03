@@ -3193,12 +3193,28 @@ exportBtn.onclick = async (e) => {
       : (typeof AIRPORTS !== "undefined" ? AIRPORTS : {});
     const profileToExport = (typeof loadProfile === "function") ? loadProfile() : {};
 
+    // Geplante Flüge (ohne Supabase-Metadaten)
+    const plannedToExport = (typeof plannedFlightsAll !== "undefined" ? plannedFlightsAll : []).map(pf => {
+      const { id, user_id, created_at, updated_at, ...cleanPlan } = pf;
+      return cleanPlan;
+    });
+
+    // Miles & More Status Tracker (liegt in localStorage)
+    const mmKeys = ["mm_real_status", "mm_offset_points", "mm_offset_qpoints", "mm_real_miles", "mm_real_vouchers", "mm_last_sync"];
+    const milesAndMoreToExport = {};
+    mmKeys.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v !== null) milesAndMoreToExport[k] = v;
+    });
+
     // 2. Das Paket schnüren (mit bereinigten Flügen)
     const payload = {
       exportedAt: new Date().toISOString(),
       flights: cleanFlights,
       airports: airportsToExport,
-      profile: profileToExport
+      profile: profileToExport,
+      plannedFlights: plannedToExport,
+      milesAndMore: milesAndMoreToExport
     };
 
     const json = JSON.stringify(payload, null, 2);
@@ -3214,7 +3230,7 @@ exportBtn.onclick = async (e) => {
           await navigator.share({
             files: [file],
             title: 'Flugtracker Backup',
-            text: `Backup von ${cleanFlights.length} Flügen.`
+            text: `Backup von ${cleanFlights.length} Flügen und ${plannedToExport.length} geplanten Flügen.`
           });
           shared = true;
           if (backupMsg) backupMsg.textContent = "✅ Teilen-Dialog geöffnet.";
@@ -3317,6 +3333,63 @@ importFile.onchange = async () => {
       if (typeof renderAll === "function") renderAll();
       if (typeof renderDashboardTiles === "function") renderDashboardTiles();
     }
+
+    // 4b. Geplante Flüge wiederherstellen (nur wenn das Backup welche enthält,
+    //     alte Backups ohne diesen Eintrag lassen die Planung unangetastet)
+    if (Array.isArray(data.plannedFlights) && typeof db !== "undefined" && db) {
+      try {
+        await db.from('planned_flights').delete().not('id', 'is', null);
+
+        if (data.plannedFlights.length > 0) {
+          const plannedPayload = data.plannedFlights.map(pf => {
+            const { id, user_id, created_at, updated_at, ...rest } = pf;
+            return rest;
+          });
+          const { error: planErr } = await db.from('planned_flights').insert(plannedPayload);
+          if (planErr) throw planErr;
+        }
+
+        if (typeof loadPlannedFlightsFromCloud === "function") await loadPlannedFlightsFromCloud();
+        if (backupMsg) backupMsg.textContent += ` ✅ ${data.plannedFlights.length} geplante Flüge importiert.`;
+      } catch (planImportErr) {
+        console.error("Import geplante Flüge:", planImportErr);
+        if (backupMsg) backupMsg.textContent += " ⚠️ Geplante Flüge konnten nicht importiert werden: " + planImportErr.message;
+      }
+    }
+
+    // 4c. Miles & More Status Tracker wiederherstellen
+    if (data.milesAndMore && typeof data.milesAndMore === "object") {
+      const mm = data.milesAndMore;
+      ["mm_real_status", "mm_offset_points", "mm_offset_qpoints", "mm_real_miles", "mm_real_vouchers", "mm_last_sync"].forEach(k => {
+        if (mm[k] !== undefined && mm[k] !== null) localStorage.setItem(k, String(mm[k]));
+      });
+
+      try {
+        if (currentUserId && db) {
+          await db.from('user_settings').upsert({
+            user_id: currentUserId,
+            mm_status: mm.mm_real_status || "FTL",
+            mm_offset_points: Number(mm.mm_offset_points) || 0,
+            mm_offset_qpoints: Number(mm.mm_offset_qpoints) || 0,
+            mm_miles: parseInt(mm.mm_real_miles, 10) || 0,
+            mm_vouchers: parseInt(mm.mm_real_vouchers, 10) || 0,
+            mm_last_sync: mm.mm_last_sync || null,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (mmErr) {
+        console.error("Import Miles & More (Cloud):", mmErr);
+      }
+      if (backupMsg) backupMsg.textContent += " ✅ Miles-&-More-Status importiert.";
+    }
+
+    // 4d. Profil wiederherstellen (Name, Home-Airport, Speed, Fortschritts-Thema)
+    if (data.profile && typeof data.profile === "object" && typeof saveProfile === "function") {
+      saveProfile(data.profile);
+      if (typeof updateAppTitle === "function") updateAppTitle();
+    }
+
+    if (typeof renderDashboardTiles === "function") renderDashboardTiles();
 
     // 5. Flughäfen wiederherstellen, falls im Backup enthalten
     if (data.airports && typeof data.airports === "object") {
