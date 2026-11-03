@@ -7445,24 +7445,24 @@ function getBackupReminderHTML() {
 
 // Check-in-Seiten (Schlüsselwörter im Airline-Namen -> URL). Unbekannte Airlines: Suchlink.
 const CHECKIN_URLS = [
-  { keys: ["swiss"], url: "https://www.swiss.com/ch/de/manage/check-in" },
+  { keys: ["swiss"], url: "https://www.swiss.com/ch/de/fly/check-in/online-check-in" },
   { keys: ["lufthansa"], url: "https://www.lufthansa.com/de/de/online-check-in" },
-  { keys: ["edelweiss"], url: "https://www.flyedelweiss.com/de/manage-booking/online-check-in" },
-  { keys: ["austrian"], url: "https://www.austrian.com/de/online-check-in" },
-  { keys: ["eurowings"], url: "https://www.eurowings.com/de/information/at-the-airport/check-in.html" },
+  { keys: ["edelweiss"], url: "https://www.flyedelweiss.com/ch/en/fly/at-the-airport/check-in.html" },
+  { keys: ["austrian"], url: "https://www.austrian.com/at/de/online-check-in" },
+  { keys: ["eurowings"], url: "https://www.eurowings.com/de/checkin" },
   { keys: ["klm"], url: "https://www.klm.ch/check-in" },
   { keys: ["air france"], url: "https://wwws.airfrance.ch/check-in" },
-  { keys: ["british airways"], url: "https://www.britishairways.com/travel/olci/public/de_ch" },
+  { keys: ["british airways"], url: "https://www.britishairways.com/travel/olcilandingpageauthreq/public/de_ch" },
   { keys: ["emirates"], url: "https://www.emirates.com/ch/german/manage-booking/online-check-in/" },
   { keys: ["qatar"], url: "https://www.qatarairways.com/de-ch/check-in.html" },
-  { keys: ["turkish"], url: "https://www.turkishairlines.com/de-int/flights/manage-booking/web-check-in/" },
+  { keys: ["turkish"], url: "https://www.turkishairlines.com/de-ch" },
   { keys: ["ryanair"], url: "https://www.ryanair.com/de/de/trip/flights/checkin" },
-  { keys: ["easyjet"], url: "https://www.easyjet.com/de/buchung-verwalten/online-check-in" },
-  { keys: ["delta"], url: "https://www.delta.com/de/de/check-in/overview" },
+  { keys: ["easyjet"], url: "https://www.easyjet.com/ch-de/" },
+  { keys: ["delta"], url: "https://de.delta.com/eu/de" },
   { keys: ["united"], url: "https://www.united.com/de/ch/checkin" },
-  { keys: ["american"], url: "https://www.aa.com/check-in/views/individualCheckInSearch" },
-  { keys: ["condor"], url: "https://www.condor.com/de/online-check-in" },
-  { keys: ["discover"], url: "https://www.discover-airlines.com/de/de/manage-booking/online-check-in" }
+  { keys: ["american"], url: "https://www.aa.com/homePage.do" },
+  { keys: ["condor"], url: "https://www.condor.com/tcibe/de/mybooking/login" },
+  { keys: ["discover"], url: "https://www.discover-airlines.com/de/de/my-bookings/check-in/online-check-in" }
 ];
 
 function getCheckinUrl(airline) {
