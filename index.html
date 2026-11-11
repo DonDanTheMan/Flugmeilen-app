@@ -4656,12 +4656,13 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
         <div class="stat-label terminal-label">⚡ Quick Actions</div>
         <div class="dash-actions">
           <button class="btn btn-primary btn-sm" type="button" id="dashGoAdd">➕ Neuer Flug</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashThisYear">📅 ${yearNow}</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🌴 Privat</button>
-          <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
+          <button class="btn btn-secondary btn-sm ${year === yearNow ? 'nav-active' : ''}" type="button" id="dashThisYear">📅 ${yearNow}</button>
+          <button class="btn btn-secondary btn-sm ${tripFilter === 'p' ? 'nav-active' : ''}" type="button" id="dashPriv">🌴 Privat</button>
+          <button class="btn btn-secondary btn-sm ${tripFilter === 'g' ? 'nav-active' : ''}" type="button" id="dashBiz">💼 Geschäft</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
           <button class="btn btn-secondary btn-sm" type="button" onclick="syncFromCloud(true)">🔄 Sync</button>
         </div>
+        ${(tripFilter || year) ? `<div class="reminder-banner" style="margin-top:.6rem; padding:.45rem .7rem;"><div class="rb-body"><div class="rb-sub" style="color:#fde68a;">⚠️ Filter aktiv: ${year ? "Jahr " + escapeHtml(year) : "alle Jahre"}${tripFilter ? " · " + (tripFilter === "g" ? "nur Geschäft" : (tripFilter === "p" ? "nur Privat" : escapeHtml(tripFilter))) : ""} – Dashboard zeigt nicht alle Flüge.</div></div><button type="button" class="btn btn-primary btn-xs" onclick="resetDashboardFilters()">Filter zurücksetzen</button></div>` : ""}
       </div>
 
       <!-- 1b. FEATURE-KACHELN -->
