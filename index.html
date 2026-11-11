@@ -2388,8 +2388,10 @@ async function loadFlightsFromCloud() {
 
   if (error) {
     console.error("Fehler beim Laden aus Supabase:", error);
-    return;
+    window.__lastSyncError = error.message || String(error);
+    return false;
   }
+  window.__lastSyncError = null;
 
   if (data) {
     // 2. Datenbank-Felder auf das Datenformat deiner App mappen
@@ -2412,6 +2414,7 @@ async function loadFlightsFromCloud() {
     if (typeof renderAll === "function") renderAll();
     if (typeof renderDashboardTiles === "function") renderDashboardTiles();
   }
+  return true;
 }
 
 async function loadPlannedFlightsFromCloud() {
@@ -4657,6 +4660,7 @@ function renderDashboardTiles(targetId = "dashboardTiles") {
           <button class="btn btn-secondary btn-sm" type="button" id="dashPriv">🌴 Privat</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashBiz">💼 Geschäft</button>
           <button class="btn btn-secondary btn-sm" type="button" id="dashClearFilters">🧹 Reset</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="syncFromCloud(true)">🔄 Sync</button>
         </div>
       </div>
 
@@ -7731,6 +7735,48 @@ async function openMapShare() {
   document.body.appendChild(ov);
 }
 
+
+
+// ============================================================
+// SYNC: Daten beim Zurückkehren in die App neu laden
+// ============================================================
+let lastCloudSync = Date.now();
+let syncRunning = false;
+
+async function syncFromCloud(manual) {
+  if (syncRunning || typeof db === "undefined" || !db) return;
+  syncRunning = true;
+  try {
+    const { data: sess } = await db.auth.getSession();
+    if (!sess || !sess.session) {
+      if (manual) showToast("Nicht eingeloggt – bitte neu anmelden", { type: "error" });
+      return;
+    }
+    const before = flightsAll.length;
+    const ok = await loadFlightsFromCloud();
+    await loadPlannedFlightsFromCloud();
+    if (ok === false) {
+      if (manual) showToast("Synchronisieren fehlgeschlagen: " + (window.__lastSyncError || "unbekannter Fehler"), { type: "error" });
+      return;
+    }
+    lastCloudSync = Date.now();
+    if (manual) {
+      const diff = flightsAll.length - before;
+      showToast("✅ Aktuell · " + flightsAll.length + " Flüge" + (diff ? " (" + (diff > 0 ? "+" : "") + diff + ")" : ""));
+    }
+  } catch (e) {
+    console.error("Sync-Fehler", e);
+    if (manual) showToast("Synchronisieren fehlgeschlagen: " + (e && e.message ? e.message : e), { type: "error" });
+  } finally {
+    syncRunning = false;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Date.now() - lastCloudSync > 30000) syncFromCloud(false);
+});
+window.addEventListener("focus", () => { if (Date.now() - lastCloudSync > 30000) syncFromCloud(false); });
+window.addEventListener("online", () => syncFromCloud(false));
 
 // Event Listener für Karten-Vollbild
 document.addEventListener("DOMContentLoaded", () => {
