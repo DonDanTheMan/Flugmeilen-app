@@ -1847,7 +1847,6 @@ a,
 select, 
 input, 
 .action-btn, 
-.holo-card, 
 [onclick] {
   cursor: pointer;
   -webkit-tap-highlight-color: rgba(56, 189, 248, 0.2);
@@ -1934,6 +1933,9 @@ input, select, textarea {
 select{color-scheme:dark;}
 select option,select optgroup{background-color:#0f172a;color:#e5e7eb;}
 select option:checked{background-color:#0369a1;color:#fff;}
+
+/* Karten sind keine Knöpfe: kein Hand-Cursor/Aufleuchten, ausser sie haben wirklich eine Klick-Aktion */
+.holo-card:not([onclick]){cursor:default;-webkit-tap-highlight-color:transparent;}
 </style>
 </head>
 <body>
@@ -6876,8 +6878,14 @@ function renderYearReviewPage() {
     const a = String(f.from || "").toUpperCase(), b = String(f.to || "").toUpperCase();
     const rk = [a, b].sort().join(" ↔ ");
     routeCounts.set(rk, (routeCounts.get(rk) || 0) + 1);
-    const air = String(f.airline || "").trim();
-    if (air) airlineCounts.set(air, (airlineCounts.get(air) || 0) + 1);
+    const air = String(f.airline || "").trim().replace(/\s+/g, " ");
+    if (air) {
+      const k = air.toLowerCase();
+      const e = airlineCounts.get(k) || { name: air, n: 0, spell: new Map() };
+      e.n++;
+      e.spell.set(air, (e.spell.get(air) || 0) + 1);
+      airlineCounts.set(k, e);
+    }
     const ac = String(f.aircraft || "").trim();
     if (ac) aircraftCounts.set(ac, (aircraftCounts.get(ac) || 0) + 1);
     [a, b].forEach(c => { if (c) airportCounts.set(c, (airportCounts.get(c) || 0) + 1); });
@@ -6889,7 +6897,14 @@ function renderYearReviewPage() {
   });
 
   const topRoute = topEntry(routeCounts);
-  const topAirline = topEntry(airlineCounts);
+  let topAirline = null;
+  airlineCounts.forEach(e => {
+    if (!topAirline || e.n > topAirline[1]) {
+      let best = e.name, bn = 0;
+      e.spell.forEach((c, nm) => { if (c > bn) { bn = c; best = nm; } });
+      topAirline = [best, e.n];
+    }
+  });
   const topAircraft = topEntry(aircraftCounts);
   const topAirport = topEntry(airportCounts);
   let busiestMonth = -1;
