@@ -2,34 +2,73 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Läuft automatisch jeden Tag um 04:00 Uhr UTC
-    - cron: '0 4 * * *'
-  workflow_dispatch: # Erlaubt manuelles Ausführen im GitHub Actions Tab
+    # Zweimal täglich (UTC), mit Versatz zu vollen Stunden, weil GitHub dort oft verzögert
+    - cron: '17 4 * * *'
+    - cron: '43 16 * * *'
+  workflow_dispatch: # Manuelles Ausführen im GitHub Actions Tab
 
 jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Write keep-alive entry to Supabase
+      - name: Mehrere Datenbank- und Auth-Zugriffe auf Supabase ausführen
+        env:
+          URL: https://uluqbxlrjakvmeptbphs.supabase.co
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KA_EMAIL: ${{ secrets.KEEPALIVE_EMAIL }}
+          KA_PASSWORD: ${{ secrets.KEEPALIVE_PASSWORD }}
         run: |
+          BASE="$URL/rest/v1"
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          FAIL=0
 
-          STATUS_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
-            'https://uluqbxlrjakvmeptbphs.supabase.co/rest/v1/keepalive' \
-            -H 'apikey: ${{ secrets.SUPABASE_ANON_KEY }}' \
-            -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
+          # 1) Anonym schreiben (Upsert)
+          CODE=$(curl -s -o /tmp/r1.json -w "%{http_code}" -X POST "$BASE/keepalive" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
             -H 'Content-Type: application/json' \
             -H 'Prefer: resolution=merge-duplicates' \
             -d "{\"id\": 1, \"pinged_at\": \"$NOW\"}")
+          echo "Upsert keepalive (anon): $CODE"
+          if [ "$CODE" != "200" ] && [ "$CODE" != "201" ]; then FAIL=1; fi
 
-          echo "Response Body:"
-          cat /tmp/response.json
-          echo ""
-          echo "Status Code: $STATUS_CODE"
+          # 2) Anonym lesen
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/keepalive?select=id,pinged_at" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "Select keepalive (anon): $CODE"
+          if [ "$CODE" != "200" ]; then FAIL=1; fi
 
-          if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 201 ]; then
-            echo "✅ Eintrag erfolgreich geschrieben, Supabase aktiv gehalten!"
+          # 3) Echter Login (Auth-Aktivität), nur wenn Zugangsdaten als Secrets hinterlegt sind
+          if [ -n "$KA_EMAIL" ] && [ -n "$KA_PASSWORD" ]; then
+            BODY=$(jq -n --arg e "$KA_EMAIL" --arg p "$KA_PASSWORD" '{email:$e,password:$p}')
+            CODE=$(curl -s -o /tmp/auth.json -w "%{http_code}" -X POST "$URL/auth/v1/token?grant_type=password" \
+              -H "apikey: $KEY" -H 'Content-Type: application/json' -d "$BODY")
+            echo "Login: $CODE"
+            if [ "$CODE" = "200" ]; then
+              TOKEN=$(jq -r '.access_token' /tmp/auth.json)
+
+              # 4) Als eingeloggter Benutzer Flüge lesen (RLS) und keepalive schreiben
+              CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/flights?select=id&limit=5" \
+                -H "apikey: $KEY" -H "Authorization: Bearer $TOKEN")
+              echo "Select flights (user): $CODE"
+              if [ "$CODE" != "200" ]; then FAIL=1; fi
+
+              CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/keepalive" \
+                -H "apikey: $KEY" -H "Authorization: Bearer $TOKEN" \
+                -H 'Content-Type: application/json' \
+                -H 'Prefer: resolution=merge-duplicates' \
+                -d "{\"id\": 1, \"pinged_at\": \"$NOW\"}")
+              echo "Upsert keepalive (user): $CODE"
+              if [ "$CODE" != "200" ] && [ "$CODE" != "201" ]; then FAIL=1; fi
+            else
+              echo "Login fehlgeschlagen (Zugangsdaten prüfen)"
+              FAIL=1
+            fi
           else
-            echo "⚠️ Unerwarteter Status Code: $STATUS_CODE"
+            echo "Kein KEEPALIVE_EMAIL/PASSWORD gesetzt – Login-Schritte übersprungen"
+          fi
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "⚠️ Mindestens ein Aufruf ist fehlgeschlagen"
             exit 1
           fi
+          echo "✅ Alle Aufrufe erfolgreich"
